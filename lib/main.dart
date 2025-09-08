@@ -443,7 +443,7 @@ class NoFormScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const CharacterCustomizationScreen(animalType: 'cat'),
+                        builder: (context) => const CharacterCustomizationScreen(animalType: 'dog'),
                       ),
                     );
                   },

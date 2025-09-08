@@ -88,33 +88,33 @@ class _CharacterCustomizationScreenState extends State<CharacterCustomizationScr
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  // 얼굴 타입 선택 (1-4)
-                  _buildPartSelector('얼굴 타입', faceTypeCount, selectedFaceType, (index) {
+                  // 귀 타입 선택 (1-4)
+                  _buildPartSelector('귀 타입', faceTypeCount, selectedFaceType, (index) {
                     setState(() {
                       selectedFaceType = index;
                     });
                   }),
                   const SizedBox(height: 15),
 
-                  // 얼굴 색상 선택 (1-6)
-                  _buildPartSelector('얼굴 색상', faceColorCount, selectedFaceColor, (index) {
+                  // 패턴 색상 선택 (1-6)
+                  _buildPartSelector('패턴 색상', faceColorCount, selectedFaceColor, (index) {
                     setState(() {
                       selectedFaceColor = index;
                     });
                   }),
                   const SizedBox(height: 15),
 
-                  // 몸통 선택 (1-6)
-                  _buildPartSelector('몸통', bodyCount, selectedBodyIndex, (index) {
-                    setState(() => selectedBodyIndex = index);
-                  }),
-                  const SizedBox(height: 15),
+                  // // 몸통 선택 (1-6)
+                  // _buildPartSelector('몸통', bodyCount, selectedBodyIndex, (index) {
+                  //   setState(() => selectedBodyIndex = index);
+                  // }),
+                  // const SizedBox(height: 15),
 
-                  // 표정 선택 (1-4)
-                  _buildPartSelector('표정', emotionCount, selectedEmotionIndex, (index) {
-                    setState(() => selectedEmotionIndex = index);
-                  }),
-                  const SizedBox(height: 15),
+                  // // 표정 선택 (1-4)
+                  // _buildPartSelector('표정', emotionCount, selectedEmotionIndex, (index) {
+                  //   setState(() => selectedEmotionIndex = index);
+                  // }),
+                  // const SizedBox(height: 15),
                   
                   // 꼬리 선택 (1-4)
                   _buildPartSelector('꼬리', tailCount, selectedTailIndex, (index) {
@@ -219,7 +219,7 @@ class CharacterView extends StatelessWidget {
     switch (part) {
       case 'body':
         // 몸통
-        return 'assets/images/characters/$animalType/body/${bodyIndex}.png';
+        return 'assets/images/characters/$animalType/body/$faceColor.png';
       case 'face':
         // 얼굴은 타입-색상 형태
         return 'assets/images/characters/$animalType/face/$faceType-$faceColor.png';
@@ -236,6 +236,18 @@ class CharacterView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    double tailWidth = 200;
+    double tailHeight = 200;
+    double tailLeft = -75;
+    double tailTop = 0;
+
+    if(tailIndex == 3) {
+      tailWidth = 80; // 꼬리 3번의 너비를 더 작게
+      tailHeight = 80; // 꼬리 3번의 높이를 더 작게
+      tailLeft = -35; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
+      tailTop = 130; // 꼬리 3번의 위쪽 위치 조정 (더 위로)
+    }
+
     return SizedBox(
       width: 200,
       height: 200,
@@ -243,7 +255,21 @@ class CharacterView extends StatelessWidget {
         alignment: Alignment.center,
         clipBehavior: Clip.none, // 드래그 시 경계를 벗어날 수 있도록
         children: [
-          // 1. 몸통 (맨 아래 베이스, 고정)
+                    
+          // 1. 드래그 가능한 꼬리 (뒤쪽에 배치)
+          Positioned(
+            left: tailLeft,
+            top: tailTop,
+            child: Image.asset(
+              _getImagePath('tail'),
+              width: tailWidth,
+              height: tailHeight,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const SizedBox(),
+            ),
+          ),
+          
+          // 2. 몸통 (맨 아래 베이스, 고정)
           Positioned(
             left: -30,
             top: 0,
@@ -263,7 +289,7 @@ class CharacterView extends StatelessWidget {
             ),
           ),
           
-          // 2. 얼굴 (고정, 몸통 위쪽에 배치)
+          // 3. 얼굴 (고정, 몸통 위쪽에 배치)
           Positioned(
             left: 25,
             top: -10,
@@ -275,19 +301,7 @@ class CharacterView extends StatelessWidget {
               errorBuilder: (context, error, stackTrace) => const SizedBox(),
             ),
           ),
-          
-          // 3. 드래그 가능한 꼬리 (뒤쪽에 배치)
-          Positioned(
-            left: -75,
-            child: Image.asset(
-              _getImagePath('tail'),
-              width: 200,
-              height: 200,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const SizedBox(),
-            ),
-          ),
-          
+
           // 4. 드래그 가능한 표정 (얼굴 위)
             Positioned(
             left: 70,
