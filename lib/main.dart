@@ -94,15 +94,35 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     // Scaffold는 앱 화면의 기본 구조를 제공
     return Scaffold(
-      body: SafeArea(
-        // 현재 단계(_currentStep)에 따라 다른 화면 위젯을 보여줌
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 500),
-          child: _buildCurrentScreen(),
+              // 1. 배경 이미지 (맨 아래에 깔림)
+        body: Stack(
+          children: [
+            Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/images/backgrounds/bg1.png'), // 여기에 네 이미지 파일 경로를 적어줘!
+              fit: BoxFit.cover, // 이미지가 화면을 꽉 채우도록 설정
+            ),
+          ),
+          ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Image.asset('assets/images/background.png'),
+          ),
+  
+        // 2. 원래 있던 화면 내용 (배경 이미지 위에 보임)
+        SafeArea(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 500),
+            child: _buildCurrentScreen(),
+          ),
         ),
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
   
   Widget _buildCurrentScreen() {
     switch (_currentStep) {
@@ -129,6 +149,7 @@ class SplashScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     return Container(
+      
       key: const ValueKey('splash'),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
       child: Column(
@@ -143,7 +164,7 @@ class SplashScreen extends StatelessWidget {
             children: [
                Text("천사일기", style: textTheme.displayLarge),
                const SizedBox(height: 40),
-               Image.asset('assets/images/illustrations/angel_dove.png', width: 150), // 샘플 비둘기 이미지
+               Image.asset('assets/images/illustrations/angel_dove.png', width: 250), // 샘플 비둘기 이미지
             ],
           ),
           Column(

@@ -241,13 +241,40 @@ class CharacterView extends StatelessWidget {
     double tailLeft = -75;
     double tailTop = 0;
 
+    if(animalType == 'cat') {
     if(tailIndex == 3) {
       tailWidth = 80; // 꼬리 3번의 너비를 더 작게
       tailHeight = 80; // 꼬리 3번의 높이를 더 작게
       tailLeft = -35; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
       tailTop = 130; // 꼬리 3번의 위쪽 위치 조정 (더 위로)
     }
-
+  } else if(animalType == 'dog') {
+    if(tailIndex == 1) {
+      tailWidth = 140; // 꼬리 3번의 너비를 더 작게
+      tailHeight = 140; // 꼬리 3번의 높이를 더 작게
+      tailLeft = -70; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
+      tailTop = 70; // 꼬리 3번의 위쪽 위치 조정 (더 위로)
+    }
+    if(tailIndex == 2) {
+      tailWidth = 140; // 꼬리 3번의 너비를 더 작게
+      tailHeight = 140; // 꼬리 3번의 높이를 더 작게
+      tailLeft = -70; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
+      tailTop = 70; // 꼬리 3번의 위쪽 위치 조정 (더 위로)
+    }
+    if(tailIndex == 3) {
+      tailWidth = 140; // 꼬리 3번의 너비를 더 작게
+      tailHeight = 140; // 꼬리 3번의 높이를 더 작게
+      tailLeft = -70; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
+      tailTop = 70; // 꼬리 3번의 위쪽 위치 조정 (더 위로)
+    }
+    if(tailIndex == 4) {
+      tailWidth = 170; // 꼬리 3번의 너비를 더 작게
+      tailHeight = 170; // 꼬리 3번의 높이를 더 작게
+      tailLeft = -75; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
+      tailTop = 70; // 꼬리 3번의 위쪽 위치 조정 (더 위로)
+    }
+  }
+  
     return SizedBox(
       width: 200,
       height: 200,
