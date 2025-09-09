@@ -92,6 +92,7 @@ class _CharacterCustomizationScreenState extends State<CharacterCustomizationScr
                   _buildPartSelector('귀 타입', faceTypeCount, selectedFaceType, (index) {
                     setState(() {
                       selectedFaceType = index;
+                      
                     });
                   }),
                   const SizedBox(height: 15),
