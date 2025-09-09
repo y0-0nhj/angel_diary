@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
 import 'character_view.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'services/photoshop_api_service.dart'; // ✨ 방금 만든 서비스 import
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:firebase_core/firebase_core.dart';
+import 'package:angel_diary/firebase_options.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 // --- 앱 전체에서 사용할 색상 정의 ---
 const Color bgColor = Color(0xFFF8F5EF);
@@ -12,7 +19,9 @@ const Color textColor = Color(0xFF3D3D3D);
 const Color cardBgColor = Colors.white;
 
 // 앱의 시작점
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const AngelDiaryApp());
 }
 
@@ -202,13 +211,13 @@ class QuestionScreen extends StatelessWidget {
     return Center(
       key: const ValueKey('question'),
       child: Padding(
-        padding: const EdgeInsets.all(40.0),
+        padding: const EdgeInsets.all(10.0),
         child: Card(
           elevation: 0,
           color: cardBgColor.withOpacity(0.7),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Padding(
-            padding: const EdgeInsets.all(30.0),
+            padding: const EdgeInsets.all(5.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -254,18 +263,28 @@ class YesFormScreen extends StatefulWidget {
 }
 
 class _YesFormScreenState extends State<YesFormScreen> {
-
   // 텍스트 입력창의 값을 가져오기 위한 컨트롤러
   final _nameController = TextEditingController();
+  final _directInputController = TextEditingController();
+
   // 폼 위젯들의 상태를 관리할 변수들
   final List<String> _petTypes = ['강아지', '고양이', '기타'];
   String? _selectedPetType;
 
   final List<String> _petDescs = ['작고 하얀 복슬강아지', '용감하고 늠름한 친구', '애교많은 개냥이', '직접 입력'];
-  final _directInputController = TextEditingController();
   String? _selectedPetDesc;
+
   XFile? _pickedImage;
+
+  // --- ✨ API 연동을 위한 상태 변수 추가 ---
+  bool _isLoading = false; // API 호출 중 로딩 상태를 알려주는 변수
+  Uint8List? _processedImageBytes; // 배경이 제거된 이미지 데이터를 담을 변수
+
+  // 이미지 선택 함수
   Future<void> _pickImage() async {
+    setState(() {
+      _processedImageBytes = null;
+    });
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
@@ -276,98 +295,237 @@ class _YesFormScreenState extends State<YesFormScreen> {
   }
 
 
+  // 등록 버튼 함수
+  Future<void> _submit() async {
+    if (_pickedImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('반려동물의 사진을 먼저 등록해주세요!')),
+      );
+      return;
+    }
+    // TODO: API 호출 및 데이터 저장 로직
+    
+    setState(() {
+      _isLoading = true;
+      
+    });
+
+    try {
+      // 2. 배경 제거 API 호출
+      final apiService = PhotoshopApiService();
+      final resultBytes = await apiService.removeBackground(File(_pickedImage!.path));
+
+          // 3. 결과 처리
+      if (resultBytes != null) {
+        setState(() {
+          _processedImageBytes = resultBytes; // 성공 시 결과 저장
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✨ 배경이 성공적으로 제거되었어요!')),
+        );
+      } else {
+        throw Exception('API 처리 실패');
+      }
+    } catch (e) {
+      // 4. 에러 처리
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('이미지 처리에 실패했어요. 다른 사진으로 시도해보세요.')),
+      );
+    } finally {
+      // 5. 로딩 종료 (성공/실패와 상관없이 항상 실행)
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+
   // 위젯이 화면에서 사라질 때 컨트롤러를 정리해줘야 메모리 누수가 없어
   @override
   void dispose() {
     _nameController.dispose();
+    _directInputController.dispose(); // ✨ 직접 입력 컨트롤러도 dispose 추가
     super.dispose();
-
   }
+
+
+// ✨ --- 1. 서버에 데이터를 저장하는 함수 추가 ---
+  Future<bool> _savePetDataToServer() async {
+  print("Firestore에 데이터 저장을 시작합니다...");
+    try {
+      // 1. 저장할 데이터 준비
+      // (실제로는 이미지 URL을 포함해야 하지만, 여기서는 텍스트 데이터만 먼저 저장)
+      final petData = {
+        'name': _nameController.text,
+        'type': _selectedPetType,
+        'feature': _selectedPetDesc == '직접 입력' ? _directInputController.text : _selectedPetDesc,
+        'createdAt': FieldValue.serverTimestamp(), // 서버 시간 기준 생성일 기록
+      };
+      
+      // 2. 'pets'라는 이름의 컬렉션(엑셀 시트)에 데이터(행) 추가
+      await FirebaseFirestore.instance.collection('pets').add(petData);
+
+      print("Firestore에 반려동물 정보 저장 성공!");
+      return true;
+
+    } catch (e) {
+      print("Firestore 저장 중 에러 발생: $e");
+      return false;
+    }
+  } 
+
+
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(37.0),
       child: Card(
-      elevation: 0,
-      color: cardBgColor.withOpacity(0.7),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      //backgroundColor: bgColor, // 일단 원래 배경색으로 설정
-      child: 
-        Container(padding: const EdgeInsets.all(50),decoration: BoxDecoration(
-          color: cardBgColor.withOpacity(0.7),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: SingleChildScrollView(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [ 
-          Text('천사 등록하기', style: TextStyle(fontSize: 43, color: textColor)),
-          const SizedBox(height: 20),
-          // 1. 이름 입력창
-          Text(
-          '당신의 마음 속에 품은 아이의 이름을 입력해주세요.', // 화면에 이 글씨가 보이는지만 확인
-          style: TextStyle(fontSize: 24, color: textColor),
-        ),TextField(controller: _nameController, decoration: InputDecoration(hintText: "ex) 행복, 별이", hintStyle: TextStyle(fontSize: 16, color: const Color.fromARGB(255, 122, 122, 122)))),
-        const SizedBox(height: 30),
-        // 2. 펫 타입 선택
-          Text(
-          '아이는 어떤 종류에요?', // 화면에 이 글씨가 보이는지만 확인
-          style: TextStyle(fontSize: 24, color: textColor),
-          ),
-        DropdownButtonFormField<String>(
-          value: _selectedPetType,
-          items: _petTypes.map((type) => DropdownMenuItem<String>(value: type, child: Text(type))).toList(),
-          onChanged: (String? value) {
-            setState(() {
-              _selectedPetType = value;
-            });
-          },
-        ),
-        // 3. 펫 설명 선택 드롭다운
-        Text(
-          '아이는 어떤 모습이에요?', // 화면에 이 글씨가 보이는지만 확인
-          style: TextStyle(fontSize: 24, color: textColor),
-        ),
-        DropdownButtonFormField<String>(
-          value: _selectedPetDesc,
-          items: _petDescs.map((desc) => DropdownMenuItem<String>(value: desc, child: Text(desc))).toList(),
-          onChanged: (String? value) {
-            setState(() {
-              _selectedPetDesc = value;
-            });
-          },
-        ),
-        const SizedBox(height: 10),
-    // ✨ '직접 입력' 선택 시 나타나는 TextField
-        if (_selectedPetDesc == '직접 입력')
-          TextField(
-            controller: _directInputController,
-            decoration: InputDecoration(
-              hintText: "반려동물의 특징을 직접 입력해주세요",
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.8),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
+        elevation: 0,
+        color: cardBgColor.withOpacity(0.85), // ✨ 투명도 살짝 조절
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: SingleChildScrollView( // ✨ 스크롤은 Card 안에서만 되도록 구조 변경
+          child: Padding(
+            padding: const EdgeInsets.all(25.0), // ✨ 내부 여백 조절
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('천사 등록하기', style: TextStyle(fontSize: 43, color: textColor)),
+                const SizedBox(height: 30),
+
+                // 1. 이름 입력창
+                const Text(
+                  '당신의 마음 속에 품은 아이의 이름을 입력해주세요.',
+                  style: TextStyle(fontSize: 24, color: textColor),
+                ),
+                const SizedBox(height: 8), // ✨ Text와 TextField 사이에 간격 추가
+                TextField(
+                  controller: _nameController,
+                  decoration: buildInputDecoration().copyWith( // ✨ 공통 스타일 함수 사용
+                    hintText: "ex) 행복, 별이",
+                    hintStyle: TextStyle(fontSize: 16, color: Colors.grey[400]),
+                  ),
+                ),
+                const SizedBox(height: 30),
+
+                // 2. 펫 타입 선택
+                const Text(
+                  '아이는 어떤 종류에요?',
+                  style: TextStyle(fontSize: 24, color: textColor),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  decoration: buildInputDecoration(), // ✨ 공통 스타일 함수 사용
+                  value: _selectedPetType,
+                  items: _petTypes.map((type) => DropdownMenuItem<String>(value: type, child: Text(type))).toList(),
+                  onChanged: (String? value) {
+                    setState(() {
+                      _selectedPetType = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 30),
+
+                // 3. 펫 설명 선택 드롭다운
+                const Text(
+                  '아이는 어떤 모습이에요?',
+                  style: TextStyle(fontSize: 24, color: textColor),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  decoration: buildInputDecoration(), // ✨ 공통 스타일 함수 사용
+                  value: _selectedPetDesc,
+                  items: _petDescs.map((desc) => DropdownMenuItem<String>(value: desc, child: Text(desc))).toList(),
+                  onChanged: (String? value) {
+                    setState(() {
+                      _selectedPetDesc = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 10),
+
+                // '직접 입력' 선택 시 나타나는 TextField
+                if (_selectedPetDesc == '직접 입력')
+                  Padding( // ✨ 약간의 여백 추가
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: TextField(
+                      controller: _directInputController,
+                      decoration: buildInputDecoration().copyWith(
+                        hintText: "반려동물의 특징을 직접 입력해주세요",
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 30),
+
+                // 4. 이미지 선택 버튼
+                const Text(
+                  '가장 아름답고 예뻤던 아이의 전신 모습을 선택해주세요.',
+                  style: TextStyle(fontSize: 24, color: textColor),
+                ),
+                const SizedBox(height: 15),
+
+                // ✨ --- 이미지 표시 영역 ---
+                Center(
+                  child: Column(
+                    children: [
+                      if (_isLoading) // 1. 로딩 중일 때
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40.0),
+                          child: CircularProgressIndicator(),
+                        )
+                      else if (_processedImageBytes != null) // 2. 배경 제거 성공 시
+                        Column(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12.0),
+                              child: Image.memory(_processedImageBytes!, height: 200, fit: BoxFit.cover),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text("✨ 천사로 변신 완료! ✨", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                          ],
+                        )
+                      else if (_pickedImage != null) // 3. 원본 이미지만 선택했을 때
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12.0),
+                          child: Image.file(File(_pickedImage!.path), height: 200, fit: BoxFit.cover),
+                        ),
+
+                      // ✨ 로딩 중이 아닐 때만 이미지 선택 버튼 표시
+                      if (!_isLoading)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 15.0),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white, foregroundColor: primaryColor,
+                              side: BorderSide(color: primaryColor),
+                              minimumSize: const Size(double.infinity, 70),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
+                            ),
+                            onPressed: _pickImage,
+                            child: Text(_pickedImage == null ? "이미지 선택" : "다른 이미지 선택", style: TextStyle(color: primaryColor)),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 30),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor, foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
+                  ),
+                  onPressed: _submit,
+                  child: Text(_isLoading ? "천사 등록 중..." : "천사 등록하기"),
+                ),
+              ],
             ),
           ),
-
-        const SizedBox(height: 20),
-
-        // 4. 이미지 선택 버튼
-        Text(
-          '가장 아름답고 예뻤던 아이의 모습 전신을 선택해주세요.', // 화면에 이 글씨가 보이는지만 확인
-          style: TextStyle(fontSize: 24, color: textColor),
         ),
-
-        ElevatedButton(onPressed: _pickImage, child: const Text("이미지 선택")),
-        // 5. 이미지 미리보기
-        if (_pickedImage != null) Image.file(File(_pickedImage!.path))],
-      ),  ),),),
+      ),
     );
   }
-  
+
   // 입력창 스타일을 하나로 통일해서 재사용
   InputDecoration buildInputDecoration() {
     return InputDecoration(
@@ -379,7 +537,7 @@ class _YesFormScreenState extends State<YesFormScreen> {
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
     );
-  }
+    }
 }
 
 // 4. "아니오" 폼 화면
@@ -404,7 +562,7 @@ class NoFormScreen extends StatelessWidget {
                 Text("괜찮아요.", style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: 10),
                 Text(
-                  "우리에게는 새로운 시작이 있으니까요.\n당신의 마음속에 작은 씨앗을 심어볼까요?",
+                  "우리에게는 새로운 시작이 있으니까요.\n당신의 마음속에 작은 씨앗을 심어볼까요? 당신의 천사와 함께 하게 될거에요.",
                   style: Theme.of(context).textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
