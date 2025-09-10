@@ -319,17 +319,21 @@ class _YesFormScreenState extends State<YesFormScreen> {
         setState(() {
           _processedImageBytes = resultBytes; // 성공 시 결과 저장
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✨ 배경이 성공적으로 제거되었어요!')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('✨ 배경이 성공적으로 제거되었어요!')),
+          );
+        }
       } else {
         throw Exception('API 처리 실패');
       }
     } catch (e) {
       // 4. 에러 처리
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('이미지 처리에 실패했어요. 다른 사진으로 시도해보세요.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('이미지 처리에 실패했어요. 다른 사진으로 시도해보세요.')),
+        );
+      }
     } finally {
       // 5. 로딩 종료 (성공/실패와 상관없이 항상 실행)
       setState(() {
@@ -772,7 +776,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 5),
               ),
