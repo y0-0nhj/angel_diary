@@ -6,6 +6,7 @@ import 'dart:io';
 import 'services/photoshop_api_service.dart'; // ✨ 방금 만든 서비스 import
 import 'package:firebase_core/firebase_core.dart';
 import 'package:angel_diary/firebase_options.dart';
+import 'home.dart';
 
 
 // --- 앱 전체에서 사용할 색상 정의 ---
@@ -15,41 +16,6 @@ const Color secondaryColor = Color(0xFFB0B0B0);
 const Color textColor = Color(0xFF3D3D3D);
 const Color cardBgColor = Colors.white;
 
-// --- 천사 데이터 모델 ---
-class AngelData {
-  final String name;
-  final String feature;
-  final String animalType;
-  final int faceType;
-  final int faceColor;
-  final int bodyIndex;
-  final int emotionIndex;
-  final int tailIndex;
-  final DateTime createdAt;
-
-  AngelData({
-    required this.name,
-    required this.feature,
-    required this.animalType,
-    required this.faceType,
-    required this.faceColor,
-    required this.bodyIndex,
-    required this.emotionIndex,
-    required this.tailIndex,
-    required this.createdAt,
-  });
-}
-
-// --- 전역 천사 데이터 관리자 ---
-class AngelDataManager {
-  static AngelData? _currentAngel;
-  
-  static AngelData? get currentAngel => _currentAngel;
-  
-  static void setCurrentAngel(AngelData angel) {
-    _currentAngel = angel;
-  }
-}
 
 // 앱의 시작점
 Future<void> main() async {
@@ -968,15 +934,31 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
 
   // 천사 생성 완료
   void _completeCreation() {
-    // 여기서 천사 데이터를 저장하거나 다음 화면으로 이동하는 로직을 구현
+    // 천사 데이터 생성 및 저장
+    final angelData = AngelData(
+      name: _nameController.text,
+      feature: _featureController.text,
+      animalType: _selectedAnimalType,
+      faceType: selectedFaceType,
+      faceColor: selectedFaceColor,
+      bodyIndex: selectedBodyIndex,
+      emotionIndex: selectedEmotionIndex,
+      tailIndex: selectedTailIndex,
+      createdAt: DateTime.now(),
+    );
+    
+    // 전역 천사 데이터에 저장
+    AngelDataManager.setCurrentAngel(angelData);
+    
+    // 팝업 닫기
     Navigator.of(context).pop();
     
-    // 성공 메시지 표시
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${_nameController.text} 천사가 생성되었습니다!'),
-        backgroundColor: primaryColor,
+    // 홈 화면으로 이동
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const HomeScreen(),
       ),
     );
   }
 }
+

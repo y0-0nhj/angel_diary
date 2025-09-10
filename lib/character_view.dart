@@ -1,13 +1,6 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
 
-// 메인 파일의 색상들을 가져다 쓰기 위해 import
-const Color bgColor = Color(0xFFF8F5EF);
-const Color primaryColor = Color(0xFF737B69);
-const Color secondaryColor = Color(0xFFB0B0B0);
-const Color textColor = Color(0xFF3D3D3D);
-const Color cardBgColor = Colors.white;
-
 class CharacterCustomizationScreen extends StatefulWidget {
   final String animalType; // 'cat' 또는 'dog'
   
@@ -20,14 +13,6 @@ class CharacterCustomizationScreen extends StatefulWidget {
 class _CharacterCustomizationScreenState extends State<CharacterCustomizationScreen> {
   // 현재 선택된 파츠 인덱스들 (단순화)
 
-  final _nameController = TextEditingController();
-  final _directInputController = TextEditingController();
-
-    final List<String> _petTypes = ['강아지', '고양이'];
-  String? _selectedPetType;
-
-
-  
   int selectedFaceType = 1; // 얼굴 타입 (1-4)
   int selectedFaceColor = 1; // 얼굴 색상 (1-6)
   int selectedBodyIndex = 1; // 몸통 (1-6)
@@ -68,42 +53,6 @@ class _CharacterCustomizationScreenState extends State<CharacterCustomizationScr
           crossAxisAlignment: CrossAxisAlignment.start,
           
           children: [
-             // 이름 입력
-             
-                  const Text('🐾 당신의 마음 속에 품을 아이의 이름을 입력해주세요.', style: TextStyle(fontSize: 24, color: textColor)),
-                  const SizedBox(height: 15),
-                  TextField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                      hintText: "ex) 행복, 별이",
-                      hintStyle: TextStyle(fontSize: 16, color: Colors.grey[400]),
-                    ),
-                  ),
-                const Text('🌈 이 아이는 어떤 아이였으면 좋겠어요?', style: TextStyle(fontSize: 24, color: textColor)),
-                  const SizedBox(height: 15),
-                  TextField(
-                    controller: _directInputController,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                      hintText: "ex) 사랑스럽고 애교넘치는 아이",
-                      hintStyle: TextStyle(fontSize: 16, color: Colors.grey[400]),
-                    ),
-                  ),
-
-
             // 캐릭터 미리보기 영역
             Container(
               height: 300, // 고정 높이로 설정
