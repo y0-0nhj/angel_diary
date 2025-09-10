@@ -89,7 +89,7 @@ class _CharacterCustomizationScreenState extends State<CharacterCustomizationScr
                 const Text('🌈 이 아이는 어떤 아이였으면 좋겠어요?', style: TextStyle(fontSize: 24, color: textColor)),
                   const SizedBox(height: 15),
                   TextField(
-                    controller: _nameController,
+                    controller: _directInputController,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,

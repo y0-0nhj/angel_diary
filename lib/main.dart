@@ -4,11 +4,8 @@ import 'character_view.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'services/photoshop_api_service.dart'; // ✨ 방금 만든 서비스 import
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:angel_diary/firebase_options.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 
 // --- 앱 전체에서 사용할 색상 정의 ---
@@ -17,6 +14,42 @@ const Color primaryColor = Color(0xFF737B69);
 const Color secondaryColor = Color(0xFFB0B0B0);
 const Color textColor = Color(0xFF3D3D3D);
 const Color cardBgColor = Colors.white;
+
+// --- 천사 데이터 모델 ---
+class AngelData {
+  final String name;
+  final String feature;
+  final String animalType;
+  final int faceType;
+  final int faceColor;
+  final int bodyIndex;
+  final int emotionIndex;
+  final int tailIndex;
+  final DateTime createdAt;
+
+  AngelData({
+    required this.name,
+    required this.feature,
+    required this.animalType,
+    required this.faceType,
+    required this.faceColor,
+    required this.bodyIndex,
+    required this.emotionIndex,
+    required this.tailIndex,
+    required this.createdAt,
+  });
+}
+
+// --- 전역 천사 데이터 관리자 ---
+class AngelDataManager {
+  static AngelData? _currentAngel;
+  
+  static AngelData? get currentAngel => _currentAngel;
+  
+  static void setCurrentAngel(AngelData angel) {
+    _currentAngel = angel;
+  }
+}
 
 // 앱의 시작점
 Future<void> main() async {
@@ -349,33 +382,6 @@ class _YesFormScreenState extends State<YesFormScreen> {
   }
 
 
-// ✨ --- 1. 서버에 데이터를 저장하는 함수 추가 ---
-  Future<bool> _savePetDataToServer() async {
-  print("Firestore에 데이터 저장을 시작합니다...");
-    try {
-      // 1. 저장할 데이터 준비
-      // (실제로는 이미지 URL을 포함해야 하지만, 여기서는 텍스트 데이터만 먼저 저장)
-      final petData = {
-        'name': _nameController.text,
-        'type': _selectedPetType,
-        'feature': _selectedPetDesc == '직접 입력' ? _directInputController.text : _selectedPetDesc,
-        'createdAt': FieldValue.serverTimestamp(), // 서버 시간 기준 생성일 기록
-      };
-      
-      // 2. 'pets'라는 이름의 컬렉션(엑셀 시트)에 데이터(행) 추가
-      await FirebaseFirestore.instance.collection('pets').add(petData);
-
-      print("Firestore에 반려동물 정보 저장 성공!");
-      return true;
-
-    } catch (e) {
-      print("Firestore 저장 중 에러 발생: $e");
-      return false;
-    }
-  } 
-
-
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -574,13 +580,8 @@ class NoFormScreen extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
                   ),
                   onPressed: () {
-                    // 마음의 씨앗 심기 - 기본값으로 고양이 커스터마이징 화면으로 이동
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CharacterCustomizationScreen(animalType: 'dog'),
-                      ),
-                    );
+                    // 천사 생성 팝업창 표시
+                    _showAngelCreationPopup(context);
                   },
                   child: const Text("마음의 씨앗 심기", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 )
@@ -588,6 +589,393 @@ class NoFormScreen extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // 천사 생성 팝업창 표시
+  void _showAngelCreationPopup(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // 배경 터치로 닫기 방지
+      builder: (context) => const AngelCreationPopup(),
+    );
+  }
+}
+
+// 천사 생성 통합 팝업창
+class AngelCreationPopup extends StatefulWidget {
+  const AngelCreationPopup({super.key});
+
+  @override
+  State<AngelCreationPopup> createState() => _AngelCreationPopupState();
+}
+
+class _AngelCreationPopupState extends State<AngelCreationPopup> {
+  // 폼 관련 변수들
+  final _nameController = TextEditingController();
+  final _featureController = TextEditingController();
+  String _selectedAnimalType = 'dog';
+  
+  // 단계 관리
+  int _currentStep = 0; // 0: 폼 입력, 1: 커스터마이징
+  
+  // 커스터마이징 관련 변수들
+  int selectedFaceType = 1;
+  int selectedFaceColor = 1;
+  int selectedBodyIndex = 1;
+  int selectedEmotionIndex = 1;
+  int selectedTailIndex = 1;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _featureController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.9,
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 20,
+              spreadRadius: 5,
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // 헤더
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: primaryColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  if (_currentStep > 0)
+                    IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _currentStep--;
+                        });
+                      },
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    ),
+                  Expanded(
+                    child: Text(
+                      _currentStep == 0 ? '천사 정보 입력' : '천사 커스터마이징',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+            
+            // 내용 영역
+            Expanded(
+              child: _currentStep == 0 ? _buildFormStep() : _buildCustomizationStep(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 폼 입력 단계
+  Widget _buildFormStep() {
+    return Padding(
+      padding: const EdgeInsets.all(30.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "당신의 천사에 대해 알려주세요",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
+          ),
+          const SizedBox(height: 30),
+          
+          // 이름 입력
+          TextField(
+            controller: _nameController,
+            decoration: InputDecoration(
+              labelText: '천사의 이름',
+              hintText: '예: 루나, 별이, 소망이',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: primaryColor, width: 2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // 특징 입력
+          TextField(
+            controller: _featureController,
+            decoration: InputDecoration(
+              labelText: '천사의 특징',
+              hintText: '예: 따뜻한, 용감한, 지혜로운',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: primaryColor, width: 2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // 동물 타입 선택
+          const Text(
+            '동물 타입',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _buildAnimalTypeCard('강아지', 'dog'),
+              ),
+              const SizedBox(width: 15),
+              Expanded(
+                child: _buildAnimalTypeCard('고양이', 'cat'),
+              ),
+            ],
+          ),
+          
+          const Spacer(),
+          
+          // 다음 단계 버튼
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              ),
+              onPressed: _validateAndProceed,
+              child: const Text(
+                '다음 단계',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 커스터마이징 단계
+  Widget _buildCustomizationStep() {
+    return Column(
+      children: [
+        // 캐릭터 미리보기
+        Container(
+          height: 300,
+          margin: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: cardBgColor,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Center(
+            child: CharacterView(
+              animalType: _selectedAnimalType,
+              faceType: selectedFaceType,
+              faceColor: selectedFaceColor,
+              bodyIndex: selectedBodyIndex,
+              emotionIndex: selectedEmotionIndex,
+              tailIndex: selectedTailIndex,
+            ),
+          ),
+        ),
+        
+        // 커스터마이징 컨트롤
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 귀 타입 선택
+                _buildPartSelector('귀 타입', 4, selectedFaceType, (index) {
+                  setState(() => selectedFaceType = index);
+                }),
+                const SizedBox(height: 15),
+
+                // 패턴 색상 선택
+                _buildPartSelector('패턴 색상', 6, selectedFaceColor, (index) {
+                  setState(() => selectedFaceColor = index);
+                }),
+                const SizedBox(height: 15),
+                
+                // 꼬리 선택
+                _buildPartSelector('꼬리', 4, selectedTailIndex, (index) {
+                  setState(() => selectedTailIndex = index);
+                }),
+                
+                const SizedBox(height: 30),
+                
+                // 완료 버튼
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    ),
+                    onPressed: _completeCreation,
+                    child: const Text(
+                      '천사 생성 완료',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 동물 타입 카드
+  Widget _buildAnimalTypeCard(String text, String animalType) {
+    return GestureDetector(
+      onTap: () => setState(() => _selectedAnimalType = animalType),
+      child: Container(
+        height: 50,
+        decoration: BoxDecoration(
+          color: _selectedAnimalType == animalType ? primaryColor : Colors.grey[200],
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Center(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: _selectedAnimalType == animalType ? Colors.white : textColor,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 파츠 선택기
+  Widget _buildPartSelector(String title, int count, int selectedIndex, Function(int) onSelect) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
+        const SizedBox(height: 8),
+        Container(
+          height: 60,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: count,
+            itemBuilder: (context, index) {
+              final itemIndex = index + 1;
+              return GestureDetector(
+                onTap: () => onSelect(itemIndex),
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  margin: const EdgeInsets.only(right: 10),
+                  decoration: BoxDecoration(
+                    color: selectedIndex == itemIndex ? primaryColor : Colors.grey[200],
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: selectedIndex == itemIndex ? primaryColor : Colors.grey[300]!,
+                      width: 2,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$itemIndex',
+                      style: TextStyle(
+                        color: selectedIndex == itemIndex ? Colors.white : textColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 폼 검증 및 다음 단계로 진행
+  void _validateAndProceed() {
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('천사의 이름을 입력해주세요')),
+      );
+      return;
+    }
+    
+    if (_featureController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('천사의 특징을 입력해주세요')),
+      );
+      return;
+    }
+    
+    setState(() {
+      _currentStep = 1;
+    });
+  }
+
+  // 천사 생성 완료
+  void _completeCreation() {
+    // 여기서 천사 데이터를 저장하거나 다음 화면으로 이동하는 로직을 구현
+    Navigator.of(context).pop();
+    
+    // 성공 메시지 표시
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${_nameController.text} 천사가 생성되었습니다!'),
+        backgroundColor: primaryColor,
       ),
     );
   }
