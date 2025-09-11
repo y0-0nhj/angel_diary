@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import 'character_view.dart';
 import 'main.dart' show bgColor, textColor;
 import 'package:table_calendar/table_calendar.dart';
@@ -65,13 +66,88 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedTabIndex = 0; // 0: 소망, 1: 목표, 2: 감사
   int _currentEmotionIndex = 1; // 현재 표정 인덱스
+  String _currentMessage = ''; // 현재 표시되는 메시지
+  DateTime _selectedDate = DateTime.now(); // 선택된 날짜
   
-  // 체크박스 상태를 포함한 데이터 구조
-  List<Map<String, dynamic>> _wishes = [
-    {'text': '내 목표를 잊지 않고 나아가기', 'completed': false},
-    {'text': '긍정적인 생각하기', 'completed': false},
-    {'text': '하루에 3번 사랑하는 이에게 표현하기', 'completed': false},
+  // 성경구절 및 조언 메시지 데이터
+  final List<Map<String, String>> _messages = [
+    {'text': '하나님이 너와 함께 하시니라', 'source': '창세기 28:15'},
+    {'text': '내가 너를 위하여 정한 계획은 평안이요 재앙이 아니니라', 'source': '예레미야 29:11'},
+    {'text': '여호와는 나의 목자시니 내게 부족함이 없으리로다', 'source': '시편 23:1'},
+    {'text': '모든 일이 합력하여 선을 이룬다', 'source': '로마서 8:28'},
+    {'text': '오늘 하루를 감사하며 시작하세요', 'source': '일상의 지혜'},
+    {'text': '작은 기쁨도 소중히 여기세요', 'source': '일상의 지혜'},
+    {'text': '사랑은 모든 것을 이깁니다', 'source': '일상의 지혜'},
+    {'text': '희망을 잃지 마세요', 'source': '일상의 지혜'},
+    {'text': '오늘도 최선을 다하세요', 'source': '일상의 지혜'},
+    {'text': '하나님의 사랑이 당신을 감싸고 있습니다', 'source': '일상의 지혜'},
   ];
+  
+  @override
+  void initState() {
+    super.initState();
+    _selectRandomMessage();
+    _generateRandomWishes();
+  }
+
+  // 랜덤 소망 생성
+  void _generateRandomWishes() {
+    final random = Random();
+    List<Map<String, dynamic>> newWishes = [];
+    
+    // 각 카테고리에서 1개씩 랜덤 선택
+    _wishCategories.forEach((category, items) {
+      final selectedItem = items[random.nextInt(items.length)];
+      newWishes.add({
+        'text': selectedItem,
+        'completed': false,
+        'category': category,
+      });
+    });
+    
+    setState(() {
+      _wishes = newWishes;
+    });
+  }
+  
+  // 랜덤 메시지 선택
+  void _selectRandomMessage() {
+    if (_messages.isNotEmpty) {
+      final random = Random();
+      final selectedMessage = _messages[random.nextInt(_messages.length)];
+      setState(() {
+        _currentMessage = selectedMessage['text'] ?? '오늘도 좋은 하루 되세요';
+      });
+    }
+  }
+  
+  // 소망 카테고리별 데이터
+  final Map<String, List<String>> _wishCategories = {
+    'kindness': [
+      '가족이나 친구에게 칭찬 한마디 하기',
+      '가장 가까운 사람에게 "고맙다"고 표현하기',
+      '카페나 편의점 직원분께 웃으며 인사하기',
+      '길에 떨어진 쓰레기 하나 줍기',
+      '동네 길고양이를 위해 물그릇 채워주기',
+    ],
+    'growth': [
+      '관심 분야 책 10페이지 읽기',
+      '아침에 일어나 이불 정리하기',
+      '미뤄뒀던 작은 일 한 가지 끝내기',
+      '새로운 단어 하나 배우고 하루 동안 세 번 써먹기',
+      '유튜브로 5분짜리 새로운 지식 영상 보기',
+    ],
+    'gratitude': [
+      '오늘 감사했던 일 3가지 자기 전에 적어보기',
+      '하늘 한번 올려다보고 깊게 숨 쉬기',
+      '내가 가진 것 중, 당연하지 않은 것 하나 떠올리기',
+      '하루를 마무리하며 5분 동안 짧은 일기 쓰기',
+      '가장 좋아하는 성경 구절이나 명언 한 줄 필사하기',
+    ],
+  };
+
+  // 체크박스 상태를 포함한 데이터 구조
+  List<Map<String, dynamic>> _wishes = [];
   
   List<Map<String, dynamic>> _goals = [
     {'text': '매일 30분 운동하기', 'completed': false},
@@ -135,14 +211,21 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: Text(
               angelData != null 
-                ? '$angelName와 함께하는\n따뜻한 하루가 되길 바라요.'
-                : '당신의 마음속 사랑은\n시간과 공간을 넘어 전해진다.',
+                ? () {
+                    final randomMessage = _messages[Random().nextInt(_messages.length)];
+                    return '$angelName와(과) 함께하는 따뜻한 하루가 되길 바라요.\n${randomMessage['text']}\n- ${randomMessage['source']}';
+                  }()
+                : () {
+                    final randomMessage = _messages[Random().nextInt(_messages.length)];
+                    return '당신의 마음속 사랑은\n시간과 공간을 넘어 전해진다.\n${randomMessage['text']}\n- ${randomMessage['source']}';
+                  }()
+              ,
               style: const TextStyle(
                 fontSize: 18,
                 color: textColor,
                 height: 1.4,
               ),
-            ),
+            )
           ),
           const SizedBox(width: 10),
           const Text('😊', style: TextStyle(fontSize: 30)),
@@ -438,13 +521,50 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _getCurrentTitle(),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      _getCurrentTitle(),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (_selectedTabIndex == 0) // 소망 탭일 때만 새로고침 버튼 표시
+                      GestureDetector(
+                        onTap: _generateRandomWishes,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[100],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.refresh,
+                            size: 16,
+                            color: Colors.blue[700],
+                          ),
+                        ),
+                      ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[100],
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Text(
+                        '${_selectedDate.month}/${_selectedDate.day}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 15),
                 ..._getCurrentList().asMap().entries.map((entry) {
@@ -575,7 +695,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
     
-    // 실제 생성된 천사 캐릭터 표시 (꼬리 애니메이션 활성화)
+    // 실제 생성된 천사 캐릭터 표시
     return Center(
       child: CharacterView(
         animalType: angelData.animalType,
@@ -585,6 +705,7 @@ class _HomeScreenState extends State<HomeScreen> {
         emotionIndex: _currentEmotionIndex, // 현재 표정 사용
         tailIndex: angelData.tailIndex,
         enableTailAnimation: true, // 홈화면에서 꼬리 애니메이션 활성화
+        scaleFactor: 0.61, // 홈화면에서는 0.61배 크기
         onEmotionChanged: (newEmotionIndex) {
           // 표정 변경 콜백
           setState(() {
@@ -628,15 +749,14 @@ class _HomeScreenState extends State<HomeScreen> {
       final currentList = _getCurrentList();
       currentList[index]['completed'] = !currentList[index]['completed'];
       
-      // 오늘 날짜의 데이터를 캘린더에 저장
+      // 선택된 날짜의 데이터를 캘린더에 저장
       _saveToCalendar();
     });
   }
 
-  // 오늘 날짜의 데이터를 캘린더에 저장
+  // 선택된 날짜의 데이터를 캘린더에 저장
   void _saveToCalendar() {
-    final today = DateTime.now();
-    final dateString = _getDateString(today);
+    final dateString = _getDateString(_selectedDate);
     
     // 전역 캘린더 데이터에 저장 (실제로는 데이터베이스에 저장)
     CalendarDataManager.saveDayData(dateString, {
@@ -678,9 +798,46 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return CalendarDialog();
+        return CalendarDialog(
+          selectedDate: _selectedDate,
+          onDateSelected: (date) {
+            setState(() {
+              _selectedDate = date;
+              _loadDataForDate(date);
+            });
+          },
+        );
       },
     );
+  }
+
+  // 특정 날짜의 데이터 로드
+  void _loadDataForDate(DateTime date) {
+    final dateString = _getDateString(date);
+    final dayData = CalendarDataManager.getDayData(dateString);
+    
+    if (dayData != null) {
+      setState(() {
+        _wishes = List<Map<String, dynamic>>.from(dayData['wishes'] ?? []);
+        _goals = List<Map<String, dynamic>>.from(dayData['goals'] ?? []);
+        _gratitudes = List<Map<String, dynamic>>.from(dayData['gratitudes'] ?? []);
+      });
+    } else {
+      // 해당 날짜에 데이터가 없으면 랜덤 소망 생성 및 기본값으로 초기화
+      _generateRandomWishes();
+      setState(() {
+        _goals = [
+          {'text': '매일 30분 운동하기', 'completed': false},
+          {'text': '책 한 권 읽기', 'completed': false},
+          {'text': '새로운 기술 배우기', 'completed': false},
+        ];
+        _gratitudes = [
+          {'text': '가족과 함께할 수 있어서', 'completed': false},
+          {'text': '맛있는 음식을 먹을 수 있어서', 'completed': false},
+          {'text': '건강한 몸을 가지고 있어서', 'completed': false},
+        ];
+      });
+    }
   }
 }
 
@@ -919,6 +1076,15 @@ class _LetterWritingDialogState extends State<LetterWritingDialog> {
 
 // 캘린더 다이얼로그
 class CalendarDialog extends StatefulWidget {
+  final DateTime selectedDate;
+  final Function(DateTime) onDateSelected;
+  
+  const CalendarDialog({
+    Key? key,
+    required this.selectedDate,
+    required this.onDateSelected,
+  }) : super(key: key);
+
   @override
   _CalendarDialogState createState() => _CalendarDialogState();
 }
@@ -928,6 +1094,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   int _selectedCategory = 0; // 0: 소망, 1: 목표, 2: 감사
+  bool _isWeekView = true; // true: 이번주만 보기, false: 이번달 펼쳐보기
 
   // 샘플 데이터 (실제로는 데이터베이스에서 가져올 예정)
   final Map<String, Map<String, List<Map<String, dynamic>>>> _sampleData = {
@@ -978,7 +1145,8 @@ class _CalendarDialogState extends State<CalendarDialog> {
   @override
   void initState() {
     super.initState();
-    _selectedDay = DateTime.now();
+    _selectedDay = widget.selectedDate;
+    _focusedDay = widget.selectedDate;
     _selectedEvents = ValueNotifier(_getEventsForDay(_selectedDay!));
   }
 
@@ -1023,6 +1191,9 @@ class _CalendarDialogState extends State<CalendarDialog> {
       });
 
       _selectedEvents.value = _getEventsForDay(selectedDay);
+      
+      // 홈 화면에 선택된 날짜 전달
+      widget.onDateSelected(selectedDay);
     }
   }
 
@@ -1035,7 +1206,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
       child: Container(
         width: MediaQuery.of(context).size.width * 0.95,
         height: MediaQuery.of(context).size.height * 0.85,
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(10),
         child: Column(
           children: [
             // 헤더
@@ -1052,6 +1223,19 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   ),
                 ),
                 const Spacer(),
+                // 뷰 전환 버튼
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _isWeekView = !_isWeekView;
+                    });
+                  },
+                  icon: Icon(
+                    _isWeekView ? Icons.calendar_view_month : Icons.view_week,
+                    color: Colors.blue,
+                  ),
+                  tooltip: _isWeekView ? '이번달 펼쳐보기' : '이번주만 보기',
+                ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.close, color: Colors.grey),
@@ -1060,7 +1244,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
             ),
             const SizedBox(height: 20),
 
-            // 주간 캘린더
+            // 캘린더 영역
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -1073,101 +1257,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   ),
                 ],
               ),
-              child: Column(
-                children: [
-                  // 월/년도 헤더
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      _getMonthYearString(_focusedDay),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                      ),
-                    ),
-                  ),
-                  // 요일 헤더
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Row(
-                      children: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-                          .map((day) => Expanded(
-                                child: Text(
-                                  day,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: day == 'Sun' || day == 'Sat' 
-                                        ? Colors.red[400] 
-                                        : Colors.grey[600],
-                                  ),
-                                ),
-                              ))
-                          .toList(),
-                    ),
-                  ),
-                  // 날짜 행
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Row(
-                      children: _getWeekDays(_focusedDay).map((day) {
-                        final isSelected = isSameDay(_selectedDay, day);
-                        final isToday = isSameDay(DateTime.now(), day);
-                        final hasEvents = _hasEventsForDay(day);
-                        
-                        return Expanded(
-                          child: GestureDetector(
-                            onTap: () => _onDaySelected(day, day),
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 2),
-                              child: Column(
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: isSelected ? Colors.blue[400] : Colors.transparent,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '${day.day}',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: isSelected 
-                                              ? Colors.white 
-                                              : isToday 
-                                                  ? Colors.red[700]
-                                                  : day.weekday == DateTime.sunday || day.weekday == DateTime.saturday
-                                                      ? Colors.red[400]
-                                                      : textColor,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  if (hasEvents)
-                                    Container(
-                                      width: 6,
-                                      height: 6,
-                                      margin: const EdgeInsets.only(top: 4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.blue[400],
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ],
-              ),
+              child: _isWeekView ? _buildWeekView() : _buildMonthView(),
             ),
             const SizedBox(height: 20),
 
@@ -1377,5 +1467,231 @@ class _CalendarDialogState extends State<CalendarDialog> {
   String _getWeekdayShort(DateTime date) {
     final weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return weekdays[date.weekday % 7];
+  }
+
+  // 이번주만 보기 뷰 빌드
+  Widget _buildWeekView() {
+    return Column(
+      children: [
+        // 주간 헤더
+        Container(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            '이번주 (${_getWeekRangeString(_focusedDay)})',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+        ),
+        // 요일 헤더
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: ['일', '월', '화', '수', '목', '금', '토']
+                .map((day) => Expanded(
+                      child: Text(
+                        day,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: day == '일' || day == '토' 
+                              ? Colors.red[400] 
+                              : Colors.grey[600],
+                        ),
+                      ),
+                    ))
+                .toList(),
+          ),
+        ),
+        // 주간 날짜 행
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: _getWeekDays(_focusedDay).map((day) {
+              final isSelected = isSameDay(_selectedDay, day);
+              final isToday = isSameDay(DateTime.now(), day);
+              final hasEvents = _hasEventsForDay(day);
+              
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => _onDaySelected(day, day),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: isSelected ? Colors.blue[400] : Colors.transparent,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${day.day}',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isSelected 
+                                    ? Colors.white 
+                                    : isToday 
+                                        ? Colors.red[700]
+                                        : day.weekday == DateTime.sunday || day.weekday == DateTime.saturday
+                                            ? Colors.red[400]
+                                            : textColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (hasEvents)
+                          Container(
+                            width: 8,
+                            height: 8,
+                            margin: const EdgeInsets.only(top: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[400],
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 월별 뷰 빌드
+  Widget _buildMonthView() {
+    return Column(
+      children: [
+        // 월/년도 헤더
+        Container(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1, 1);
+                  });
+                },
+                icon: const Icon(Icons.chevron_left),
+              ),
+              Text(
+                _getMonthYearString(_focusedDay),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1, 1);
+                  });
+                },
+                icon: const Icon(Icons.chevron_right),
+              ),
+            ],
+          ),
+        ),
+        // 요일 헤더
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                .map((day) => Expanded(
+                      child: Text(
+                        day,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: day == 'Sun' || day == 'Sat' 
+                              ? Colors.red[400] 
+                              : Colors.grey[600],
+                        ),
+                      ),
+                    ))
+                .toList(),
+          ),
+        ),
+        // 날짜 행
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: _getWeekDays(_focusedDay).map((day) {
+              final isSelected = isSameDay(_selectedDay, day);
+              final isToday = isSameDay(DateTime.now(), day);
+              final hasEvents = _hasEventsForDay(day);
+              
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => _onDaySelected(day, day),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: isSelected ? Colors.blue[400] : Colors.transparent,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${day.day}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: isSelected 
+                                    ? Colors.white 
+                                    : isToday 
+                                        ? Colors.red[700]
+                                        : day.weekday == DateTime.sunday || day.weekday == DateTime.saturday
+                                            ? Colors.red[400]
+                                            : textColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (hasEvents)
+                          Container(
+                            width: 6,
+                            height: 6,
+                            margin: const EdgeInsets.only(top: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[400],
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 주간 범위 문자열 가져오기
+  String _getWeekRangeString(DateTime date) {
+    final startOfWeek = date.subtract(Duration(days: date.weekday % 7));
+    final endOfWeek = startOfWeek.add(const Duration(days: 6));
+    return '${startOfWeek.month}/${startOfWeek.day} - ${endOfWeek.month}/${endOfWeek.day}';
   }
 }

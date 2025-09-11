@@ -769,7 +769,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
       children: [
         // 캐릭터 미리보기
         Container(
-          height: 150, // 300 * 0.5 = 150
+          height: 300,
           margin: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: cardBgColor,
@@ -790,6 +790,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
               bodyIndex: selectedBodyIndex,
               emotionIndex: selectedEmotionIndex,
               tailIndex: selectedTailIndex,
+              scaleFactor: 1.0, // 천사 생성 팝업에서는 원본 크기
             ),
           ),
         ),

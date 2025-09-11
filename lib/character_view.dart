@@ -55,8 +55,9 @@ class _CharacterCustomizationScreenState extends State<CharacterCustomizationScr
           children: [
             // 캐릭터 미리보기 영역
             Container(
-              height: 150, // 300 * 0.5 = 150 (고정 높이로 설정)
-              margin: const EdgeInsets.all(20),
+              height: 600, // 천사 크기에 맞게 더 크게 조정 (450 * 1.33 = 600)
+              width: double.infinity, // 전체 너비 사용
+              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               decoration: BoxDecoration(
                 color: cardBgColor,
                 borderRadius: BorderRadius.circular(20),
@@ -76,6 +77,7 @@ class _CharacterCustomizationScreenState extends State<CharacterCustomizationScr
                   bodyIndex: selectedBodyIndex,
                   emotionIndex: selectedEmotionIndex,
                   tailIndex: selectedTailIndex,
+                  scaleFactor: 3.0, // 커스터마이징창에서는 3.0배 크기로 더 크게
                 ),
               ),
             ),
@@ -209,6 +211,7 @@ class CharacterView extends StatefulWidget {
   final int tailIndex;
   final bool enableTailAnimation; // 꼬리 애니메이션 활성화 여부
   final Function(int)? onEmotionChanged; // 표정 변경 콜백
+  final double scaleFactor; // 크기 조절 팩터
   
   const CharacterView({
     super.key,
@@ -220,6 +223,7 @@ class CharacterView extends StatefulWidget {
     required this.tailIndex,
     this.enableTailAnimation = false, // 기본값은 false
     this.onEmotionChanged, // 표정 변경 콜백
+    this.scaleFactor = 1.0, // 기본값은 1.0 (원본 크기)
   });
 
   @override
@@ -380,8 +384,8 @@ class _CharacterViewState extends State<CharacterView>
 
   @override
   Widget build(BuildContext context) {
-    // 천사 크기를 절반으로 줄이기 위한 스케일 팩터
-    const double scaleFactor = 0.5;
+    // 위젯에서 전달받은 스케일 팩터 사용
+    final double scaleFactor = widget.scaleFactor;
     
     double tailWidth = 200 * scaleFactor;
     double tailHeight = 200 * scaleFactor;
