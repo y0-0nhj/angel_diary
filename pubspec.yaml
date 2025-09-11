@@ -42,7 +42,8 @@ dependencies:
   flutter_dotenv: ^6.0.0
   table_calendar: ^3.1.2
   audioplayers: ^6.0.0
-  
+  flutter_local_notifications: ^17.2.3
+  timezone: ^0.9.4
 
 
 dev_dependencies:
@@ -74,4 +75,5 @@ flutter:
     - assets/images/characters/dog/body/
     - assets/images/characters/dog/emotion/
     - assets/images/characters/dog/tail/
+    - assets/audio/
  

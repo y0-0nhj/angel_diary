@@ -3,6 +3,11 @@ import 'dart:math';
 import 'character_view.dart';
 import 'main.dart' show bgColor, textColor;
 import 'package:table_calendar/table_calendar.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
+
+
 
 // --- 천사 데이터 모델 ---
 class AngelData {
@@ -69,6 +74,19 @@ class _HomeScreenState extends State<HomeScreen> {
   String _currentMessage = ''; // 현재 표시되는 메시지
   DateTime _selectedDate = DateTime.now(); // 선택된 날짜
   
+  // 음악 재생 관련
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isPlaying = false;
+  List<String> _musicPlaylist = [
+    'audio/기다림.mp3',
+    'audio/꿈속에서만나.mp3',
+  ];
+  int _currentMusicIndex = 0;
+  
+  // 알림 관련
+  final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
+  List<String> _dailyWishes = []; // 오늘의 소망들 (최대 5개)
+  
   // 성경구절 및 조언 메시지 데이터
   final List<Map<String, String>> _messages = [
     {'text': '하나님이 너와 함께 하시니라', 'source': '창세기 28:15'},
@@ -87,18 +105,25 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _selectRandomMessage();
-    _generateRandomWishes();
+    _generateRandomGoals();
+    _initializeNotifications();
   }
 
-  // 랜덤 소망 생성
-  void _generateRandomWishes() {
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  // 랜덤 목표 생성 (기존 소망 내용을 목표로 사용)
+  void _generateRandomGoals() {
     final random = Random();
-    List<Map<String, dynamic>> newWishes = [];
+    List<Map<String, dynamic>> newGoals = [];
     
     // 각 카테고리에서 1개씩 랜덤 선택
-    _wishCategories.forEach((category, items) {
+    _goalCategories.forEach((category, items) {
       final selectedItem = items[random.nextInt(items.length)];
-      newWishes.add({
+      newGoals.add({
         'text': selectedItem,
         'completed': false,
         'category': category,
@@ -106,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     
     setState(() {
-      _wishes = newWishes;
+      _goals = newGoals;
     });
   }
   
@@ -120,9 +145,461 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
   }
+
+  // 음악 재생/일시정지 토글
+  Future<void> _toggleMusic() async {
+    try {
+      if (_isPlaying) {
+        await _audioPlayer.pause();
+        setState(() {
+          _isPlaying = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🎵 음악이 일시정지되었습니다'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      } else {
+        await _playCurrentMusic();
+      }
+    } catch (e) {
+      print('음악 재생 오류: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('음악 재생에 실패했습니다'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  // 현재 음악 재생
+  Future<void> _playCurrentMusic() async {
+    try {
+      final currentMusic = _musicPlaylist[_currentMusicIndex];
+      await _audioPlayer.play(AssetSource(currentMusic));
+      setState(() {
+        _isPlaying = true;
+      });
+      
+      // 음악이 끝나면 다음 곡으로 자동 이동
+      _audioPlayer.onPlayerComplete.listen((_) {
+        _playNextMusic();
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('🎵 ${_getMusicName(currentMusic)} 재생 중'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    } catch (e) {
+      // 로컬 파일이 없으면 시뮬레이션
+      setState(() {
+        _isPlaying = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('🎵 ${_getMusicName(_musicPlaylist[_currentMusicIndex])} 재생 모드 (시뮬레이션)'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  // 다음 곡 재생
+  Future<void> _playNextMusic() async {
+    setState(() {
+      _currentMusicIndex = (_currentMusicIndex + 1) % _musicPlaylist.length;
+    });
+    await _playCurrentMusic();
+  }
+
+  // 음악 이름 추출
+  String _getMusicName(String path) {
+    final fileName = path.split('/').last;
+    return fileName.replaceAll('.mp3', '').replaceAll('_', ' ');
+  }
+
+  // 알림 초기화
+  Future<void> _initializeNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    
+    const DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,
+    );
+
+    await _notifications.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: _onNotificationTapped,
+    );
+
+    // 알림 권한 요청
+    await _requestNotificationPermission();
+  }
+
+  // 알림 권한 요청
+  Future<void> _requestNotificationPermission() async {
+    await _notifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+  }
+
+  // 알림 탭 처리
+  void _onNotificationTapped(NotificationResponse response) {
+    if (response.payload == 'daily_wish') {
+      _showDailyWishDialog();
+    }
+  }
+
+
+  // 일일 소망 설정 다이얼로그
+  void _showDailyWishDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return DailyWishDialog(
+          currentWishes: _dailyWishes,
+          onWishesSaved: (wishes) {
+            setState(() {
+              _dailyWishes = wishes;
+            });
+            _saveDailyWishes();
+          },
+        );
+      },
+    );
+  }
+
+  // 일일 소망 저장
+  void _saveDailyWishes() {
+    // SharedPreferences나 다른 저장소에 저장
+    // 여기서는 간단히 상태로만 관리
+    print('일일 소망 저장: $_dailyWishes');
+  }
+
+  // 설정 다이얼로그 표시
+  void _showSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.settings, color: Colors.blue, size: 28),
+                    const SizedBox(width: 12),
+                    const Text(
+                      '설정',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close, color: Colors.grey),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                _buildSettingsItem(Icons.music_note, '음악 설정', () {
+                  Navigator.of(context).pop();
+                  _showMusicSettingsDialog();
+                }),
+                _buildSettingsItem(Icons.favorite, '일일 소망 설정', () {
+                  Navigator.of(context).pop();
+                  _showDailyWishDialog();
+                }),
+                _buildSettingsItem(Icons.notifications, '알림 설정', () {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('알림 설정 기능 준비 중입니다')),
+                  );
+                }),
+                _buildSettingsItem(Icons.palette, '테마 설정', () {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('테마 설정 기능 준비 중입니다')),
+                  );
+                }),
+                _buildSettingsItem(Icons.help, '도움말', () {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('도움말 기능 준비 중입니다')),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // 마이페이지 다이얼로그 표시
+  void _showMyPageDialog() {
+    final angelData = AngelDataManager.currentAngel;
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.person, color: Colors.purple, size: 28),
+                    const SizedBox(width: 12),
+                    const Text(
+                      '마이페이지',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close, color: Colors.grey),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // 천사 정보
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.purple[50],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '나의 천사',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('이름: ${angelData?.name ?? '미설정'}'),
+                      Text('특징: ${angelData?.feature ?? '미설정'}'),
+                      Text('동물: ${angelData?.animalType ?? '미설정'}'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildMyPageItem(Icons.edit, '천사 커스터마이징', () {
+                  Navigator.of(context).pop();
+                  Navigator.pushNamed(context, '/customization');
+                }),
+                _buildMyPageItem(Icons.analytics, '통계 보기', () {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('통계 기능 준비 중입니다')),
+                  );
+                }),
+                _buildMyPageItem(Icons.backup, '데이터 백업', () {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('백업 기능 준비 중입니다')),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // 음악 설정 다이얼로그
+  void _showMusicSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.music_note, color: Colors.pink, size: 28),
+                    const SizedBox(width: 12),
+                    const Text(
+                      '음악 설정',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close, color: Colors.grey),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  '플레이리스트',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ..._musicPlaylist.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final music = entry.value;
+                  final isCurrent = index == _currentMusicIndex;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isCurrent ? Colors.pink[100] : Colors.grey[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: isCurrent ? Border.all(color: Colors.pink[300]!) : null,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isCurrent ? Icons.play_arrow : Icons.music_note,
+                          color: isCurrent ? Colors.pink[600] : Colors.grey[600],
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _getMusicName(music),
+                            style: TextStyle(
+                              fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                              color: isCurrent ? Colors.pink[600] : Colors.grey[700],
+                            ),
+                          ),
+                        ),
+                        if (isCurrent && _isPlaying)
+                          Icon(
+                            Icons.volume_up,
+                            color: Colors.pink[600],
+                            size: 16,
+                          ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // 설정 아이템 빌더
+  Widget _buildSettingsItem(IconData icon, String title, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.blue[600], size: 20),
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                color: textColor,
+              ),
+            ),
+            const Spacer(),
+            const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 마이페이지 아이템 빌더
+  Widget _buildMyPageItem(IconData icon, String title, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: Colors.purple[50],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.purple[600], size: 20),
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                color: textColor,
+              ),
+            ),
+            const Spacer(),
+            const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
   
-  // 소망 카테고리별 데이터
-  final Map<String, List<String>> _wishCategories = {
+  // 목표 카테고리별 데이터 (기존 소망 내용을 목표로 이동)
+  final Map<String, List<String>> _goalCategories = {
     'kindness': [
       '가족이나 친구에게 칭찬 한마디 하기',
       '가장 가까운 사람에게 "고맙다"고 표현하기',
@@ -149,11 +626,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // 체크박스 상태를 포함한 데이터 구조
   List<Map<String, dynamic>> _wishes = [];
   
-  List<Map<String, dynamic>> _goals = [
-    {'text': '매일 30분 운동하기', 'completed': false},
-    {'text': '책 한 권 읽기', 'completed': false},
-    {'text': '새로운 기술 배우기', 'completed': false},
-  ];
+  List<Map<String, dynamic>> _goals = [];
   
   List<Map<String, dynamic>> _gratitudes = [
     {'text': '가족과 함께할 수 있어서', 'completed': false},
@@ -171,6 +644,10 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.all(20.0),
             child: Column(
               children: [
+                // 상단 음악 버튼
+                _buildMusicButton(),
+                const SizedBox(height: 20),
+                
                 // 상단 말풍선 영역
                 _buildSpeechBubble(),
                 const SizedBox(height: 20),
@@ -186,6 +663,122 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  // 음악 버튼 위젯
+  Widget _buildMusicButton() {
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: _toggleMusic,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _isPlaying ? Colors.pink[100] : Colors.grey[100],
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _isPlaying ? Icons.music_note : Icons.music_off,
+                  color: _isPlaying ? Colors.pink[600] : Colors.grey[600],
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _isPlaying ? '음악 재생 중' : '음악 재생',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: _isPlaying ? Colors.pink[600] : Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // 다음 곡 버튼
+        GestureDetector(
+          onTap: _playNextMusic,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue[100],
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.skip_next,
+              color: Colors.blue[600],
+              size: 20,
+            ),
+          ),
+        ),
+        const Spacer(),
+        // 설정 버튼
+        GestureDetector(
+          onTap: _showSettingsDialog,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.settings,
+              color: Colors.grey[600],
+              size: 20,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // 마이페이지 버튼
+        GestureDetector(
+          onTap: _showMyPageDialog,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.purple[100],
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.person,
+              color: Colors.purple[600],
+              size: 20,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -362,15 +955,15 @@ class _HomeScreenState extends State<HomeScreen> {
             right: 0,
             top: 120, // 천사를 아래로 이동 (기존 중앙에서 20px 아래)
             child: Center(
-              child: SizedBox(
+            child: SizedBox(
                 width: 100, // 200 * 0.5 = 100
                 height: 100, // 200 * 0.5 = 100
-                // decoration: BoxDecoration(
-                //   color: Colors.white.withOpacity(0.8),
-                //   shape: BoxShape.circle,
-                //   border: Border.all(color: Colors.grey[300]!, width: 2),
-                // ),
-                child: _buildAngelCharacter(),
+              // decoration: BoxDecoration(
+              //   color: Colors.white.withOpacity(0.8),
+              //   shape: BoxShape.circle,
+              //   border: Border.all(color: Colors.grey[300]!, width: 2),
+              // ),
+              child: _buildAngelCharacter(),
               ),
             ),
           ),
@@ -465,7 +1058,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         children: [
           // 제목과 달력
-           Padding(
+          Padding(
              padding: const EdgeInsets.all(5),
              child: Row(
           //     children: [
@@ -507,7 +1100,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: Row(
               children: [
-                _buildTabButton(0, '소망', Colors.blue[200]!),
+                _buildTabButton(0, '소망', Colors.lightBlue[300]!),
                 _buildTabButton(1, '목표', Colors.pink[200]!),
                 _buildTabButton(2, '감사', Colors.yellow[400]!),
                 _buildCalendarTab(),
@@ -525,16 +1118,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Text(
                       _getCurrentTitle(),
-                      style: const TextStyle(
+                    style: const TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                      ),
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
                     ),
+                  ),
                     const Spacer(),
-                    if (_selectedTabIndex == 0) // 소망 탭일 때만 새로고침 버튼 표시
+                    if (_selectedTabIndex == 1) // 목표 탭일 때만 새로고침 버튼 표시
                       GestureDetector(
-                        onTap: _generateRandomWishes,
+                        onTap: _generateRandomGoals,
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
@@ -549,27 +1142,153 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
                         color: Colors.blue[100],
-                        borderRadius: BorderRadius.circular(15),
-                      ),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
                       child: Text(
                         '${_selectedDate.month}/${_selectedDate.day}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
                           color: Colors.blue[700],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+                const SizedBox(height: 15),
+          
+                // 소망 탭일 때만 등록하기 버튼 표시
+                if (_selectedTabIndex == 0) ...[
+          Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    child: ElevatedButton.icon(
+                      onPressed: _showDailyWishDialog,
+                      icon: const Icon(Icons.add_circle_outline, size: 24),
+                      label: const Text(
+                        '소망 등록하기',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.pink[600],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                        shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+                        elevation: 3,
+                      ),
                     ),
-                  ],
+                  ),
+                ],
+                
+                // 소망 탭일 때 등록된 소망들 표시
+                if (_selectedTabIndex == 0) ...[
+                  if (_dailyWishes.isEmpty) ...[
+          Container(
+                      width: double.infinity,
+            padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+            child: Column(
+              children: [
+                          Icon(
+                            Icons.favorite_border,
+                            size: 48,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 12),
+                Text(
+                            '아직 등록된 소망이 없습니다',
+                            style: TextStyle(
+                    fontSize: 16,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '위의 버튼을 눌러 소망을 등록해보세요!',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    ..._dailyWishes.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final wish = entry.value;
+                      
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.pink[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.pink[200]!),
+                        ),
+                        child: Row(
+                          children: [
+                            // 번호
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: Colors.pink[400],
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${index + 1}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            // 소망 텍스트
+                            Expanded(
+                              child: Text(
+                                wish,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                    color: textColor,
+                  ),
                 ),
-                const SizedBox(height: 15),
+                            ),
+                            // 체크박스
+                            Checkbox(
+                              value: false, // 소망은 체크박스 없이 표시만
+                              onChanged: null,
+                              activeColor: Colors.pink[400],
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ] else ...[
+                  // 목표와 감사 탭의 기존 리스트
                 ..._getCurrentList().asMap().entries.map((entry) {
-                  final item = entry.value;
-                  final isCompleted = item['completed'] as bool;
+                    final item = entry.value;
+                    final isCompleted = item['completed'] as bool;
                   
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
@@ -634,6 +1353,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   );
                 }),
+                ],
               ],
             ),
           ),
@@ -823,14 +1543,9 @@ class _HomeScreenState extends State<HomeScreen> {
         _gratitudes = List<Map<String, dynamic>>.from(dayData['gratitudes'] ?? []);
       });
     } else {
-      // 해당 날짜에 데이터가 없으면 랜덤 소망 생성 및 기본값으로 초기화
-      _generateRandomWishes();
+      // 해당 날짜에 데이터가 없으면 랜덤 목표 생성 및 기본값으로 초기화
+      _generateRandomGoals();
       setState(() {
-        _goals = [
-          {'text': '매일 30분 운동하기', 'completed': false},
-          {'text': '책 한 권 읽기', 'completed': false},
-          {'text': '새로운 기술 배우기', 'completed': false},
-        ];
         _gratitudes = [
           {'text': '가족과 함께할 수 있어서', 'completed': false},
           {'text': '맛있는 음식을 먹을 수 있어서', 'completed': false},
@@ -1693,5 +2408,217 @@ class _CalendarDialogState extends State<CalendarDialog> {
     final startOfWeek = date.subtract(Duration(days: date.weekday % 7));
     final endOfWeek = startOfWeek.add(const Duration(days: 6));
     return '${startOfWeek.month}/${startOfWeek.day} - ${endOfWeek.month}/${endOfWeek.day}';
+  }
+}
+
+// 일일 소망 설정 다이얼로그 위젯
+class DailyWishDialog extends StatefulWidget {
+  final List<String> currentWishes;
+  final Function(List<String>) onWishesSaved;
+
+  const DailyWishDialog({
+    super.key,
+    required this.currentWishes,
+    required this.onWishesSaved,
+  });
+
+  @override
+  State<DailyWishDialog> createState() => _DailyWishDialogState();
+}
+
+class _DailyWishDialogState extends State<DailyWishDialog> {
+  final List<TextEditingController> _controllers = [];
+  final int maxWishes = 5;
+
+  @override
+  void initState() {
+    super.initState();
+    // 기존 소망들을 컨트롤러에 추가
+    for (int i = 0; i < maxWishes; i++) {
+      _controllers.add(TextEditingController(
+        text: i < widget.currentWishes.length ? widget.currentWishes[i] : '',
+      ));
+    }
+  }
+
+  @override
+  void dispose() {
+    for (var controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.9,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 헤더
+            Row(
+              children: [
+                const Icon(Icons.favorite, color: Colors.pink, size: 28),
+                const SizedBox(width: 12),
+                const Text(
+                  '오늘의 소망 설정',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close, color: Colors.grey),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '최대 5개까지 소망을 설정할 수 있습니다',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // 소망 입력 필드들
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: List.generate(maxWishes, (index) {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: Colors.pink[100],
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${index + 1}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.pink[700],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: _controllers[index],
+                              decoration: InputDecoration(
+                                hintText: '소망 ${index + 1}을 입력하세요',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.pink[400]!),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                              ),
+                              maxLines: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // 버튼들
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      side: BorderSide(color: Colors.grey[400]!),
+                    ),
+                    child: const Text(
+                      '취소',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _saveWishes,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.pink[600],
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      '저장',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _saveWishes() {
+    final wishes = _controllers
+        .map((controller) => controller.text.trim())
+        .where((text) => text.isNotEmpty)
+        .toList();
+    
+    widget.onWishesSaved(wishes);
+    Navigator.of(context).pop();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${wishes.length}개의 소망이 저장되었습니다! 💖'),
+        backgroundColor: Colors.pink[600],
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 }
