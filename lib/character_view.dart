@@ -55,7 +55,7 @@ class _CharacterCustomizationScreenState extends State<CharacterCustomizationScr
           children: [
             // 캐릭터 미리보기 영역
             Container(
-              height: 300, // 고정 높이로 설정
+              height: 150, // 300 * 0.5 = 150 (고정 높이로 설정)
               margin: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: cardBgColor,
@@ -380,48 +380,51 @@ class _CharacterViewState extends State<CharacterView>
 
   @override
   Widget build(BuildContext context) {
-    double tailWidth = 200;
-    double tailHeight = 200;
-    double tailLeft = -75;
+    // 천사 크기를 절반으로 줄이기 위한 스케일 팩터
+    const double scaleFactor = 0.5;
+    
+    double tailWidth = 200 * scaleFactor;
+    double tailHeight = 200 * scaleFactor;
+    double tailLeft = -75 * scaleFactor;
     double tailTop = 0;
 
     if(widget.animalType == 'cat') {
     if(widget.tailIndex == 3) {
-      tailWidth = 80; // 꼬리 3번의 너비를 더 작게
-      tailHeight = 80; // 꼬리 3번의 높이를 더 작게
-      tailLeft = -35; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
-      tailTop = 130; // 꼬리 3번의 위쪽 위치 조정 (더 위로)
+      tailWidth = 80 * scaleFactor; // 꼬리 3번의 너비를 더 작게
+      tailHeight = 80 * scaleFactor; // 꼬리 3번의 높이를 더 작게
+      tailLeft = -35 * scaleFactor; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
+      tailTop = 130 * scaleFactor; // 꼬리 3번의 위쪽 위치 조정 (더 위로)
     }
   } else if(widget.animalType == 'dog') {
     if(widget.tailIndex == 1) {
-      tailWidth = 140; // 꼬리 3번의 너비를 더 작게
-      tailHeight = 140; // 꼬리 3번의 높이를 더 작게
-      tailLeft = -70; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
-      tailTop = 70; // 꼬리 3번의 위쪽 위치 조정 (더 위로)
+      tailWidth = 140 * scaleFactor; // 꼬리 3번의 너비를 더 작게
+      tailHeight = 140 * scaleFactor; // 꼬리 3번의 높이를 더 작게
+      tailLeft = -70 * scaleFactor; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
+      tailTop = 70 * scaleFactor; // 꼬리 3번의 위쪽 위치 조정 (더 위로)
     }
     if(widget.tailIndex == 2) {
-      tailWidth = 140; // 꼬리 3번의 너비를 더 작게
-      tailHeight = 140; // 꼬리 3번의 높이를 더 작게
-      tailLeft = -70; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
-      tailTop = 70; // 꼬리 3번의 위쪽 위치 조정 (더 위로)
+      tailWidth = 140 * scaleFactor; // 꼬리 3번의 너비를 더 작게
+      tailHeight = 140 * scaleFactor; // 꼬리 3번의 높이를 더 작게
+      tailLeft = -70 * scaleFactor; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
+      tailTop = 70 * scaleFactor; // 꼬리 3번의 위쪽 위치 조정 (더 위로)
     }
     if(widget.tailIndex == 3) {
-      tailWidth = 140; // 꼬리 3번의 너비를 더 작게
-      tailHeight = 140; // 꼬리 3번의 높이를 더 작게
-      tailLeft = -70; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
-      tailTop = 70; // 꼬리 3번의 위쪽 위치 조정 (더 위로)
+      tailWidth = 140 * scaleFactor; // 꼬리 3번의 너비를 더 작게
+      tailHeight = 140 * scaleFactor; // 꼬리 3번의 높이를 더 작게
+      tailLeft = -70 * scaleFactor; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
+      tailTop = 70 * scaleFactor; // 꼬리 3번의 위쪽 위치 조정 (더 위로)
     }
     if(widget.tailIndex == 4) {
-      tailWidth = 170; // 꼬리 3번의 너비를 더 작게
-      tailHeight = 170; // 꼬리 3번의 높이를 더 작게
-      tailLeft = -75; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
-      tailTop = 70; // 꼬리 3번의 위쪽 위치 조정 (더 위로)
+      tailWidth = 170 * scaleFactor; // 꼬리 3번의 너비를 더 작게
+      tailHeight = 170 * scaleFactor; // 꼬리 3번의 높이를 더 작게
+      tailLeft = -75 * scaleFactor; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
+      tailTop = 70 * scaleFactor; // 꼬리 3번의 위쪽 위치 조정 (더 위로)
     }
   }
   
     return SizedBox(
-      width: 200,
-      height: 200,
+      width: 200 * scaleFactor,
+      height: 200 * scaleFactor,
       child: Stack(
         alignment: Alignment.center,
         clipBehavior: Clip.none, // 드래그 시 경계를 벗어날 수 있도록
@@ -450,7 +453,7 @@ class _CharacterViewState extends State<CharacterView>
           
           // 2. 몸통 (맨 아래 베이스, 호흡 애니메이션 적용)
           Positioned(
-            left: -30,
+            left: -30 * scaleFactor,
             top: 0,
             child: AnimatedBuilder(
               animation: _breathingAnimation,
@@ -459,13 +462,13 @@ class _CharacterViewState extends State<CharacterView>
                   scale: widget.enableTailAnimation ? _breathingAnimation.value : 1.0,
                   child: Image.asset(
                     _getImagePath('body'),
-                    width: 250,
-                    height: 250,
+                    width: 250 * scaleFactor,
+                    height: 250 * scaleFactor,
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
-                        width: 200,
-                        height: 200,
+                        width: 200 * scaleFactor,
+                        height: 200 * scaleFactor,
                         color: Colors.grey[300],
                         child: const Icon(Icons.error),
                       );
@@ -478,8 +481,8 @@ class _CharacterViewState extends State<CharacterView>
           
           // 3. 얼굴 (드래그 가능, 몸통 위쪽에 배치)
           Positioned(
-            left: 25,
-            top: -10,
+            left: 25 * scaleFactor,
+            top: -10 * scaleFactor,
             child: GestureDetector(
               onPanUpdate: (details) {
                 // 드래그 중 랜덤 표정 변경
@@ -491,8 +494,8 @@ class _CharacterViewState extends State<CharacterView>
               },
               child: Image.asset(
                 _getImagePath('face'),
-                width: 180,
-                height: 180,
+                width: 180 * scaleFactor,
+                height: 180 * scaleFactor,
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => const SizedBox(),
               ),
@@ -501,12 +504,12 @@ class _CharacterViewState extends State<CharacterView>
 
           // 4. 드래그 가능한 표정 (얼굴 위)
             Positioned(
-            left: 70,
-            top: 50,
+            left: 70 * scaleFactor,
+            top: 50 * scaleFactor,
             child: Image.asset(
               _getImagePath('emotion'),
-              width: 100,
-              height: 100,
+              width: 100 * scaleFactor,
+              height: 100 * scaleFactor,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) => const SizedBox(),
             ),

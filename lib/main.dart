@@ -769,7 +769,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
       children: [
         // 캐릭터 미리보기
         Container(
-          height: 300,
+          height: 150, // 300 * 0.5 = 150
           margin: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: cardBgColor,
