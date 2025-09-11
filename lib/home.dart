@@ -107,6 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _selectRandomMessage();
     _generateRandomGoals();
     _initializeNotifications();
+    _configureAudioPlayer();
   }
 
   @override
@@ -146,6 +147,22 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // 오디오 플레이어 설정 (알림 비활성화)
+  Future<void> _configureAudioPlayer() async {
+    // 간단한 설정으로 알림 최소화
+    await _audioPlayer.setAudioContext(
+      AudioContext(
+        android: AudioContextAndroid(
+          isSpeakerphoneOn: false,
+          stayAwake: true,
+          contentType: AndroidContentType.music,
+          usageType: AndroidUsageType.media,
+          audioFocus: AndroidAudioFocus.gain,
+        ),
+      ),
+    );
+  }
+
   // 음악 재생/일시정지 토글
   Future<void> _toggleMusic() async {
     try {
@@ -154,23 +171,25 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           _isPlaying = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🎵 음악이 일시정지되었습니다'),
-            duration: Duration(seconds: 1),
-          ),
-        );
+        // 알림 제거
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   const SnackBar(
+        //     content: Text('🎵 음악이 일시정지되었습니다'),
+        //     duration: Duration(seconds: 1),
+        //   ),
+        // );
       } else {
         await _playCurrentMusic();
       }
     } catch (e) {
       print('음악 재생 오류: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('음악 재생에 실패했습니다'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      // 에러 알림도 제거
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(
+      //     content: Text('음악 재생에 실패했습니다'),
+      //     duration: Duration(seconds: 2),
+      //   ),
+      // );
     }
   }
 
@@ -178,7 +197,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _playCurrentMusic() async {
     try {
       final currentMusic = _musicPlaylist[_currentMusicIndex];
-      await _audioPlayer.play(AssetSource(currentMusic));
+      
+      // 알림 없이 재생
+      await _audioPlayer.play(
+        AssetSource(currentMusic),
+        volume: 0.8,
+        mode: PlayerMode.mediaPlayer,
+      );
+      
       setState(() {
         _isPlaying = true;
       });
@@ -188,23 +214,25 @@ class _HomeScreenState extends State<HomeScreen> {
         _playNextMusic();
       });
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('🎵 ${_getMusicName(currentMusic)} 재생 중'),
-          duration: const Duration(seconds: 1),
-        ),
-      );
+      // SnackBar도 제거하여 알림 최소화
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text('🎵 ${_getMusicName(currentMusic)} 재생 중'),
+      //     duration: const Duration(seconds: 1),
+      //   ),
+      // );
     } catch (e) {
       // 로컬 파일이 없으면 시뮬레이션
       setState(() {
         _isPlaying = true;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('🎵 ${_getMusicName(_musicPlaylist[_currentMusicIndex])} 재생 모드 (시뮬레이션)'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      // 시뮬레이션 알림도 제거
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text('🎵 ${_getMusicName(_musicPlaylist[_currentMusicIndex])} 재생 모드 (시뮬레이션)'),
+      //     duration: const Duration(seconds: 2),
+      //   ),
+      // );
     }
   }
 
@@ -654,6 +682,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 
                 // 천사 일러스트 영역
                 _buildAngelIllustration(),
+                const SizedBox(height: 20),
+                
+                // 날짜와 기온 정보
+                _buildDateWeatherInfo(),
                 const SizedBox(height: 20),
                 
                 // 탭과 목록 영역
@@ -1432,6 +1464,80 @@ class _HomeScreenState extends State<HomeScreen> {
             _currentEmotionIndex = newEmotionIndex;
           });
         },
+      ),
+    );
+  }
+
+  // 날짜와 기온 정보 위젯
+  Widget _buildDateWeatherInfo() {
+    final now = DateTime.now();
+    final weekdays = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+    final weekday = weekdays[now.weekday % 7];
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // 날짜 정보
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${now.year}년 ${now.month.toString().padLeft(2, '0')}월 ${now.day.toString().padLeft(2, '0')}일 $weekday',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+          
+          // 기온 정보
+          Row(
+            children: [
+              Icon(
+                Icons.wb_sunny,
+                color: Colors.orange[400],
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '기온: 25°C',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  Text(
+                    '날씨: 맑음',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
