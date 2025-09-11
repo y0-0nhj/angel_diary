@@ -85,7 +85,6 @@ class _HomeScreenState extends State<HomeScreen> {
   
   // 알림 관련
   final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
-  List<String> _dailyWishes = []; // 오늘의 소망들 (최대 5개)
   
   // 성경구절 및 조언 메시지 데이터
   final List<Map<String, String>> _messages = [
@@ -299,24 +298,22 @@ class _HomeScreenState extends State<HomeScreen> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return DailyWishDialog(
-          currentWishes: _dailyWishes,
+          currentWishes: _wishes.map((wish) => wish['text'] as String).toList(),
           onWishesSaved: (wishes) {
             setState(() {
-              _dailyWishes = wishes;
+              // _wishes를 새로운 소망들로 업데이트
+              _wishes = wishes.map((wishText) => {
+                'text': wishText,
+                'completed': false,
+              }).toList();
             });
-            _saveDailyWishes();
+            _saveToCalendar(); // 캘린더에 저장
           },
         );
       },
     );
   }
 
-  // 일일 소망 저장
-  void _saveDailyWishes() {
-    // SharedPreferences나 다른 저장소에 저장
-    // 여기서는 간단히 상태로만 관리
-    print('일일 소망 저장: $_dailyWishes');
-  }
 
   // 설정 다이얼로그 표시
   void _showSettingsDialog() {
@@ -1193,130 +1190,33 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
                 const SizedBox(height: 15),
           
-                // 소망 탭일 때만 등록하기 버튼 표시
-                if (_selectedTabIndex == 0) ...[
-          Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 20),
-                    child: ElevatedButton.icon(
-                      onPressed: _showDailyWishDialog,
-                      icon: const Icon(Icons.add_circle_outline, size: 24),
-                      label: const Text(
-                        '소망 등록하기',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.pink[600],
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                        shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-                        elevation: 3,
+                // 새 항목 추가 버튼 (모든 탭에서 동일)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  child: ElevatedButton.icon(
+                    onPressed: _isAddButtonEnabled() ? _getAddButtonAction() : null,
+                    icon: const Icon(Icons.add_circle_outline, size: 24),
+                    label: Text(
+                      _getAddButtonText(),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                ],
-                
-                // 소망 탭일 때 등록된 소망들 표시
-                if (_selectedTabIndex == 0) ...[
-                  if (_dailyWishes.isEmpty) ...[
-          Container(
-                      width: double.infinity,
-            padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[300]!),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isAddButtonEnabled() ? _getTabColor() : Colors.grey[400],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
                       ),
-            child: Column(
-              children: [
-                          Icon(
-                            Icons.favorite_border,
-                            size: 48,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 12),
-                Text(
-                            '아직 등록된 소망이 없습니다',
-                            style: TextStyle(
-                    fontSize: 16,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '위의 버튼을 눌러 소망을 등록해보세요!',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[500],
-                            ),
-                          ),
-                        ],
-                      ),
+                      elevation: 3,
                     ),
-                  ] else ...[
-                    ..._dailyWishes.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final wish = entry.value;
-                      
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.pink[50],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.pink[200]!),
-                        ),
-                        child: Row(
-                          children: [
-                            // 번호
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: Colors.pink[400],
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${index + 1}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            // 소망 텍스트
-                            Expanded(
-                              child: Text(
-                                wish,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                    color: textColor,
                   ),
                 ),
-                            ),
-                            // 체크박스
-                            Checkbox(
-                              value: false, // 소망은 체크박스 없이 표시만
-                              onChanged: null,
-                              activeColor: Colors.pink[400],
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                ] else ...[
+                
+                // 목록 표시 (모든 탭에서 동일한 형태)
                   // 목표와 감사 탭의 기존 리스트
                 ..._getCurrentList().asMap().entries.map((entry) {
                     final item = entry.value;
@@ -1357,7 +1257,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8),
+                        // 수정 버튼
+                        IconButton(
+                          onPressed: () => _showEditDialog(entry.key),
+                          icon: Icon(
+                            Icons.edit,
+                            color: Colors.grey[600],
+                            size: 20,
+                          ),
+                        ),
                         // 체크박스 (맨 뒤로 이동)
                         GestureDetector(
                           onTap: () => _toggleItem(entry.key),
@@ -1385,7 +1294,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   );
                 }),
-                ],
+                
               ],
             ),
           ),
@@ -1556,6 +1465,62 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // 추가 버튼 텍스트
+  String _getAddButtonText() {
+    switch (_selectedTabIndex) {
+      case 0:
+        return '새 소망 추가하기 (${_wishes.length}/5)';
+      case 1:
+        return '새 목표 추가하기 (${_goals.length}/5)';
+      case 2:
+        return '새 감사 추가하기 (${_gratitudes.length}/5)';
+      default:
+        return '새 항목 추가하기';
+    }
+  }
+
+  // 추가 버튼 액션
+  VoidCallback _getAddButtonAction() {
+    switch (_selectedTabIndex) {
+      case 0:
+        return _showWishDialog;
+      case 1:
+        return _showGoalDialog;
+      case 2:
+        return _showGratitudeDialog;
+      default:
+        return _showWishDialog;
+    }
+  }
+
+  // 탭 색상
+  Color _getTabColor() {
+    switch (_selectedTabIndex) {
+      case 0:
+        return Colors.lightBlue[600]!;
+      case 1:
+        return Colors.pink[600]!;
+      case 2:
+        return Colors.yellow[600]!;
+      default:
+        return Colors.lightBlue[600]!;
+    }
+  }
+
+  // 추가 버튼 활성화 여부
+  bool _isAddButtonEnabled() {
+    switch (_selectedTabIndex) {
+      case 0:
+        return _wishes.length < 5; // 소망은 최대 5개
+      case 1:
+        return _goals.length < 5; // 목표는 최대 5개
+      case 2:
+        return _gratitudes.length < 5; // 감사는 최대 5개
+      default:
+        return true;
+    }
+  }
+
   List<Map<String, dynamic>> _getCurrentList() {
     switch (_selectedTabIndex) {
       case 0:
@@ -1580,6 +1545,28 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // 수정 다이얼로그 표시
+  void _showEditDialog(int index) {
+    final currentList = _getCurrentList();
+    final item = currentList[index];
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return EditDialog(
+          initialText: item['text'] as String,
+          tabIndex: _selectedTabIndex,
+          onItemEdited: (newText) {
+            setState(() {
+              currentList[index]['text'] = newText;
+            });
+            _saveToCalendar();
+          },
+        );
+      },
+    );
+  }
+
   // 선택된 날짜의 데이터를 캘린더에 저장
   void _saveToCalendar() {
     final dateString = _getDateString(_selectedDate);
@@ -1596,18 +1583,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
-  Color _getTabColor() {
-    switch (_selectedTabIndex) {
-      case 0:
-        return Colors.blue[400]!;
-      case 1:
-        return Colors.pink[400]!;
-      case 2:
-        return Colors.yellow[600]!;
-      default:
-        return Colors.blue[400]!;
-    }
-  }
 
   // 편지 쓰기 팝업 표시
   void _showLetterWritingPopup() {
@@ -1659,6 +1634,105 @@ class _HomeScreenState extends State<HomeScreen> {
         ];
       });
     }
+  }
+
+  // 소망 추가 다이얼로그
+  void _showWishDialog() {
+    // 최대 5개 제한 확인
+    if (_wishes.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('소망은 최대 5개까지 추가할 수 있습니다 💙'),
+          backgroundColor: Colors.lightBlue[600],
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return WishDialog(
+          currentCount: _wishes.length,
+          onWishAdded: (wishText) {
+            setState(() {
+              _wishes.add({
+                'text': wishText,
+                'completed': false,
+              });
+            });
+            _saveToCalendar();
+          },
+        );
+      },
+    );
+  }
+
+  // 목표 추가 다이얼로그
+  void _showGoalDialog() {
+    // 최대 5개 제한 확인
+    if (_goals.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('목표는 최대 5개까지 추가할 수 있습니다 💖'),
+          backgroundColor: Colors.pink[600],
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return GoalDialog(
+          currentCount: _goals.length,
+          onGoalAdded: (goalText) {
+            setState(() {
+              _goals.add({
+                'text': goalText,
+                'completed': false,
+              });
+            });
+            _saveToCalendar();
+          },
+        );
+      },
+    );
+  }
+
+  // 감사 추가 다이얼로그
+  void _showGratitudeDialog() {
+    // 최대 5개 제한 확인
+    if (_gratitudes.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('감사는 최대 5개까지 추가할 수 있습니다 💛'),
+          backgroundColor: Colors.yellow[600],
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return GratitudeDialog(
+          currentCount: _gratitudes.length,
+          onGratitudeAdded: (gratitudeText) {
+            setState(() {
+              _gratitudes.add({
+                'text': gratitudeText,
+                'completed': false,
+              });
+            });
+            _saveToCalendar();
+          },
+        );
+      },
+    );
   }
 }
 
@@ -2574,7 +2648,7 @@ class _DailyWishDialogState extends State<DailyWishDialog> {
             // 헤더
             Row(
               children: [
-                const Icon(Icons.favorite, color: Colors.pink, size: 28),
+                const Icon(Icons.favorite, color: Colors.lightBlue, size: 28),
                 const SizedBox(width: 12),
                 const Text(
                   '오늘의 소망 설정',
@@ -2686,7 +2760,7 @@ class _DailyWishDialogState extends State<DailyWishDialog> {
                   child: ElevatedButton(
                     onPressed: _saveWishes,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.pink[600],
+                      backgroundColor: Colors.lightBlue[600],
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -2721,8 +2795,720 @@ class _DailyWishDialogState extends State<DailyWishDialog> {
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${wishes.length}개의 소망이 저장되었습니다! 💖'),
+        content: Text('${wishes.length}개의 소망이 저장되었습니다! 💙'),
+        backgroundColor: Colors.lightBlue[600],
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+}
+
+// 소망 추가 다이얼로그
+class WishDialog extends StatefulWidget {
+  final int currentCount;
+  final Function(String) onWishAdded;
+
+  const WishDialog({
+    super.key,
+    required this.currentCount,
+    required this.onWishAdded,
+  });
+
+  @override
+  State<WishDialog> createState() => _WishDialogState();
+}
+
+class _WishDialogState extends State<WishDialog> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.8,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 헤더
+            Row(
+              children: [
+                Icon(Icons.favorite, color: Colors.lightBlue, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '새 소망 추가',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
+                      Text(
+                        '현재 ${widget.currentCount}/5개',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close, color: Colors.grey),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            
+            // 입력 필드
+            TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                hintText: '소망을 입력해주세요...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.lightBlue[400]!),
+                ),
+                contentPadding: const EdgeInsets.all(16),
+              ),
+              maxLines: 3,
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // 버튼들
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      side: BorderSide(color: Colors.grey[400]!),
+                    ),
+                    child: const Text(
+                      '취소',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _saveWish,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.lightBlue[600],
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      '저장',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _saveWish() {
+    final wishText = _controller.text.trim();
+    
+    if (wishText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('소망을 입력해주세요')),
+      );
+      return;
+    }
+    
+    widget.onWishAdded(wishText);
+    Navigator.of(context).pop();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('소망이 추가되었습니다! 💙'),
+        backgroundColor: Colors.lightBlue[600],
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+}
+
+// 목표 추가 다이얼로그
+class GoalDialog extends StatefulWidget {
+  final int currentCount;
+  final Function(String) onGoalAdded;
+
+  const GoalDialog({
+    super.key,
+    required this.currentCount,
+    required this.onGoalAdded,
+  });
+
+  @override
+  State<GoalDialog> createState() => _GoalDialogState();
+}
+
+class _GoalDialogState extends State<GoalDialog> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.8,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 헤더
+            Row(
+              children: [
+                Icon(Icons.flag, color: Colors.pink, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '새 목표 추가',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
+                      Text(
+                        '현재 ${widget.currentCount}/5개',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close, color: Colors.grey),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            
+            // 입력 필드
+            TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                hintText: '목표를 입력해주세요...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.pink[400]!),
+                ),
+                contentPadding: const EdgeInsets.all(16),
+              ),
+              maxLines: 3,
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // 버튼들
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      side: BorderSide(color: Colors.grey[400]!),
+                    ),
+                    child: const Text(
+                      '취소',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _saveGoal,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.pink[600],
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      '저장',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _saveGoal() {
+    final goalText = _controller.text.trim();
+    
+    if (goalText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('목표를 입력해주세요')),
+      );
+      return;
+    }
+    
+    widget.onGoalAdded(goalText);
+    Navigator.of(context).pop();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('목표가 추가되었습니다! 💖'),
         backgroundColor: Colors.pink[600],
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+}
+
+// 감사 추가 다이얼로그
+class GratitudeDialog extends StatefulWidget {
+  final int currentCount;
+  final Function(String) onGratitudeAdded;
+
+  const GratitudeDialog({
+    super.key,
+    required this.currentCount,
+    required this.onGratitudeAdded,
+  });
+
+  @override
+  State<GratitudeDialog> createState() => _GratitudeDialogState();
+}
+
+class _GratitudeDialogState extends State<GratitudeDialog> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.8,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 헤더
+            Row(
+              children: [
+                Icon(Icons.favorite_border, color: Colors.yellow[600], size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '새 감사 추가',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
+                      Text(
+                        '현재 ${widget.currentCount}/5개',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close, color: Colors.grey),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            
+            // 입력 필드
+            TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                hintText: '감사한 것을 입력해주세요...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.yellow[400]!),
+                ),
+                contentPadding: const EdgeInsets.all(16),
+              ),
+              maxLines: 3,
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // 버튼들
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      side: BorderSide(color: Colors.grey[400]!),
+                    ),
+                    child: const Text(
+                      '취소',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _saveGratitude,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.yellow[600],
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      '저장',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _saveGratitude() {
+    final gratitudeText = _controller.text.trim();
+    
+    if (gratitudeText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('감사한 것을 입력해주세요')),
+      );
+      return;
+    }
+    
+    widget.onGratitudeAdded(gratitudeText);
+    Navigator.of(context).pop();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('감사가 추가되었습니다! 💛'),
+        backgroundColor: Colors.yellow[600],
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+}
+
+// 수정 다이얼로그
+class EditDialog extends StatefulWidget {
+  final String initialText;
+  final int tabIndex;
+  final Function(String) onItemEdited;
+
+  const EditDialog({
+    super.key,
+    required this.initialText,
+    required this.tabIndex,
+    required this.onItemEdited,
+  });
+
+  @override
+  State<EditDialog> createState() => _EditDialogState();
+}
+
+class _EditDialogState extends State<EditDialog> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.text = widget.initialText;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  String _getTitle() {
+    switch (widget.tabIndex) {
+      case 0:
+        return '소망 수정';
+      case 1:
+        return '목표 수정';
+      case 2:
+        return '감사 수정';
+      default:
+        return '항목 수정';
+    }
+  }
+
+  IconData _getIcon() {
+    switch (widget.tabIndex) {
+      case 0:
+        return Icons.favorite;
+      case 1:
+        return Icons.flag;
+      case 2:
+        return Icons.favorite_border;
+      default:
+        return Icons.edit;
+    }
+  }
+
+  Color _getColor() {
+    switch (widget.tabIndex) {
+      case 0:
+        return Colors.lightBlue;
+      case 1:
+        return Colors.pink;
+      case 2:
+        return Colors.yellow[600]!;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getHintText() {
+    switch (widget.tabIndex) {
+      case 0:
+        return '소망을 수정해주세요...';
+      case 1:
+        return '목표를 수정해주세요...';
+      case 2:
+        return '감사한 것을 수정해주세요...';
+      default:
+        return '내용을 수정해주세요...';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.8,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 헤더
+            Row(
+              children: [
+                Icon(_getIcon(), color: _getColor(), size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _getTitle(),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close, color: Colors.grey),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            
+            // 입력 필드
+            TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                hintText: _getHintText(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: _getColor()),
+                ),
+                contentPadding: const EdgeInsets.all(16),
+              ),
+              maxLines: 3,
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // 버튼들
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      side: BorderSide(color: Colors.grey[400]!),
+                    ),
+                    child: const Text(
+                      '취소',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _saveEdit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _getColor(),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      '저장',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _saveEdit() {
+    final newText = _controller.text.trim();
+    
+    if (newText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('내용을 입력해주세요')),
+      );
+      return;
+    }
+    
+    widget.onItemEdited(newText);
+    Navigator.of(context).pop();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${_getTitle()}이 완료되었습니다!'),
+        backgroundColor: _getColor(),
         duration: const Duration(seconds: 2),
       ),
     );

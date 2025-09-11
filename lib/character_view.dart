@@ -415,7 +415,7 @@ class _CharacterViewState extends State<CharacterView>
     if(widget.tailIndex == 3) {
       tailWidth = 140 * scaleFactor; // 꼬리 3번의 너비를 더 작게
       tailHeight = 140 * scaleFactor; // 꼬리 3번의 높이를 더 작게
-      tailLeft = -70 * scaleFactor; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
+      tailLeft = -65 * scaleFactor; // 꼬리 3번의 왼쪽 위치 조정 (더 안쪽으로)
       tailTop = 70 * scaleFactor; // 꼬리 3번의 위쪽 위치 조정 (더 위로)
     }
     if(widget.tailIndex == 4) {
