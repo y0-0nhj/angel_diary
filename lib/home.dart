@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'character_view.dart';
-import 'main.dart' show bgColor, textColor;
+import 'main.dart' show bgColor, textColor, primaryColor;
 import 'package:table_calendar/table_calendar.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'diary_dialog.dart';
+import 'simple_calendar_dialog.dart';
 
 
 
@@ -47,17 +49,33 @@ class AngelDataManager {
 
 // --- 전역 캘린더 데이터 관리자 ---
 class CalendarDataManager {
-  static final Map<String, Map<String, List<Map<String, dynamic>>>> _calendarData = {};
+  static final Map<String, Map<String, dynamic>> _calendarData = {};
   
-  static Map<String, List<Map<String, dynamic>>>? getDayData(String dateString) {
+  static Map<String, dynamic>? getDayData(String dateString) {
     return _calendarData[dateString];
   }
   
-  static void saveDayData(String dateString, Map<String, List<Map<String, dynamic>>> dayData) {
+  static void saveDayData(String dateString, Map<String, dynamic> dayData) {
     _calendarData[dateString] = dayData;
   }
   
-  static Map<String, Map<String, List<Map<String, dynamic>>>> get allData => _calendarData;
+  static void saveDiary(String dateString, String diaryContent) {
+    if (_calendarData[dateString] == null) {
+      _calendarData[dateString] = {
+        'wishes': <Map<String, dynamic>>[],
+        'goals': <Map<String, dynamic>>[],
+        'gratitudes': <Map<String, dynamic>>[],
+        'diary': '',
+      };
+    }
+    _calendarData[dateString]!['diary'] = diaryContent;
+  }
+  
+  static String? getDiary(String dateString) {
+    return _calendarData[dateString]?['diary'] as String?;
+  }
+  
+  static Map<String, Map<String, dynamic>> get allData => _calendarData;
 }
 
 // --- 홈 화면 ---
@@ -71,7 +89,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedTabIndex = 0; // 0: 소망, 1: 목표, 2: 감사
   int _currentEmotionIndex = 1; // 현재 표정 인덱스
-  String _currentMessage = ''; // 현재 표시되는 메시지
   DateTime _selectedDate = DateTime.now(); // 선택된 날짜
   
   // 음악 재생 관련
@@ -103,10 +120,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _selectRandomMessage();
     _generateRandomGoals();
     _initializeNotifications();
     _configureAudioPlayer();
+    _scheduleDailyWishNotification(); // 매일 11시 47분 소망 설정 알림 스케줄링
   }
 
   @override
@@ -135,16 +152,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
   
-  // 랜덤 메시지 선택
-  void _selectRandomMessage() {
-    if (_messages.isNotEmpty) {
-      final random = Random();
-      final selectedMessage = _messages[random.nextInt(_messages.length)];
-      setState(() {
-        _currentMessage = selectedMessage['text'] ?? '오늘도 좋은 하루 되세요';
-      });
-    }
-  }
 
   // 오디오 플레이어 설정 (알림 비활성화)
   Future<void> _configureAudioPlayer() async {
@@ -235,6 +242,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // 특정 음악 재생
+  Future<void> _playMusic(int index) async {
+    setState(() {
+      _currentMusicIndex = index;
+    });
+    await _playCurrentMusic();
+  }
+
   // 다음 곡 재생
   Future<void> _playNextMusic() async {
     setState(() {
@@ -283,6 +298,53 @@ class _HomeScreenState extends State<HomeScreen> {
         ?.requestNotificationsPermission();
   }
 
+  // 매일 오전 11시 47분에 소망 설정 알림 스케줄링
+  Future<void> _scheduleDailyWishNotification() async {
+    // 기존 알림 취소
+    await _notifications.cancel(1);
+    
+    // 오늘 오전 11시 47분 시간 설정
+    final now = DateTime.now();
+    var scheduledDate = DateTime(now.year, now.month, now.day, 11, 47);
+    
+    // 이미 지난 시간이면 내일로 설정
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+    
+    // 타임존 설정
+    final location = tz.getLocation('Asia/Seoul');
+    final tzScheduledDate = tz.TZDateTime.from(scheduledDate, location);
+    
+    // 알림 스케줄링
+    await _notifications.zonedSchedule(
+      1, // 알림 ID
+      '소망 설정 시간이에요! 🌟',
+      '오늘의 소망을 설정해보세요',
+      tzScheduledDate,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'daily_wish_channel',
+          '일일 소망 알림',
+          channelDescription: '매일 소망을 설정하도록 알려주는 알림',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(
+          sound: 'default',
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time, // 매일 같은 시간에 반복
+      payload: 'daily_wish',
+    );
+  }
+
   // 알림 탭 처리
   void _onNotificationTapped(NotificationResponse response) {
     if (response.payload == 'daily_wish') {
@@ -297,15 +359,14 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return DailyWishDialog(
-          currentWishes: _wishes.map((wish) => wish['text'] as String).toList(),
-          onWishesSaved: (wishes) {
+        return WishDialog(
+          currentCount: _wishes.length,
+          onWishAdded: (wishText) {
             setState(() {
-              // _wishes를 새로운 소망들로 업데이트
-              _wishes = wishes.map((wishText) => {
+              _wishes.add({
                 'text': wishText,
                 'completed': false,
-              }).toList();
+              });
             });
             _saveToCalendar(); // 캘린더에 저장
           },
@@ -354,10 +415,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildSettingsItem(Icons.music_note, '음악 설정', () {
                   Navigator.of(context).pop();
                   _showMusicSettingsDialog();
-                }),
-                _buildSettingsItem(Icons.favorite, '일일 소망 설정', () {
-                  Navigator.of(context).pop();
-                  _showDailyWishDialog();
                 }),
                 _buildSettingsItem(Icons.notifications, '알림 설정', () {
                   Navigator.of(context).pop();
@@ -521,37 +578,42 @@ class _HomeScreenState extends State<HomeScreen> {
                   final index = entry.key;
                   final music = entry.value;
                   final isCurrent = index == _currentMusicIndex;
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isCurrent ? Colors.pink[100] : Colors.grey[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: isCurrent ? Border.all(color: Colors.pink[300]!) : null,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isCurrent ? Icons.play_arrow : Icons.music_note,
-                          color: isCurrent ? Colors.pink[600] : Colors.grey[600],
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            _getMusicName(music),
-                            style: TextStyle(
-                              fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                              color: isCurrent ? Colors.pink[600] : Colors.grey[700],
+                  return GestureDetector(
+                    onTap: () {
+                      _playMusic(index);
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isCurrent ? primaryColor.withOpacity(0.1) : Colors.grey[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: isCurrent ? Border.all(color: primaryColor, width: 2) : null,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isCurrent ? Icons.play_arrow : Icons.music_note,
+                            color: isCurrent ? primaryColor : Colors.grey[600],
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _getMusicName(music),
+                              style: TextStyle(
+                                fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                                color: isCurrent ? primaryColor : Colors.grey[700],
+                              ),
                             ),
                           ),
-                        ),
-                        if (isCurrent && _isPlaying)
-                          Icon(
-                            Icons.volume_up,
-                            color: Colors.pink[600],
-                            size: 16,
-                          ),
-                      ],
+                          if (isCurrent && _isPlaying)
+                            Icon(
+                              Icons.volume_up,
+                              color: primaryColor,
+                              size: 16,
+                            ),
+                        ],
+                      ),
                     ),
                   );
                 }).toList(),
@@ -654,9 +716,9 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _goals = [];
   
   List<Map<String, dynamic>> _gratitudes = [
-    {'text': '가족과 함께할 수 있어서', 'completed': false},
-    {'text': '맛있는 음식을 먹을 수 있어서', 'completed': false},
-    {'text': '건강한 몸을 가지고 있어서', 'completed': false},
+    {'text': '오늘 감사했던 일 3가지 자기 전에 떠올리기', 'completed': false},
+    {'text': '하늘 한번 올려다보고 계절의 변화 느껴보기', 'completed': false},
+    {'text': '가장 좋아하는 성경 구절이나 명언 한 줄 필사하기', 'completed': false},
   ];
 
   @override
@@ -687,6 +749,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 
                 // 탭과 목록 영역
                 _buildTabSection(),
+                const SizedBox(height: 20),
+                
+                // 하단 섹션 (일기 쓰기 버튼 + 캘린더 아이콘)
+                _buildBottomSection(),
               ],
             ),
           ),
@@ -920,17 +986,15 @@ class _HomeScreenState extends State<HomeScreen> {
             top: 10,
             right: 10,
             child: Container(
-              width: 40,
-              height: 40,
-              decoration: const BoxDecoration(
-                color: Colors.yellow,
-                shape: BoxShape.circle,
-              ),
-              child: const Center(
-                child: Text('🌞', style: TextStyle(fontSize: 25)),
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: AssetImage('assets/images/illustrations/sun.png'),
+                  fit: BoxFit.none,
+                ),
               ),
             ),
           ),
+          
           
           // 풀밭과 꽃들
           Positioned(
@@ -1252,8 +1316,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             item['text'],
                             style: TextStyle(
                               fontSize: 17,
-                              color: isCompleted ? Colors.lightGreen : textColor,
-                              fontWeight: isCompleted ? FontWeight.w600 : FontWeight.normal,
+                              color: _selectedTabIndex == 0 ? textColor : (isCompleted ? Colors.lightGreen : textColor),
+                              fontWeight: _selectedTabIndex == 0 ? FontWeight.normal : (isCompleted ? FontWeight.w600 : FontWeight.normal),
                             ),
                           ),
                         ),
@@ -1267,29 +1331,30 @@ class _HomeScreenState extends State<HomeScreen> {
                             size: 20,
                           ),
                         ),
-                        // 체크박스 (맨 뒤로 이동)
-                        GestureDetector(
-                          onTap: () => _toggleItem(entry.key),
-                          child: Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: isCompleted ? Colors.lightGreen : Colors.transparent,
-                              border: Border.all(
-                                color: isCompleted ? Colors.lightGreen : Colors.grey[400]!,
-                                width: 2,
+                        // 체크박스 (평생의 소망 탭에서는 숨김)
+                        if (_selectedTabIndex != 0)
+                          GestureDetector(
+                            onTap: () => _toggleItem(entry.key),
+                            child: Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: isCompleted ? Colors.lightGreen : Colors.transparent,
+                                border: Border.all(
+                                  color: isCompleted ? Colors.lightGreen : Colors.grey[400]!,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(4),
                               ),
-                              borderRadius: BorderRadius.circular(4),
+                              child: isCompleted
+                                  ? const Icon(
+                                      Icons.check,
+                                      color: Colors.white,
+                                      size: 16,
+                                    )
+                                  : null,
                             ),
-                            child: isCompleted
-                                ? const Icon(
-                                    Icons.check,
-                                    color: Colors.white,
-                                    size: 16,
-                                  )
-                                : null,
                           ),
-                        ),
                       ],
                     ),
                   );
@@ -1300,6 +1365,96 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // 하단 섹션 (일기 쓰기 버튼 + 캘린더 아이콘)
+  Widget _buildBottomSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          // 일기 쓰기 버튼 (왼쪽)
+          Expanded(
+            child: ElevatedButton(
+              onPressed: _showDiaryDialog,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                elevation: 3,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.edit_note, size: 24),
+                  const SizedBox(width: 12),
+                  const Text(
+                    '오늘의 일기 쓰기',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          const SizedBox(width: 12),
+          
+          // 캘린더 아이콘 (오른쪽)
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              onPressed: _showCalendarDialog,
+              icon: const Icon(
+                Icons.calendar_today,
+                size: 28,
+                color: primaryColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 일기 다이얼로그 표시
+  void _showDiaryDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return DiaryDialog();
+      },
+    );
+  }
+
+  // 캘린더 다이얼로그 표시
+  void _showCalendarDialog() {
+    // 현재 데이터를 캘린더에 저장
+    _saveToCalendar();
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return SimpleCalendarDialog();
+      },
     );
   }
 
@@ -1455,13 +1610,13 @@ class _HomeScreenState extends State<HomeScreen> {
   String _getCurrentTitle() {
     switch (_selectedTabIndex) {
       case 0:
-        return '오늘의 소망';
+        return '평생의 소망';
       case 1:
         return '오늘의 목표';
       case 2:
         return '오늘의 감사';
       default:
-        return '오늘의 소망';
+        return '평생의 소망';
     }
   }
 
@@ -1469,7 +1624,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _getAddButtonText() {
     switch (_selectedTabIndex) {
       case 0:
-        return '새 소망 추가하기 (${_wishes.length}/5)';
+        return '새 소망 추가하기 (${_wishes.length}/3)';
       case 1:
         return '새 목표 추가하기 (${_goals.length}/5)';
       case 2:
@@ -1511,7 +1666,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isAddButtonEnabled() {
     switch (_selectedTabIndex) {
       case 0:
-        return _wishes.length < 5; // 소망은 최대 5개
+        return _wishes.length < 3; // 소망은 최대 3개
       case 1:
         return _goals.length < 5; // 목표는 최대 5개
       case 2:
@@ -1576,6 +1731,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'wishes': List<Map<String, dynamic>>.from(_wishes),
       'goals': List<Map<String, dynamic>>.from(_goals),
       'gratitudes': List<Map<String, dynamic>>.from(_gratitudes),
+      'diary': CalendarDataManager.getDiary(dateString) ?? '',
     });
   }
 
@@ -1638,11 +1794,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 소망 추가 다이얼로그
   void _showWishDialog() {
-    // 최대 5개 제한 확인
-    if (_wishes.length >= 5) {
+    // 최대 3개 제한 확인
+    if (_wishes.length >= 3) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('소망은 최대 5개까지 추가할 수 있습니다 💙'),
+          content: const Text('소망은 최대 3개까지 추가할 수 있습니다 💙'),
           backgroundColor: Colors.lightBlue[600],
           duration: const Duration(seconds: 2),
         ),

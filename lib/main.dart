@@ -3,10 +3,10 @@ import 'dart:typed_data';
 import 'character_view.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'services/photoshop_api_service.dart'; // ✨ 방금 만든 서비스 import
 import 'package:firebase_core/firebase_core.dart';
 import 'package:angel_diary/firebase_options.dart';
 import 'home.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 
 // --- 앱 전체에서 사용할 색상 정의 ---
@@ -21,6 +21,10 @@ const Color cardBgColor = Colors.white;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // 타임존 초기화
+  tz.initializeTimeZones();
+  
   runApp(const AngelDiaryApp());
 }
 
@@ -274,21 +278,53 @@ class _YesFormScreenState extends State<YesFormScreen> {
   String? _selectedPetDesc;
 
   XFile? _pickedImage;
+  Uint8List? _processedImageBytes;
+  bool _isProcessing = false;
 
-  // --- ✨ API 연동을 위한 상태 변수 추가 ---
-  bool _isLoading = false; // API 호출 중 로딩 상태를 알려주는 변수
-  Uint8List? _processedImageBytes; // 배경이 제거된 이미지 데이터를 담을 변수
 
   // 이미지 선택 함수
   Future<void> _pickImage() async {
-    setState(() {
-      _processedImageBytes = null;
-    });
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
       setState(() {
         _pickedImage = image;
+        _processedImageBytes = null; // 새 이미지 선택 시 처리된 이미지 초기화
+      });
+    }
+  }
+
+  // 배경 제거 함수 (시뮬레이션)
+  Future<void> _removeBackground() async {
+    if (_pickedImage == null) return;
+    
+    setState(() {
+      _isProcessing = true;
+    });
+
+    // 2초 대기 (로딩 시뮬레이션)
+    await Future.delayed(const Duration(seconds: 2));
+    
+    try {
+      // 실제로는 원본 이미지를 복사하여 처리된 이미지로 표시
+      final imageFile = File(_pickedImage!.path);
+      final Uint8List imageBytes = await imageFile.readAsBytes();
+      
+      setState(() {
+        _processedImageBytes = imageBytes;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✨ 천사로 변신 완료! (시뮬레이션)')),
+      );
+    } catch (e) {
+      print("Error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('처리에 실패했어요. 다시 시도해주세요.')),
+      );
+    } finally {
+      setState(() {
+        _isProcessing = false;
       });
     }
   }
@@ -302,44 +338,18 @@ class _YesFormScreenState extends State<YesFormScreen> {
       );
       return;
     }
-    // TODO: API 호출 및 데이터 저장 로직
     
-    setState(() {
-      _isLoading = true;
-      
-    });
-
-    try {
-      // 2. 배경 제거 API 호출
-      final apiService = PhotoshopApiService();
-      final resultBytes = await apiService.removeBackground(File(_pickedImage!.path));
-
-          // 3. 결과 처리
-      if (resultBytes != null) {
-        setState(() {
-          _processedImageBytes = resultBytes; // 성공 시 결과 저장
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('✨ 배경이 성공적으로 제거되었어요!')),
-          );
-        }
-      } else {
-        throw Exception('API 처리 실패');
-      }
-    } catch (e) {
-      // 4. 에러 처리
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('이미지 처리에 실패했어요. 다른 사진으로 시도해보세요.')),
-        );
-      }
-    } finally {
-      // 5. 로딩 종료 (성공/실패와 상관없이 항상 실행)
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    // 천사 등록 완료
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('✨ 천사 등록이 완료되었어요!')),
+    );
+    
+    // 홈 화면으로 이동
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const HomeScreen(),
+      ),
+    );
   }
 
 
@@ -440,45 +450,78 @@ class _YesFormScreenState extends State<YesFormScreen> {
                 ),
                 const SizedBox(height: 15),
 
-                // ✨ --- 이미지 표시 영역 ---
+                // 이미지 표시 영역
                 Center(
                   child: Column(
                     children: [
-                      if (_isLoading) // 1. 로딩 중일 때
+                      if (_isProcessing)
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 40.0),
                           child: CircularProgressIndicator(),
                         )
-                      else if (_processedImageBytes != null) // 2. 배경 제거 성공 시
+                      else if (_processedImageBytes != null)
                         Column(
                           children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12.0),
-                              child: Image.memory(_processedImageBytes!, height: 200, fit: BoxFit.cover),
+                            // 원본 이미지
+                            Column(
+                              children: [
+                                const Text("원본 이미지", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12.0),
+                                  child: Image.file(File(_pickedImage!.path), height: 200, fit: BoxFit.cover),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 10),
-                            const Text("✨ 천사로 변신 완료! ✨", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 20),
+                            // 배경 제거된 이미지
+                            Column(
+                              children: [
+                                const Text("✨ 천사로 변신 완료! ✨", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12.0),
+                                  child: Image.memory(_processedImageBytes!, height: 200, fit: BoxFit.cover),
+                                ),
+                              ],
+                            ),
                           ],
                         )
-                      else if (_pickedImage != null) // 3. 원본 이미지만 선택했을 때
+                      else if (_pickedImage != null)
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12.0),
                           child: Image.file(File(_pickedImage!.path), height: 200, fit: BoxFit.cover),
                         ),
+                      
+                      
 
-                      // ✨ 로딩 중이 아닐 때만 이미지 선택 버튼 표시
-                      if (!_isLoading)
+                      // 이미지 선택 버튼
+                      Padding(
+                        padding: const EdgeInsets.only(top: 15.0),
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white, foregroundColor: primaryColor,
+                            side: BorderSide(color: primaryColor),
+                            minimumSize: const Size(double.infinity, 70),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
+                          ),
+                          onPressed: _pickImage,
+                          child: Text(_pickedImage == null ? "이미지 선택" : "다른 이미지 선택", style: TextStyle(color: primaryColor)),
+                        ),
+                      ),
+                      
+                      // 배경 제거 버튼
+                      if (_pickedImage != null && _processedImageBytes == null)
                         Padding(
-                          padding: const EdgeInsets.only(top: 15.0),
+                          padding: const EdgeInsets.only(top: 10.0),
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white, foregroundColor: primaryColor,
-                              side: BorderSide(color: primaryColor),
-                              minimumSize: const Size(double.infinity, 70),
+                              backgroundColor: primaryColor, foregroundColor: Colors.white,
+                              minimumSize: const Size(double.infinity, 50),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
                             ),
-                            onPressed: _pickImage,
-                            child: Text(_pickedImage == null ? "이미지 선택" : "다른 이미지 선택", style: TextStyle(color: primaryColor)),
+                            onPressed: _isProcessing ? null : _removeBackground,
+                            child: Text(_isProcessing ? "배경 제거 중..." : "배경 제거하기", style: const TextStyle(color: Colors.white)),
                           ),
                         ),
                     ],
@@ -491,14 +534,14 @@ class _YesFormScreenState extends State<YesFormScreen> {
                     minimumSize: const Size(double.infinity, 50),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
                   ),
-                  onPressed: _submit,
-                  child: Text(_isLoading ? "천사 등록 중..." : "천사 등록하기"),
+                  onPressed: _isProcessing ? null : _submit,
+                  child: Text(_isProcessing ? "천사 등록 중..." : "천사 등록하기"),
                 ),
               ],
             ),
           ),
         ),
-      ),
+      ), 
     );
   }
 
