@@ -31,10 +31,9 @@ class _CharacterCustomizationScreenState extends State<CharacterCustomizationScr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor,
       appBar: AppBar(
         backgroundColor: bgColor,
-        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: textColor),
           onPressed: () => Navigator.pop(context),
@@ -61,13 +60,6 @@ class _CharacterCustomizationScreenState extends State<CharacterCustomizationScr
               decoration: BoxDecoration(
                 color: cardBgColor,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
               ),
               child: Center(
                 child: CharacterView(

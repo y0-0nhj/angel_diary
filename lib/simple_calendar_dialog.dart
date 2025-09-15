@@ -70,6 +70,7 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -107,13 +108,6 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -234,6 +228,7 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
                   
                   // 하단: 일기 영역
                   Container(
+                    width: double.infinity, // 상단 탭과 동일한 너비로 설정
                     height: 200,
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -260,8 +255,7 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Container(
-                            height: 120,
+                          Expanded( // Container 대신 Expanded 사용하여 남은 공간 모두 사용
                             child: SingleChildScrollView(
                               child: _buildDiaryContent(),
                             ),
@@ -283,24 +277,30 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
     final String? diary = _selectedDayData?['diary'] as String?;
     
     if (diary == null || diary.isEmpty) {
-      return Center(
-        child: Text(
-          '일기가 없습니다',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey[600],
-            fontStyle: FontStyle.italic,
+      return Container(
+        width: double.infinity, // 전체 너비 사용
+        child: Center(
+          child: Text(
+            '일기가 없습니다',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+              fontStyle: FontStyle.italic,
+            ),
           ),
         ),
       );
     }
     
-    return Text(
-      diary,
-      style: const TextStyle(
-        fontSize: 16,
-        color: textColor,
-        height: 1.6,
+    return Container(
+      width: double.infinity, // 전체 너비 사용
+      child: Text(
+        diary,
+        style: const TextStyle(
+          fontSize: 16,
+          color: textColor,
+          height: 1.6,
+        ),
       ),
     );
   }

@@ -4,6 +4,15 @@ import 'home.dart';
 
 // 일기 다이얼로그
 class DiaryDialog extends StatefulWidget {
+  final String? existingContent;
+  final bool isEditMode;
+  
+  const DiaryDialog({
+    Key? key,
+    this.existingContent,
+    this.isEditMode = false,
+  }) : super(key: key);
+
   @override
   _DiaryDialogState createState() => _DiaryDialogState();
 }
@@ -11,6 +20,15 @@ class DiaryDialog extends StatefulWidget {
 class _DiaryDialogState extends State<DiaryDialog> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    // 수정 모드일 때 기존 내용을 텍스트 필드에 미리 채우기
+    if (widget.isEditMode && widget.existingContent != null) {
+      _controller.text = widget.existingContent!;
+    }
+  }
 
   @override
   void dispose() {
@@ -22,6 +40,7 @@ class _DiaryDialogState extends State<DiaryDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -36,8 +55,8 @@ class _DiaryDialogState extends State<DiaryDialog> {
               children: [
                 const Icon(Icons.edit_note, color: primaryColor, size: 28),
                 const SizedBox(width: 12),
-                const Text(
-                  '오늘의 일기',
+                Text(
+                  widget.isEditMode ? '일기 수정하기' : '오늘의 일기',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -134,7 +153,7 @@ class _DiaryDialogState extends State<DiaryDialog> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text('저장'),
+                    child: Text(widget.isEditMode ? '수정하기' : '저장'),
                   ),
                 ),
               ],
@@ -161,7 +180,7 @@ class _DiaryDialogState extends State<DiaryDialog> {
     CalendarDataManager.saveDiary(dateString, content);
     
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('일기가 저장되었습니다 ✨')),
+      SnackBar(content: Text(widget.isEditMode ? '일기가 수정되었습니다 ✨' : '일기가 저장되었습니다 ✨')),
     );
     
     Navigator.of(context).pop();

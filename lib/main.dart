@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'dart:typed_data';
+import 'dart:typed_data'; // Uint8List를 사용하기 위해 필요
 import 'character_view.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:angel_diary/firebase_options.dart';
 import 'home.dart';
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 
 // --- 앱 전체에서 사용할 색상 정의 ---
@@ -17,10 +17,12 @@ const Color textColor = Color(0xFF3D3D3D);
 const Color cardBgColor = Colors.white;
 
 
+const String apiKey = "sA98gt2eUbC5QkjrVYujZEna"; // Remove.bg API 키
+
 // 앱의 시작점
 Future<void> main() async {
+  
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   
   // 타임존 초기화
   tz.initializeTimeZones();
@@ -28,13 +30,47 @@ Future<void> main() async {
   runApp(const AngelDiaryApp());
 }
 
-class AngelDiaryApp extends StatelessWidget {
+class AngelDiaryApp extends StatefulWidget {
   const AngelDiaryApp({super.key});
+
+  @override
+  State<AngelDiaryApp> createState() => _AngelDiaryAppState();
+}
+
+class _AngelDiaryAppState extends State<AngelDiaryApp> {
+  bool _isLoading = true;
+  bool _hasAngel = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAngelStatus();
+  }
+
+  // 천사 등록 여부 확인
+  Future<void> _checkAngelStatus() async {
+    try {
+      // SharedPreferences에서 직접 천사 데이터 확인
+      final prefs = await SharedPreferences.getInstance();
+      final angelJson = prefs.getString('angel_data');
+      
+      setState(() {
+        _hasAngel = angelJson != null && angelJson.isNotEmpty;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _hasAngel = false;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '천사일기',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         scaffoldBackgroundColor: bgColor,
         primaryColor: primaryColor,
@@ -65,7 +101,54 @@ class AngelDiaryApp extends StatelessWidget {
           // labelSmall: TextStyle(fontFamily: 'Pretendard', fontSize: 11, fontWeight: FontWeight.w500, color: textColor),
         ),
       ),
-      home: const OnboardingScreen(),
+      home: _buildHome(),
+    );
+  }
+
+  Widget _buildHome() {
+    if (_isLoading) {
+      return const LoadingScreen();
+    }
+    
+    return _hasAngel ? const HomeScreen() : const OnboardingScreen();
+  }
+}
+
+// 로딩 화면
+class LoadingScreen extends StatelessWidget {
+  const LoadingScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/backgrounds/bg1.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+              ),
+              SizedBox(height: 20),
+              Text(
+                '천사를 불러오는 중...',
+                style: TextStyle(
+                  fontFamily: 'Oneprettynight',
+                  fontSize: 16,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -216,7 +299,6 @@ class QuestionScreen extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(10.0),
         child: Card(
-          elevation: 0,
           color: cardBgColor.withOpacity(0.7),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Padding(
@@ -277,54 +359,80 @@ class _YesFormScreenState extends State<YesFormScreen> {
   final List<String> _petDescs = ['작고 하얀 복슬강아지', '용감하고 늠름한 친구', '애교많은 개냥이', '직접 입력'];
   String? _selectedPetDesc;
 
-  XFile? _pickedImage;
-  Uint8List? _processedImageBytes;
   bool _isProcessing = false;
+  File? _pickedImage; // 사용자가 선택한 원본 이미지 파일
+  Uint8List? _processedImageBytes; // 배경 제거 후 돌려받은 이미지 데이터 (바이트 형태)
+  bool _isLoading = false; // 로딩 중인지 여부
+
 
 
   // 이미지 선택 함수
   Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
       setState(() {
-        _pickedImage = image;
-        _processedImageBytes = null; // 새 이미지 선택 시 처리된 이미지 초기화
+        _pickedImage = File(pickedFile.path);
+        _processedImageBytes = null; // 새 이미지를 골랐으니 이전 결과는 초기화
       });
     }
   }
 
-  // 배경 제거 함수 (시뮬레이션)
+   // 2. Remove.bg API를 호출해서 배경을 제거하는 함수
   Future<void> _removeBackground() async {
-    if (_pickedImage == null) return;
-    
+    if (_pickedImage == null) {
+      // 사용자에게 이미지를 먼저 선택하라고 알려줌
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("먼저 이미지를 선택해주세요!")),
+      );
+      return;
+    }
+
+    // 로딩 시작
     setState(() {
-      _isProcessing = true;
+      _isLoading = true;
     });
 
-    // 2초 대기 (로딩 시뮬레이션)
-    await Future.delayed(const Duration(seconds: 2));
-    
     try {
-      // 실제로는 원본 이미지를 복사하여 처리된 이미지로 표시
-      final imageFile = File(_pickedImage!.path);
-      final Uint8List imageBytes = await imageFile.readAsBytes();
-      
-      setState(() {
-        _processedImageBytes = imageBytes;
-      });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✨ 천사로 변신 완료! (시뮬레이션)')),
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('https://api.remove.bg/v1/removebg'),
       );
+      
+      // 헤더에 API 키 추가
+      request.headers['X-Api-Key'] = apiKey;
+      
+      // 요청에 이미지 파일 추가
+      request.files.add(
+        await http.MultipartFile.fromPath('image_file', _pickedImage!.path),
+      );
+
+      // API 요청 보내고 응답 받기
+      final response = await request.send();
+
+      if (response.statusCode == 200) {
+        // 성공! 응답받은 이미지 데이터를 변수에 저장
+        final imageBytes = await response.stream.toBytes();
+        setState(() {
+          _processedImageBytes = imageBytes;
+        });
+      } else {
+        // 실패... 에러 메시지 보여주기
+        final error = await response.stream.bytesToString();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("에러 발생: $error")),
+        );
+      }
     } catch (e) {
-      print("Error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('처리에 실패했어요. 다시 시도해주세요.')),
+      // 네트워크 에러 등 예외 처리
+       ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("오류: $e")),
       );
     } finally {
+      // 로딩 종료
       setState(() {
-        _isProcessing = false;
+        _isLoading = false;
       });
     }
   }
@@ -570,7 +678,6 @@ class NoFormScreen extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(40.0),
         child: Card(
-          elevation: 0,
           color: cardBgColor.withOpacity(0.7),
            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Padding(
@@ -655,15 +762,8 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
         width: MediaQuery.of(context).size.width * 0.9,
         height: MediaQuery.of(context).size.height * 0.85,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: bgColor,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 20,
-              spreadRadius: 5,
-            ),
-          ],
         ),
         child: Column(
           children: [
@@ -817,13 +917,6 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
           decoration: BoxDecoration(
             color: cardBgColor,
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
           ),
           child: Center(
             child: CharacterView(
@@ -981,8 +1074,8 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
   }
 
   // 천사 생성 완료
-  void _completeCreation() {
-    // 천사 데이터 생성 및 저장
+  Future<void> _completeCreation() async {
+    // 천사 데이터 생성
     final angelData = AngelData(
       name: _nameController.text,
       feature: _featureController.text,
@@ -995,8 +1088,8 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
       createdAt: DateTime.now(),
     );
     
-    // 전역 천사 데이터에 저장
-    AngelDataManager.setCurrentAngel(angelData);
+    // 전역 천사 데이터에 저장 (SharedPreferences에 자동 저장)
+    await AngelDataManager.setCurrentAngel(angelData);
     
     // 팝업 닫기
     Navigator.of(context).pop();
@@ -1005,6 +1098,14 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) => const HomeScreen(),
+      ),
+    );
+    
+    // 성공 메시지
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('✨ 천사가 생성되고 저장되었습니다!'),
+        backgroundColor: Colors.green,
       ),
     );
   }

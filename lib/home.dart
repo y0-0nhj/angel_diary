@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'dart:convert';
 import 'character_view.dart';
 import 'main.dart' show bgColor, textColor, primaryColor;
 import 'package:table_calendar/table_calendar.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'diary_dialog.dart';
 import 'simple_calendar_dialog.dart';
 
@@ -34,32 +36,103 @@ class AngelData {
     required this.tailIndex,
     required this.createdAt,
   });
+
+  // JSON 변환을 위한 메서드들
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'feature': feature,
+      'animalType': animalType,
+      'faceType': faceType,
+      'faceColor': faceColor,
+      'bodyIndex': bodyIndex,
+      'emotionIndex': emotionIndex,
+      'tailIndex': tailIndex,
+      'createdAt': createdAt.toIso8601String(),
+    };
+  }
+
+  factory AngelData.fromJson(Map<String, dynamic> json) {
+    return AngelData(
+      name: json['name'],
+      feature: json['feature'],
+      animalType: json['animalType'],
+      faceType: json['faceType'],
+      faceColor: json['faceColor'],
+      bodyIndex: json['bodyIndex'],
+      emotionIndex: json['emotionIndex'],
+      tailIndex: json['tailIndex'],
+      createdAt: DateTime.parse(json['createdAt']),
+    );
+  }
 }
 
 // --- 전역 천사 데이터 관리자 ---
 class AngelDataManager {
   static AngelData? _currentAngel;
+  static const String _angelKey = 'angel_data';
   
   static AngelData? get currentAngel => _currentAngel;
   
-  static void setCurrentAngel(AngelData angel) {
+  static Future<void> setCurrentAngel(AngelData angel) async {
     _currentAngel = angel;
+    await _saveAngelToStorage(angel);
+  }
+  
+  // SharedPreferences에 천사 데이터 저장
+  static Future<void> _saveAngelToStorage(AngelData angel) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final angelJson = jsonEncode(angel.toJson());
+      await prefs.setString(_angelKey, angelJson);
+    } catch (e) {
+    }
+  }
+  
+  // SharedPreferences에서 천사 데이터 로드
+  static Future<AngelData?> loadAngelFromStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final angelJson = prefs.getString(_angelKey);
+      
+      if (angelJson != null) {
+        final angelData = AngelData.fromJson(jsonDecode(angelJson));
+        _currentAngel = angelData;
+        return angelData;
+      }
+    } catch (e) {
+    }
+    return null;
+  }
+  
+  // 천사 데이터 삭제
+  static Future<void> clearAngelData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_angelKey);
+      _currentAngel = null;
+    } catch (e) {
+    }
   }
 }
 
 // --- 전역 캘린더 데이터 관리자 ---
 class CalendarDataManager {
   static final Map<String, Map<String, dynamic>> _calendarData = {};
+  static final Map<String, List<Map<String, dynamic>>> _persistentWishes = {}; // 소망은 지속적으로 유지
+  static const String _calendarKey = 'calendar_data';
+  static const String _wishesKey = 'wishes_data';
   
   static Map<String, dynamic>? getDayData(String dateString) {
     return _calendarData[dateString];
   }
   
-  static void saveDayData(String dateString, Map<String, dynamic> dayData) {
+  static Future<void> saveDayData(String dateString, Map<String, dynamic> dayData) async {
     _calendarData[dateString] = dayData;
+    await _saveCalendarToStorage();
   }
   
-  static void saveDiary(String dateString, String diaryContent) {
+  static Future<void> saveDiary(String dateString, String diaryContent) async {
     if (_calendarData[dateString] == null) {
       _calendarData[dateString] = {
         'wishes': <Map<String, dynamic>>[],
@@ -69,13 +142,95 @@ class CalendarDataManager {
       };
     }
     _calendarData[dateString]!['diary'] = diaryContent;
+    await _saveCalendarToStorage();
   }
   
   static String? getDiary(String dateString) {
     return _calendarData[dateString]?['diary'] as String?;
   }
   
+  // 소망 전용 저장/조회 메서드
+  static Future<void> saveWishes(String dateString, List<Map<String, dynamic>> wishes) async {
+    _persistentWishes[dateString] = List<Map<String, dynamic>>.from(wishes);
+    await _saveWishesToStorage();
+  }
+  
+  static List<Map<String, dynamic>> getWishes(String dateString) {
+    return _persistentWishes[dateString] ?? [];
+  }
+  
+  // 소망이 설정되어 있는지 확인
+  static bool hasWishes(String dateString) {
+    return _persistentWishes.containsKey(dateString) && _persistentWishes[dateString]!.isNotEmpty;
+  }
+  
   static Map<String, Map<String, dynamic>> get allData => _calendarData;
+  
+  // SharedPreferences에 캘린더 데이터 저장
+  static Future<void> _saveCalendarToStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final calendarJson = jsonEncode(_calendarData);
+      await prefs.setString(_calendarKey, calendarJson);
+    } catch (e) {
+    }
+  }
+  
+  // SharedPreferences에 소망 데이터 저장
+  static Future<void> _saveWishesToStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final wishesJson = jsonEncode(_persistentWishes);
+      await prefs.setString(_wishesKey, wishesJson);
+    } catch (e) {
+    }
+  }
+  
+  // SharedPreferences에서 캘린더 데이터 로드
+  static Future<void> loadCalendarFromStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // 캘린더 데이터 로드
+      final calendarJson = prefs.getString(_calendarKey);
+      if (calendarJson != null) {
+        final calendarData = Map<String, Map<String, dynamic>>.from(
+          jsonDecode(calendarJson).map((key, value) => 
+            MapEntry(key, Map<String, dynamic>.from(value))
+          )
+        );
+        _calendarData.clear();
+        _calendarData.addAll(calendarData);
+      }
+      
+      // 소망 데이터 로드
+      final wishesJson = prefs.getString(_wishesKey);
+      if (wishesJson != null) {
+        final wishesData = Map<String, List<Map<String, dynamic>>>.from(
+          jsonDecode(wishesJson).map((key, value) => 
+            MapEntry(key, List<Map<String, dynamic>>.from(
+              (value as List).map((item) => Map<String, dynamic>.from(item))
+            ))
+          )
+        );
+        _persistentWishes.clear();
+        _persistentWishes.addAll(wishesData);
+      }
+    } catch (e) {
+    }
+  }
+  
+  // 모든 데이터 삭제
+  static Future<void> clearAllData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_calendarKey);
+      await prefs.remove(_wishesKey);
+      _calendarData.clear();
+      _persistentWishes.clear();
+    } catch (e) {
+    }
+  }
 }
 
 // --- 홈 화면 ---
@@ -120,10 +275,32 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeApp();
+  }
+
+  // 앱 초기화
+  Future<void> _initializeApp() async {
     _generateRandomGoals();
     _initializeNotifications();
     _configureAudioPlayer();
     _scheduleDailyWishNotification(); // 매일 11시 47분 소망 설정 알림 스케줄링
+    
+    // 저장된 데이터 로드
+    await _loadStoredData();
+  }
+
+  // 저장된 데이터 로드
+  Future<void> _loadStoredData() async {
+    // 천사 데이터 로드
+    await AngelDataManager.loadAngelFromStorage();
+    
+    // 캘린더 데이터 로드
+    await CalendarDataManager.loadCalendarFromStorage();
+    
+    // UI 업데이트
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -147,10 +324,9 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     });
     
-    setState(() {
-      _goals = newGoals;
-    });
+    _goals = newGoals;
   }
+
   
 
   // 오디오 플레이어 설정 (알림 비활성화)
@@ -188,7 +364,6 @@ class _HomeScreenState extends State<HomeScreen> {
         await _playCurrentMusic();
       }
     } catch (e) {
-      print('음악 재생 오류: $e');
       // 에러 알림도 제거
       // ScaffoldMessenger.of(context).showSnackBar(
       //   const SnackBar(
@@ -382,6 +557,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
+          backgroundColor: bgColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -449,6 +625,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
+          backgroundColor: bgColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -535,6 +712,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
+          backgroundColor: bgColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -772,13 +950,6 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               color: _isPlaying ? Colors.pink[100] : Colors.grey[100],
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -810,13 +981,6 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               color: Colors.blue[100],
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: Icon(
               Icons.skip_next,
@@ -834,13 +998,6 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               color: Colors.grey[100],
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: Icon(
               Icons.settings,
@@ -858,13 +1015,6 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               color: Colors.purple[100],
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: Icon(
               Icons.person,
@@ -886,13 +1036,6 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
       ),
       child: Row(
         children: [
@@ -928,13 +1071,6 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
       ),
       child: Stack(
         children: [
@@ -1073,13 +1209,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 decoration: BoxDecoration(
                   color: Colors.red[600],
                   borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 5,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
                 ),
                 child: Column(
                   children: [
@@ -1140,13 +1269,6 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
       ),
       child: Column(
         children: [
@@ -1196,7 +1318,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildTabButton(0, '소망', Colors.lightBlue[300]!),
                 _buildTabButton(1, '목표', Colors.pink[200]!),
                 _buildTabButton(2, '감사', Colors.yellow[400]!),
-                _buildCalendarTab(),
               ],
             ),
           ),
@@ -1275,7 +1396,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
-                      elevation: 3,
                     ),
                   ),
                 ),
@@ -1368,16 +1488,20 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 하단 섹션 (일기 쓰기 버튼 + 캘린더 아이콘)
+  // 하단 섹션 (일기 쓰기/수정 버튼 + 캘린더 아이콘)
   Widget _buildBottomSection() {
+    final dateString = _getDateString(_selectedDate);
+    final existingDiary = CalendarDataManager.getDiary(dateString);
+    final hasDiary = existingDiary != null && existingDiary.isNotEmpty;
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          // 일기 쓰기 버튼 (왼쪽)
+          // 일기 쓰기/수정 버튼 (왼쪽)
           Expanded(
             child: ElevatedButton(
-              onPressed: _showDiaryDialog,
+              onPressed: hasDiary ? _showEditDiaryDialog : _showDiaryDialog,
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
                 foregroundColor: Colors.white,
@@ -1385,15 +1509,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15),
                 ),
-                elevation: 3,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.edit_note, size: 24),
+                  Icon(hasDiary ? Icons.edit : Icons.edit_note, size: 24),
                   const SizedBox(width: 12),
-                  const Text(
-                    '오늘의 일기 쓰기',
+                  Text(
+                    hasDiary ? '오늘의 일기 수정' : '오늘의 일기 쓰기',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -1413,13 +1536,6 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: IconButton(
               onPressed: _showCalendarDialog,
@@ -1435,12 +1551,28 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 일기 다이얼로그 표시
+  // 일기 다이얼로그 표시 (새로 작성)
   void _showDiaryDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return DiaryDialog();
+      },
+    );
+  }
+
+  // 일기 수정 다이얼로그 표시
+  void _showEditDiaryDialog() {
+    final dateString = _getDateString(_selectedDate);
+    final existingContent = CalendarDataManager.getDiary(dateString);
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return DiaryDialog(
+          existingContent: existingContent,
+          isEditMode: true,
+        );
       },
     );
   }
@@ -1483,23 +1615,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCalendarTab() {
-    return GestureDetector(
-      onTap: () => _showCalendarPopup(),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Icon(
-          Icons.calendar_today,
-          size: 20,
-          color: textColor,
-        ),
-      ),
-    );
-  }
 
   Widget _buildAngelCharacter() {
     final angelData = AngelDataManager.currentAngel;
@@ -1543,13 +1658,6 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1652,13 +1760,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Color _getTabColor() {
     switch (_selectedTabIndex) {
       case 0:
-        return Colors.lightBlue[600]!;
+        return Colors.lightBlue[300]!;
       case 1:
-        return Colors.pink[600]!;
+        return Colors.pink[300]!;
       case 2:
-        return Colors.yellow[600]!;
+        return Colors.yellow[300]!;
       default:
-        return Colors.lightBlue[600]!;
+        return Colors.lightBlue[300]!;
     }
   }
 
@@ -1723,16 +1831,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // 선택된 날짜의 데이터를 캘린더에 저장
-  void _saveToCalendar() {
+  Future<void> _saveToCalendar() async {
     final dateString = _getDateString(_selectedDate);
     
-    // 전역 캘린더 데이터에 저장 (실제로는 데이터베이스에 저장)
-    CalendarDataManager.saveDayData(dateString, {
+    final dayData = {
       'wishes': List<Map<String, dynamic>>.from(_wishes),
       'goals': List<Map<String, dynamic>>.from(_goals),
       'gratitudes': List<Map<String, dynamic>>.from(_gratitudes),
       'diary': CalendarDataManager.getDiary(dateString) ?? '',
-    });
+    };
+    
+    // 전역 캘린더 데이터에 저장
+    await CalendarDataManager.saveDayData(dateString, dayData);
+    
+    // 소망도 별도로 저장 (지속적 유지를 위해)
+    await CalendarDataManager.saveWishes(dateString, _wishes);
   }
 
   String _getDateString(DateTime date) {
@@ -1750,47 +1863,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 캘린더 팝업 표시
-  void _showCalendarPopup() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return CalendarDialog(
-          selectedDate: _selectedDate,
-          onDateSelected: (date) {
-            setState(() {
-              _selectedDate = date;
-              _loadDataForDate(date);
-            });
-          },
-        );
-      },
-    );
-  }
 
-  // 특정 날짜의 데이터 로드
-  void _loadDataForDate(DateTime date) {
-    final dateString = _getDateString(date);
-    final dayData = CalendarDataManager.getDayData(dateString);
-    
-    if (dayData != null) {
-      setState(() {
-        _wishes = List<Map<String, dynamic>>.from(dayData['wishes'] ?? []);
-        _goals = List<Map<String, dynamic>>.from(dayData['goals'] ?? []);
-        _gratitudes = List<Map<String, dynamic>>.from(dayData['gratitudes'] ?? []);
-      });
-    } else {
-      // 해당 날짜에 데이터가 없으면 랜덤 목표 생성 및 기본값으로 초기화
-      _generateRandomGoals();
-      setState(() {
-        _gratitudes = [
-          {'text': '가족과 함께할 수 있어서', 'completed': false},
-          {'text': '맛있는 음식을 먹을 수 있어서', 'completed': false},
-          {'text': '건강한 몸을 가지고 있어서', 'completed': false},
-        ];
-      });
-    }
-  }
 
   // 소망 추가 다이얼로그
   void _showWishDialog() {
@@ -1819,6 +1892,9 @@ class _HomeScreenState extends State<HomeScreen> {
               });
             });
             _saveToCalendar();
+            // 소망도 별도로 저장
+            final dateString = _getDateString(_selectedDate);
+            CalendarDataManager.saveWishes(dateString, _wishes);
           },
         );
       },
@@ -2300,13 +2376,6 @@ class _CalendarDialogState extends State<CalendarDialog> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
               ),
               child: _isWeekView ? _buildWeekView() : _buildMonthView(),
             ),
@@ -3165,7 +3234,7 @@ class _GoalDialogState extends State<GoalDialog> {
             // 헤더
             Row(
               children: [
-                Icon(Icons.flag, color: Colors.pink, size: 28),
+                Icon(Icons.flag, color: Colors.pink[300]!, size: 28),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -3518,9 +3587,9 @@ class _EditDialogState extends State<EditDialog> {
   Color _getColor() {
     switch (widget.tabIndex) {
       case 0:
-        return Colors.lightBlue;
+        return Colors.lightBlue[300]!;
       case 1:
-        return Colors.pink;
+        return Colors.pink[300]!;
       case 2:
         return Colors.yellow[600]!;
       default:

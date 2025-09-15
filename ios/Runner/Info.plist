@@ -46,4 +46,6 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 </dict>
+<key>NSPhotoLibraryUsageDescription</key>
+<string>배경을 제거할 사진을 선택하기 위해 갤러리 접근 권한이 필요합니다.</string>
 </plist>
