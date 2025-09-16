@@ -37,6 +37,144 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
+  // 반응형 헤더 빌더
+  Widget _buildResponsiveHeader() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWideScreen = screenWidth > 600; // 폴드4 펼쳐진 상태 기준
+
+    if (isWideScreen) {
+      // 펼쳐진 상태: Row로 쭉 spaceBetween
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // 현재 선택된 날짜 표시
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '선택된 날짜',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${_selectedDate.year}년 ${_selectedDate.month}월 ${_selectedDate.day}일',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: primaryColor,
+                ),
+              ),
+            ],
+          ),
+          
+          // 버튼들
+          Row(
+            children: [
+              // 새로고침 버튼
+              IconButton(
+                onPressed: () {
+                  _loadDayData(_selectedDate);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('데이터를 새로고침했습니다 ✨'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.refresh, color: primaryColor),
+                tooltip: '데이터 새로고침',
+              ),
+              // 날짜 선택 버튼
+              ElevatedButton(
+                onPressed: _selectDate,
+                child: const Icon(Icons.calendar_today, color: Colors.white),
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: primaryColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    } else {
+      // 접힌 상태: Wrap으로 줄바꿈
+      return Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          // 현재 선택된 날짜 표시
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '선택된 날짜',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${_selectedDate.year}년 ${_selectedDate.month}월 ${_selectedDate.day}일',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: primaryColor,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          
+          // 버튼들
+          Wrap(
+            children: [
+              // 새로고침 버튼
+              IconButton(
+                onPressed: () {
+                  _loadDayData(_selectedDate);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('데이터를 새로고침했습니다 ✨'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.refresh, color: primaryColor),
+                tooltip: '데이터 새로고침',
+              ),
+              // 날짜 선택 버튼
+              ElevatedButton(
+                onPressed: _selectDate,
+                child: const Icon(Icons.calendar_today, color: Colors.white),
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: primaryColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+  }
+
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -75,8 +213,12 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.95,
-        height: MediaQuery.of(context).size.height * 0.8,
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.95,
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+          minWidth: 300,
+          minHeight: 400,
+        ),
         padding: const EdgeInsets.all(20),
         child: SingleChildScrollView(
           child: Column(
@@ -109,71 +251,7 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(15),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // 현재 선택된 날짜 표시
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          '선택된 날짜',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: textColor,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${_selectedDate.year}년 ${_selectedDate.month}월 ${_selectedDate.day}일',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: primaryColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    // 버튼들
-                    Row(
-                      children: [
-                        // 새로고침 버튼
-                        IconButton(
-                          onPressed: () {
-                            _loadDayData(_selectedDate);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('데이터를 새로고침했습니다 ✨'),
-                                duration: Duration(seconds: 1),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.refresh, color: primaryColor),
-                          tooltip: '데이터 새로고침',
-                        ),
-                        
-                        // 날짜 선택 버튼
-                        ElevatedButton.icon(
-                          onPressed: _selectDate,
-                          icon: const Icon(Icons.calendar_today, color: Colors.white),
-                          label: const Text(
-                            '날짜 선택',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryColor,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                child: _buildResponsiveHeader(),
               ),
               const SizedBox(height: 20),
               

@@ -37,21 +37,40 @@ class _DiaryDialogState extends State<DiaryDialog> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: bgColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
-        height: MediaQuery.of(context).size.height * 0.7,
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // 헤더
-            Row(
+  // 반응형 헤더 빌더
+  Widget _buildResponsiveHeader() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWideScreen = screenWidth > 600; // 폴드4 펼쳐진 상태 기준
+
+    if (isWideScreen) {
+      // 펼쳐진 상태: Row로 쭉 spaceBetween
+      return Row(
+        children: [
+          const Icon(Icons.edit_note, color: primaryColor, size: 28),
+          const SizedBox(width: 12),
+          Text(
+            widget.isEditMode ? '일기 수정하기' : '오늘의 일기',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.close, color: Colors.grey),
+          ),
+        ],
+      );
+    } else {
+      // 접힌 상태: Wrap으로 줄바꿈
+      return Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Flexible(
+            child: Row(
               children: [
                 const Icon(Icons.edit_note, color: primaryColor, size: 28),
                 const SizedBox(width: 12),
@@ -62,14 +81,39 @@ class _DiaryDialogState extends State<DiaryDialog> {
                     fontWeight: FontWeight.bold,
                     color: textColor,
                   ),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: Colors.grey),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
+          ),
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.close, color: Colors.grey),
+          ),
+        ],
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: bgColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.9,
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+          minWidth: 300,
+          minHeight: 300,
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            // 헤더
+            _buildResponsiveHeader(),
             const SizedBox(height: 20),
             
             // 날짜 표시

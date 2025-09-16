@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
+import 'dart:io';
 
 class CharacterCustomizationScreen extends StatefulWidget {
   final String animalType; // 'cat' 또는 'dog'
+  final File? petImage; // 선택한 반려동물 사진
   
-  const CharacterCustomizationScreen({super.key, this.animalType = 'dog'});
+  const CharacterCustomizationScreen({
+    super.key, 
+    this.animalType = 'dog',
+    this.petImage,
+  });
 
   @override
   State<CharacterCustomizationScreen> createState() => _CharacterCustomizationScreenState();
@@ -61,16 +67,56 @@ class _CharacterCustomizationScreenState extends State<CharacterCustomizationScr
                 color: cardBgColor,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Center(
-                child: CharacterView(
-                  animalType: widget.animalType,
-                  faceType: selectedFaceType,
-                  faceColor: selectedFaceColor,
-                  bodyIndex: selectedBodyIndex,
-                  emotionIndex: selectedEmotionIndex,
-                  tailIndex: selectedTailIndex,
-                  scaleFactor: 3.0, // 커스터마이징창에서는 3.0배 크기로 더 크게
-                ),
+              child: Stack(
+                children: [
+                  // 선택한 사진 표시 (배경으로)
+                  if (widget.petImage != null)
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.file(
+                          widget.petImage!,
+                          fit: BoxFit.cover,
+                          opacity: const AlwaysStoppedAnimation(0.3), // 반투명하게
+                        ),
+                      ),
+                    ),
+                  
+                  // 천사 캐릭터 (앞쪽에)
+                  Center(
+                    child: CharacterView(
+                      animalType: widget.animalType,
+                      faceType: selectedFaceType,
+                      faceColor: selectedFaceColor,
+                      bodyIndex: selectedBodyIndex,
+                      emotionIndex: selectedEmotionIndex,
+                      tailIndex: selectedTailIndex,
+                      scaleFactor: 3.0, // 커스터마이징창에서는 3.0배 크기로 더 크게
+                    ),
+                  ),
+                  
+                  // 사진 표시 안내 텍스트
+                  if (widget.petImage != null)
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          '📸 원본 사진',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             

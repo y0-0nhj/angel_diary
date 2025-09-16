@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'dart:typed_data'; // Uint8List를 사용하기 위해 필요
 import 'character_view.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'home.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 
 
 // --- 앱 전체에서 사용할 색상 정의 ---
@@ -17,7 +15,6 @@ const Color textColor = Color(0xFF3D3D3D);
 const Color cardBgColor = Colors.white;
 
 
-const String apiKey = "sA98gt2eUbC5QkjrVYujZEna"; // Remove.bg API 키
 
 // 앱의 시작점
 Future<void> main() async {
@@ -359,10 +356,12 @@ class _YesFormScreenState extends State<YesFormScreen> {
   final List<String> _petDescs = ['작고 하얀 복슬강아지', '용감하고 늠름한 친구', '애교많은 개냥이', '직접 입력'];
   String? _selectedPetDesc;
 
-  bool _isProcessing = false;
-  File? _pickedImage; // 사용자가 선택한 원본 이미지 파일
-  Uint8List? _processedImageBytes; // 배경 제거 후 돌려받은 이미지 데이터 (바이트 형태)
-  bool _isLoading = false; // 로딩 중인지 여부
+  File? _pickedImage; // 사용자가 선택한 이미지 파일
+  
+  // 커스터마이징 관련 변수들
+  int _selectedFaceType = 1; // 얼굴 타입 (1-4)
+  int _selectedFaceColor = 1; // 얼굴 색상 (1-6)
+  int _selectedTailIndex = 1; // 꼬리 (1-4)
 
 
 
@@ -374,69 +373,93 @@ class _YesFormScreenState extends State<YesFormScreen> {
     if (pickedFile != null) {
       setState(() {
         _pickedImage = File(pickedFile.path);
-        _processedImageBytes = null; // 새 이미지를 골랐으니 이전 결과는 초기화
       });
     }
   }
 
-   // 2. Remove.bg API를 호출해서 배경을 제거하는 함수
-  Future<void> _removeBackground() async {
-    if (_pickedImage == null) {
-      // 사용자에게 이미지를 먼저 선택하라고 알려줌
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("먼저 이미지를 선택해주세요!")),
-      );
-      return;
-    }
 
-    // 로딩 시작
-    setState(() {
-      _isLoading = true;
-    });
 
-    try {
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse('https://api.remove.bg/v1/removebg'),
-      );
-      
-      // 헤더에 API 키 추가
-      request.headers['X-Api-Key'] = apiKey;
-      
-      // 요청에 이미지 파일 추가
-      request.files.add(
-        await http.MultipartFile.fromPath('image_file', _pickedImage!.path),
-      );
-
-      // API 요청 보내고 응답 받기
-      final response = await request.send();
-
-      if (response.statusCode == 200) {
-        // 성공! 응답받은 이미지 데이터를 변수에 저장
-        final imageBytes = await response.stream.toBytes();
-        setState(() {
-          _processedImageBytes = imageBytes;
-        });
-      } else {
-        // 실패... 에러 메시지 보여주기
-        final error = await response.stream.bytesToString();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("에러 발생: $error")),
-        );
-      }
-    } catch (e) {
-      // 네트워크 에러 등 예외 처리
-       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("오류: $e")),
-      );
-    } finally {
-      // 로딩 종료
-      setState(() {
-        _isLoading = false;
-      });
-    }
+  // 커스터마이징 컨트롤 위젯
+  Widget _buildCustomizationControls() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 얼굴 타입
+        _buildControlSection('얼굴 타입', _selectedFaceType, 4, (value) {
+          setState(() {
+            _selectedFaceType = value;
+          });
+        }),
+        
+        // 얼굴 색상
+        _buildControlSection('얼굴 색상', _selectedFaceColor, 6, (value) {
+          setState(() {
+            _selectedFaceColor = value;
+          });
+        }),
+        
+        // 꼬리
+        _buildControlSection('꼬리', _selectedTailIndex, 4, (value) {
+          setState(() {
+            _selectedTailIndex = value;
+          });
+        }),
+      ],
+    );
   }
-
+  
+  // 개별 컨트롤 섹션 위젯
+  Widget _buildControlSection(String title, int currentValue, int maxValue, Function(int) onChanged) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: List.generate(maxValue, (index) {
+              final value = index + 1;
+              final isSelected = currentValue == value;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onChanged(value),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: isSelected ? primaryColor : Colors.grey[200],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected ? primaryColor : Colors.grey[300]!,
+                        width: 2,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$value',
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : Colors.grey[600],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
 
   // 등록 버튼 함수
   Future<void> _submit() async {
@@ -562,79 +585,101 @@ class _YesFormScreenState extends State<YesFormScreen> {
                 Center(
                   child: Column(
                     children: [
-                      if (_isProcessing)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 40.0),
-                          child: CircularProgressIndicator(),
-                        )
-                      else if (_processedImageBytes != null)
-                        Column(
-                          children: [
-                            // 원본 이미지
-                            Column(
-                              children: [
-                                const Text("원본 이미지", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
-                                const SizedBox(height: 8),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12.0),
-                                  child: Image.file(File(_pickedImage!.path), height: 200, fit: BoxFit.cover),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            // 배경 제거된 이미지
-                            Column(
-                              children: [
-                                const Text("✨ 천사로 변신 완료! ✨", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 16)),
-                                const SizedBox(height: 8),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12.0),
-                                  child: Image.memory(_processedImageBytes!, height: 200, fit: BoxFit.cover),
-                                ),
-                              ],
-                            ),
-                          ],
-                        )
-                      else if (_pickedImage != null)
+                      if (_pickedImage != null)
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12.0),
                           child: Image.file(File(_pickedImage!.path), height: 200, fit: BoxFit.cover),
+                        )
+                      else
+                        Container(
+                          height: 200,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey[300]!),
+                            borderRadius: BorderRadius.circular(12.0),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_photo_alternate, size: 50, color: Colors.grey[400]),
+                              const SizedBox(height: 10),
+                              Text('사진을 선택해주세요', style: TextStyle(color: Colors.grey[600])),
+                            ],
+                          ),
                         ),
                       
+                      const SizedBox(height: 20),
                       
-
                       // 이미지 선택 버튼
-                      Padding(
-                        padding: const EdgeInsets.only(top: 15.0),
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white, foregroundColor: primaryColor,
-                            side: BorderSide(color: primaryColor),
-                            minimumSize: const Size(double.infinity, 70),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
-                          ),
-                          onPressed: _pickImage,
-                          child: Text(_pickedImage == null ? "이미지 선택" : "다른 이미지 선택", style: TextStyle(color: primaryColor)),
+                      ElevatedButton.icon(
+                        onPressed: _pickImage,
+                        icon: const Icon(Icons.add_photo_alternate),
+                        label: Text(_pickedImage == null ? "이미지 선택" : "다른 이미지 선택"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                         ),
                       ),
-                      
-                      // 배경 제거 버튼
-                      if (_pickedImage != null && _processedImageBytes == null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 10.0),
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryColor, foregroundColor: Colors.white,
-                              minimumSize: const Size(double.infinity, 50),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
-                            ),
-                            onPressed: _isProcessing ? null : _removeBackground,
-                            child: Text(_isProcessing ? "배경 제거 중..." : "배경 제거하기", style: const TextStyle(color: Colors.white)),
-                          ),
-                        ),
                     ],
                   ),
                 ),
+                
+                // 이미지가 선택된 경우에만 커스터마이징 뷰 표시
+                if (_pickedImage != null) ...[
+                  const SizedBox(height: 30),
+                  
+                  // 천사 미리보기 섹션
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '🎨 천사 캐릭터 커스터마이징',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: textColor,
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        
+                        // 천사 미리보기 영역
+                        Container(
+                          height: 300,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: cardBgColor,
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: Stack(
+                            children: [
+                              // 천사 캐릭터 (앞쪽에)
+                              Center(
+                                child: CharacterView(
+                                  animalType: _selectedPetType == '고양이' ? 'cat' : 'dog',
+                                  faceType: _selectedFaceType,
+                                  faceColor: _selectedFaceColor,
+                                  bodyIndex: 1, // 기본값 고정
+                                  emotionIndex: 1, // 기본값 고정
+                                  tailIndex: _selectedTailIndex,
+                                  scaleFactor: 1, // 4분의 1 크기 (2.0 / 4 = 0.5)
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 20),
+                        
+                        // 커스터마이징 컨트롤
+                        _buildCustomizationControls(),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 30),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -642,8 +687,8 @@ class _YesFormScreenState extends State<YesFormScreen> {
                     minimumSize: const Size(double.infinity, 50),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
                   ),
-                  onPressed: _isProcessing ? null : _submit,
-                  child: Text(_isProcessing ? "천사 등록 중..." : "천사 등록하기"),
+                  onPressed: _submit,
+                  child: const Text("천사 등록하기"),
                 ),
               ],
             ),
@@ -754,13 +799,88 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
     super.dispose();
   }
 
+  // 반응형 헤더 빌더
+  Widget _buildResponsiveHeader() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWideScreen = screenWidth > 600; // 폴드4 펼쳐진 상태 기준
+
+    if (isWideScreen) {
+      // 펼쳐진 상태: Row로 쭉 spaceBetween
+      return Row(
+        children: [
+          if (_currentStep > 0)
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  _currentStep--;
+                });
+              },
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+            ),
+          Expanded(
+            child: Text(
+              _currentStep == 0 ? '천사 정보 입력' : '천사 커스터마이징',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.close, color: Colors.white),
+          ),
+        ],
+      );
+    } else {
+      // 접힌 상태: Wrap으로 줄바꿈
+      return Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          if (_currentStep > 0)
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  _currentStep--;
+                });
+              },
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+            ),
+          Flexible(
+            child: Text(
+              _currentStep == 0 ? '천사 정보 입력' : '천사 커스터마이징',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.close, color: Colors.white),
+          ),
+        ],
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
-        height: MediaQuery.of(context).size.height * 0.85,
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.9,
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+          minWidth: 300,
+          minHeight: 400,
+        ),
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(20),
@@ -777,34 +897,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
                   topRight: Radius.circular(20),
                 ),
               ),
-              child: Row(
-                children: [
-                  if (_currentStep > 0)
-                    IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _currentStep--;
-                        });
-                      },
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    ),
-                  Expanded(
-                    child: Text(
-                      _currentStep == 0 ? '천사 정보 입력' : '천사 커스터마이징',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Colors.white),
-                  ),
-                ],
-              ),
+              child: _buildResponsiveHeader(),
             ),
             
             // 내용 영역

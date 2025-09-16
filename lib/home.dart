@@ -11,6 +11,27 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'diary_dialog.dart';
 import 'simple_calendar_dialog.dart';
 
+// 말풍선 꼬리를 그리는 CustomPainter
+class SpeechBubbleTailPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    path.moveTo(0, size.height);
+    path.lineTo(size.width * 0.3, size.height);
+    path.lineTo(size.width * 0.5, 0);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
 
 
 // --- 천사 데이터 모델 ---
@@ -241,7 +262,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   int _selectedTabIndex = 0; // 0: 소망, 1: 목표, 2: 감사
   int _currentEmotionIndex = 1; // 현재 표정 인덱스
   DateTime _selectedDate = DateTime.now(); // 선택된 날짜
@@ -255,8 +276,38 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
   int _currentMusicIndex = 0;
   
+  
   // 알림 관련
   final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
+  
+  // 애니메이션 관련
+  late AnimationController _heartAnimationController;
+  late Animation<double> _heartScaleAnimation;
+  late Animation<double> _heartOpacityAnimation;
+  
+  // 응원의 말 관련
+  bool _showEncouragement = false;
+  String _currentEncouragementMessage = '';
+  
+  // 시간대별 배경 이미지
+  String _getBackgroundImage() {
+    final now = DateTime.now();
+    final hour = now.hour;
+    
+    if (hour >= 5 && hour < 10) {
+      // 새벽 ~ 아침 (05:00 ~ 10:00)
+      return 'assets/images/backgrounds/희망의일출.png';
+    } else if (hour >= 10 && hour < 17) {
+      // 낮 (10:00 ~ 17:00)
+      return 'assets/images/backgrounds/평온한하늘.png';
+    } else if (hour >= 17 && hour < 20) {
+      // 저녁 (17:00 ~ 20:00)
+      return 'assets/images/backgrounds/아름다운노을.png';
+    } else {
+      // 밤 (20:00 ~ 05:00)
+      return 'assets/images/backgrounds/고요한별밤.png';
+    }
+  }
   
   // 성경구절 및 조언 메시지 데이터
   final List<Map<String, String>> _messages = [
@@ -271,22 +322,74 @@ class _HomeScreenState extends State<HomeScreen> {
     {'text': '오늘도 최선을 다하세요', 'source': '일상의 지혜'},
     {'text': '하나님의 사랑이 당신을 감싸고 있습니다', 'source': '일상의 지혜'},
   ];
+
+  // 응원의 말 목록
+  final List<String> _encouragementMessages = [
+    '정말 잘하고 있어요! 💪',
+    '훌륭해요! 계속 이렇게 해요! ✨',
+    '오늘도 멋진 하루를 보내고 있네요! 🌟',
+    '정말 대단해요! 자랑스러워요! 👏',
+    '완벽해요! 정말 잘했어요! 🎉',
+    '오늘도 최고의 하루였어요! 🌈',
+    '정말 멋진 선택이에요! 💖',
+    '훌륭한 하루를 보내고 있네요! 🌸',
+    '정말 자랑스러워요! 잘했어요! 🌺',
+    '오늘도 멋진 하루였어요! 🌻',
+    '정말 대단해요! 계속 이렇게 해요! 🌷',
+    '완벽한 하루를 보내고 있네요! 🌹',
+  ];
   
   @override
   void initState() {
     super.initState();
+    _initializeHeartAnimation();
     _initializeApp();
+  }
+  
+  // 하트 애니메이션 초기화
+  void _initializeHeartAnimation() {
+    _heartAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    
+    _heartScaleAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _heartAnimationController,
+      curve: const Interval(0.0, 0.3, curve: Curves.elasticOut),
+    ));
+    
+    _heartOpacityAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _heartAnimationController,
+      curve: const Interval(0.7, 1.0, curve: Curves.easeOut),
+    ));
+    
+    _heartAnimationController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        setState(() {
+          _showEncouragement = false;
+        });
+        _heartAnimationController.reset();
+      }
+    });
   }
 
   // 앱 초기화
   Future<void> _initializeApp() async {
-    _generateRandomGoals();
     _initializeNotifications();
     _configureAudioPlayer();
     _scheduleDailyWishNotification(); // 매일 11시 47분 소망 설정 알림 스케줄링
     
     // 저장된 데이터 로드
     await _loadStoredData();
+    
+    // 일일 데이터 확인 및 관리
+    await _checkAndManageDailyData();
   }
 
   // 저장된 데이터 로드
@@ -297,7 +400,62 @@ class _HomeScreenState extends State<HomeScreen> {
     // 캘린더 데이터 로드
     await CalendarDataManager.loadCalendarFromStorage();
     
+    // 일일 데이터 날짜 로드
+    final prefs = await SharedPreferences.getInstance();
+    _lastDataDate = prefs.getString('last_data_date');
+    
     // UI 업데이트
+    if (mounted) {
+      setState(() {});
+    }
+  }
+  
+  // 일일 데이터 확인 및 관리
+  Future<void> _checkAndManageDailyData() async {
+    final today = _getDateString(DateTime.now());
+    final prefs = await SharedPreferences.getInstance();
+    
+    // 오늘 날짜와 마지막 데이터 날짜가 다르면 새로운 데이터 생성
+    if (_lastDataDate != today) {
+      // 새로운 목표와 감사 생성
+      _generateRandomGoals();
+      _generateRandomGratitudes();
+      
+      // 오늘 날짜로 업데이트
+      _lastDataDate = today;
+      await prefs.setString('last_data_date', today);
+      
+      // 목표와 감사 데이터 저장
+      await _saveDailyData();
+    } else {
+      // 같은 날이면 저장된 데이터 로드
+      await _loadDailyData();
+    }
+  }
+  
+  // 일일 데이터 저장
+  Future<void> _saveDailyData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('daily_goals', jsonEncode(_goals));
+    await prefs.setString('daily_gratitudes', jsonEncode(_gratitudes));
+  }
+  
+  // 일일 데이터 로드
+  Future<void> _loadDailyData() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    final goalsJson = prefs.getString('daily_goals');
+    if (goalsJson != null) {
+      final List<dynamic> goalsList = jsonDecode(goalsJson);
+      _goals = goalsList.map((item) => Map<String, dynamic>.from(item)).toList();
+    }
+    
+    final gratitudesJson = prefs.getString('daily_gratitudes');
+    if (gratitudesJson != null) {
+      final List<dynamic> gratitudesList = jsonDecode(gratitudesJson);
+      _gratitudes = gratitudesList.map((item) => Map<String, dynamic>.from(item)).toList();
+    }
+    
     if (mounted) {
       setState(() {});
     }
@@ -306,6 +464,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _audioPlayer.dispose();
+    _heartAnimationController.dispose();
     super.dispose();
   }
 
@@ -313,6 +472,23 @@ class _HomeScreenState extends State<HomeScreen> {
   void _generateRandomGoals() {
     final random = Random();
     List<Map<String, dynamic>> newGoals = [];
+    
+    // test 목표들 추가
+    newGoals.add({
+      'text': 'test1',
+      'completed': false,
+      'category': 'test',
+    });
+    newGoals.add({
+      'text': 'test2',
+      'completed': false,
+      'category': 'test',
+    });
+    newGoals.add({
+      'text': 'test3',
+      'completed': false,
+      'category': 'test',
+    });
     
     // 각 카테고리에서 1개씩 랜덤 선택
     _goalCategories.forEach((category, items) {
@@ -324,7 +500,70 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     });
     
-    _goals = newGoals;
+    setState(() {
+      _goals = newGoals;
+    });
+    
+    // 수동 새로고침일 때만 피드백 표시
+    if (_lastDataDate == _getDateString(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('목표가 새로고침되었습니다! ✨'),
+          backgroundColor: Colors.blue[600],
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+  
+  // 랜덤 감사 생성
+  void _generateRandomGratitudes() {
+    final random = Random();
+    final gratitudeOptions = [
+      '가족과 함께할 수 있어서',
+      '맛있는 음식을 먹을 수 있어서',
+      '건강한 몸을 가지고 있어서',
+      '좋은 날씨에 감사해서',
+      '친구들과의 만남에 감사해서서',
+      '새로운 하루를 시작할 수 있어서',
+      '사랑하는 사람들이 있어서',
+      '평화로운 마음으로 잠들 수 있어서',
+      '작은 기쁨들을 발견할 수 있어서',
+      '하나님의 사랑을 느낄 수 있어서',
+    ];
+
+    List<Map<String, dynamic>> newGratitudes = [];
+
+    // 3개 랜덤 선택 (중복 없이)
+    List<String> selectedGratitudes = [];
+    while (selectedGratitudes.length < 3) {
+      final selected = gratitudeOptions[random.nextInt(gratitudeOptions.length)];
+      if (!selectedGratitudes.contains(selected)) {
+        selectedGratitudes.add(selected);
+      }
+    }
+
+    for (String gratitude in selectedGratitudes) {
+      newGratitudes.add({
+        'text': gratitude,
+        'completed': false,
+      });
+    }
+
+    setState(() {
+      _gratitudes = newGratitudes;
+    });
+    
+    // 수동 새로고침일 때만 피드백 표시
+    if (_lastDataDate == _getDateString(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('감사가 새로고침되었습니다! ✨'),
+          backgroundColor: Colors.yellow[600],
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   
@@ -898,6 +1137,9 @@ class _HomeScreenState extends State<HomeScreen> {
     {'text': '하늘 한번 올려다보고 계절의 변화 느껴보기', 'completed': false},
     {'text': '가장 좋아하는 성경 구절이나 명언 한 줄 필사하기', 'completed': false},
   ];
+  
+  // 일일 데이터 관리
+  String? _lastDataDate;
 
   @override
   Widget build(BuildContext context) {
@@ -911,23 +1153,23 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 // 상단 음악 버튼
                 _buildMusicButton(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 
                 // 상단 말풍선 영역
                 _buildSpeechBubble(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 
                 // 천사 일러스트 영역
                 _buildAngelIllustration(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 
                 // 날짜와 기온 정보
                 _buildDateWeatherInfo(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 
                 // 탭과 목록 영역
                 _buildTabSection(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 
                 // 하단 섹션 (일기 쓰기 버튼 + 캘린더 아이콘)
                 _buildBottomSection(),
@@ -948,7 +1190,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _isPlaying ? Colors.pink[100] : Colors.grey[100],
+              color: _isPlaying ? Colors.pink[50] : Colors.grey[100],
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -956,7 +1198,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Icon(
                   _isPlaying ? Icons.music_note : Icons.music_off,
-                  color: _isPlaying ? Colors.pink[600] : Colors.grey[600],
+                  color: _isPlaying ? Colors.pinkAccent : Colors.grey[600],
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -965,7 +1207,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: _isPlaying ? Colors.pink[600] : Colors.grey[600],
+                    color: _isPlaying ? Colors.pinkAccent : Colors.grey[600],
                   ),
                 ),
               ],
@@ -1031,6 +1273,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final angelData = AngelDataManager.currentAngel;
     final angelName = angelData?.name ?? '천사';
     
+    // 고정된 메시지 사용 (첫 번째 메시지)
+    final fixedMessage = _messages[0];
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1042,14 +1287,8 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: Text(
               angelData != null 
-                ? () {
-                    final randomMessage = _messages[Random().nextInt(_messages.length)];
-                    return '$angelName와(과) 함께하는 따뜻한 하루가 되길 바라요.\n${randomMessage['text']}\n- ${randomMessage['source']}';
-                  }()
-                : () {
-                    final randomMessage = _messages[Random().nextInt(_messages.length)];
-                    return '당신의 마음속 사랑은\n시간과 공간을 넘어 전해진다.\n${randomMessage['text']}\n- ${randomMessage['source']}';
-                  }()
+                ? '$angelName와(과) 함께하는 따뜻한 하루가 되길 바라요.\n${fixedMessage['text']}\n- ${fixedMessage['source']}'
+                : '당신의 마음속 사랑은\n시간과 공간을 넘어 전해진다.\n${fixedMessage['text']}\n- ${fixedMessage['source']}'
               ,
               style: const TextStyle(
                 fontSize: 18,
@@ -1067,113 +1306,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAngelIllustration() {
     return Container(
-      height: 300,
+      height: 350,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Stack(
         children: [
-          // 배경 일러스트 (하늘, 구름, 풀밭)
+          // 시간대별 배경 (맨 아래 레이어)
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.blue[100]!,
-                    Colors.green[100]!,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          
-          // 구름
-          Positioned(
-            top: 20,
-            left: 20,
-            child: Container(
-              width: 60,
-              height: 30,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(15),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 30,
-            right: 30,
-            child: Container(
-              width: 50,
-              height: 25,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-          
-          // 태양
-          Positioned(
-            top: 10,
-            right: 10,
-            child: Container(
-              decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: AssetImage('assets/images/illustrations/sun.png'),
-                  fit: BoxFit.none,
+                  image: AssetImage(_getBackgroundImage()),
+                  fit: BoxFit.cover,
                 ),
               ),
             ),
           ),
           
-          
-          // 풀밭과 꽃들
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
+          // 투명한 천사 이미지 (시간대별 배경 위에 쌓이는 레이어)
+          Positioned.fill(
             child: Container(
-              height: 80,
               decoration: BoxDecoration(
-                color: Colors.green[200],
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
+                borderRadius: BorderRadius.circular(20),
+                image: const DecorationImage(
+                  image: AssetImage('assets/images/backgrounds/crt_bg.png'),
+                  fit: BoxFit.cover,
                 ),
-              ),
-              child: Stack(
-                children: [
-                  // 꽃들
-                  Positioned(
-                    bottom: 10,
-                    left: 30,
-                    child: Container(
-                      width: 15,
-                      height: 15,
-                      decoration: const BoxDecoration(
-                        color: Colors.yellow,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 10,
-                    right: 40,
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ),
           ),
@@ -1182,7 +1343,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Positioned(
             left: 0,
             right: 0,
-            top: 120, // 천사를 아래로 이동 (기존 중앙에서 20px 아래)
+            top: 140, // 천사를 더 아래로 이동
             child: Center(
             child: SizedBox(
                 width: 100, // 200 * 0.5 = 100
@@ -1196,6 +1357,50 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          
+          // 응원 문구 (하트 애니메이션 위치에 표시)
+          if (_showEncouragement)
+            Positioned(
+              left: 20, // 오른쪽으로 이동
+              right: 0,
+              top: 100, // 천사 위쪽에 배치
+              child: Center(
+                child: AnimatedBuilder(
+                  animation: _heartAnimationController,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: _heartScaleAnimation.value,
+                      child: Opacity(
+                        opacity: _heartOpacityAnimation.value,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            _currentEncouragementMessage,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
           
           // 우체통 (천사 오른쪽에 배치)
           Positioned(
@@ -1308,7 +1513,7 @@ class _HomeScreenState extends State<HomeScreen> {
           
           // 탭 버튼들
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.grey[100],
               borderRadius: BorderRadius.circular(15),
@@ -1324,7 +1529,7 @@ class _HomeScreenState extends State<HomeScreen> {
           
           // 내용 영역
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1407,7 +1612,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     final isCompleted = item['completed'] as bool;
                   
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.only(bottom: 0),
                     child: Row(
                       children: [
                         // 번호 (앞에 유지)
@@ -1801,10 +2006,60 @@ class _HomeScreenState extends State<HomeScreen> {
   void _toggleItem(int index) {
     setState(() {
       final currentList = _getCurrentList();
-      currentList[index]['completed'] = !currentList[index]['completed'];
+      final wasCompleted = currentList[index]['completed'] as bool;
+      currentList[index]['completed'] = !wasCompleted;
       
       // 선택된 날짜의 데이터를 캘린더에 저장
       _saveToCalendar();
+      
+      // 일일 데이터 저장 (목표나 감사 탭에서만)
+      if (_selectedTabIndex == 1 || _selectedTabIndex == 2) {
+        _saveDailyData();
+        _showHeartAnimation(!wasCompleted); // 새로운 체크 상태 전달
+      }
+    });
+  }
+  
+  // 응원 문구 애니메이션 시작
+  void _showHeartAnimation(bool isCompleted) {
+    _showEncouragementMessage(isCompleted);
+    _heartAnimationController.forward();
+  }
+  
+  
+  // 응원의 말 표시
+  void _showEncouragementMessage(bool isCompleted) {
+    final random = Random();
+    
+    if (isCompleted) {
+      // 체크했을 때의 응원 문구
+      _currentEncouragementMessage = _encouragementMessages[random.nextInt(_encouragementMessages.length)];
+    } else {
+      // 체크 해제했을 때의 응원 문구
+      final uncheckMessages = [
+        '괜찮아요! 다시 도전해보세요! 💪',
+        '아직 시간이 있어요! 천천히 해보세요! 🌱',
+        '다음에 더 잘할 수 있을 거예요! 🌟',
+        '조금씩 천천히 해보세요! 🌸',
+        '포기하지 마세요! 응원해요! 🌺',
+        '다시 한 번 도전해보세요! 🌻',
+        '천천히 해도 괜찮아요! 🌷',
+        '다음 기회에 더 잘할 거예요! 🌹',
+      ];
+      _currentEncouragementMessage = uncheckMessages[random.nextInt(uncheckMessages.length)];
+    }
+    
+    setState(() {
+      _showEncouragement = true;
+    });
+    
+    // 3초 후 응원의 말 숨기기
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _showEncouragement = false;
+        });
+      }
     });
   }
 
@@ -1991,6 +2246,7 @@ class _LetterWritingDialogState extends State<LetterWritingDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -2327,6 +2583,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -2857,6 +3114,7 @@ class _DailyWishDialogState extends State<DailyWishDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -3055,6 +3313,7 @@ class _WishDialogState extends State<WishDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -3083,7 +3342,7 @@ class _WishDialogState extends State<WishDialog> {
                         ),
                       ),
                       Text(
-                        '현재 ${widget.currentCount}/5개',
+                        '현재 ${widget.currentCount}/3개',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],
@@ -3221,6 +3480,7 @@ class _GoalDialogState extends State<GoalDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -3249,7 +3509,7 @@ class _GoalDialogState extends State<GoalDialog> {
                         ),
                       ),
                       Text(
-                        '현재 ${widget.currentCount}/5개',
+                        '현재 ${widget.currentCount}/3개',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],
@@ -3387,6 +3647,7 @@ class _GratitudeDialogState extends State<GratitudeDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -3415,7 +3676,7 @@ class _GratitudeDialogState extends State<GratitudeDialog> {
                         ),
                       ),
                       Text(
-                        '현재 ${widget.currentCount}/5개',
+                        '현재 ${widget.currentCount}/3개',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],
@@ -3613,6 +3874,7 @@ class _EditDialogState extends State<EditDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),

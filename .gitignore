@@ -100,9 +100,9 @@ web/
 **/lib/firebase_options.dart
 
 # Environment files
-.env
-.env.local
-.env.production
+ .env
+ .env.local
+ .env.production
 
 # Custom additions for angel_diary
 # Add any project-specific files you want to ignore
