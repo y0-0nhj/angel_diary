@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'dart:convert';
 import 'character_view.dart';
-import 'main.dart' show bgColor, textColor, primaryColor;
+import 'main.dart' show bgColor, textColor, primaryColor, AngelDiaryApp;
 import 'package:table_calendar/table_calendar.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -10,6 +10,8 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'diary_dialog.dart';
 import 'simple_calendar_dialog.dart';
+import 'generated/l10n/app_localizations.dart';
+import 'language_manager.dart';
 
 // 말풍선 꼬리를 그리는 CustomPainter
 class SpeechBubbleTailPainter extends CustomPainter {
@@ -714,49 +716,83 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // 매일 오전 11시 47분에 소망 설정 알림 스케줄링
   Future<void> _scheduleDailyWishNotification() async {
-    // 기존 알림 취소
-    await _notifications.cancel(1);
-    
-    // 오늘 오전 11시 47분 시간 설정
-    final now = DateTime.now();
-    var scheduledDate = DateTime(now.year, now.month, now.day, 11, 47);
-    
-    // 이미 지난 시간이면 내일로 설정
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    try {
+      // 기존 알림 취소
+      await _notifications.cancel(1);
+      
+      // 오늘 오전 11시 47분 시간 설정
+      final now = DateTime.now();
+      var scheduledDate = DateTime(now.year, now.month, now.day, 11, 47);
+      
+      // 이미 지난 시간이면 내일로 설정
+      if (scheduledDate.isBefore(now)) {
+        scheduledDate = scheduledDate.add(const Duration(days: 1));
+      }
+      
+      // 타임존 설정
+      final location = tz.getLocation('Asia/Seoul');
+      final tzScheduledDate = tz.TZDateTime.from(scheduledDate, location);
+      
+      // 알림 스케줄링
+      await _notifications.zonedSchedule(
+        1, // 알림 ID
+        '소망 설정 시간이에요! 🌟',
+        '오늘의 소망을 설정해보세요',
+        tzScheduledDate,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'daily_wish_channel',
+            '일일 소망 알림',
+            channelDescription: '매일 소망을 설정하도록 알려주는 알림',
+            importance: Importance.high,
+            priority: Priority.high,
+            icon: '@mipmap/ic_launcher',
+          ),
+          iOS: DarwinNotificationDetails(
+            sound: 'default',
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time, // 매일 같은 시간에 반복
+        payload: 'daily_wish',
+      );
+    } catch (e) {
+      // 정확한 알림 권한이 없거나 다른 에러가 발생한 경우 일반 알림으로 대체
+      print('정확한 알림 스케줄링 실패, 일반 알림으로 대체: $e');
+      try {
+        await _notifications.zonedSchedule(
+          1,
+          '소망 설정 시간이에요! 🌟',
+          '오늘의 소망을 설정해보세요',
+          tz.TZDateTime.now(tz.getLocation('Asia/Seoul')).add(const Duration(minutes: 1)),
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'daily_wish_channel',
+              '일일 소망 알림',
+              channelDescription: '매일 소망을 설정하도록 알려주는 알림',
+              importance: Importance.high,
+              priority: Priority.high,
+              icon: '@mipmap/ic_launcher',
+            ),
+            iOS: DarwinNotificationDetails(
+              sound: 'default',
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
+            ),
+          ),
+          androidScheduleMode: AndroidScheduleMode.inexact,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+          payload: 'daily_wish',
+        );
+      } catch (e2) {
+        print('일반 알림 스케줄링도 실패: $e2');
+      }
     }
-    
-    // 타임존 설정
-    final location = tz.getLocation('Asia/Seoul');
-    final tzScheduledDate = tz.TZDateTime.from(scheduledDate, location);
-    
-    // 알림 스케줄링
-    await _notifications.zonedSchedule(
-      1, // 알림 ID
-      '소망 설정 시간이에요! 🌟',
-      '오늘의 소망을 설정해보세요',
-      tzScheduledDate,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'daily_wish_channel',
-          '일일 소망 알림',
-          channelDescription: '매일 소망을 설정하도록 알려주는 알림',
-          importance: Importance.high,
-          priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
-        ),
-        iOS: DarwinNotificationDetails(
-          sound: 'default',
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time, // 매일 같은 시간에 반복
-      payload: 'daily_wish',
-    );
   }
 
   // 알림 탭 처리
@@ -795,6 +831,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        final l10n = AppLocalizations.of(context)!;
         return Dialog(
           backgroundColor: bgColor,
           shape: RoundedRectangleBorder(
@@ -811,9 +848,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   children: [
                     const Icon(Icons.settings, color: Colors.blue, size: 28),
                     const SizedBox(width: 12),
-                    const Text(
-                      '설정',
-                      style: TextStyle(
+                    Text(
+                      l10n.settings,
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: textColor,
@@ -827,29 +864,106 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ],
                 ),
                 const SizedBox(height: 20),
-                _buildSettingsItem(Icons.music_note, '음악 설정', () {
+                _buildSettingsItem(Icons.music_note, l10n.musicSettings, () {
                   Navigator.of(context).pop();
                   _showMusicSettingsDialog();
                 }),
-                _buildSettingsItem(Icons.notifications, '알림 설정', () {
+                _buildSettingsItem(Icons.language, l10n.languageSelection, () {
+                  Navigator.of(context).pop();
+                  _showLanguageSelectionDialog(context);
+                }),
+                _buildSettingsItem(Icons.notifications, l10n.notificationSettings, () {
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('알림 설정 기능 준비 중입니다')),
+                    SnackBar(content: Text('${l10n.notificationSettings} 기능 준비 중입니다')),
                   );
                 }),
-                _buildSettingsItem(Icons.palette, '테마 설정', () {
+                _buildSettingsItem(Icons.palette, l10n.themeSettings, () {
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('테마 설정 기능 준비 중입니다')),
+                    SnackBar(content: Text('${l10n.themeSettings} 기능 준비 중입니다')),
                   );
                 }),
-                _buildSettingsItem(Icons.help, '도움말', () {
+                _buildSettingsItem(Icons.help, l10n.help, () {
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('도움말 기능 준비 중입니다')),
+                    SnackBar(content: Text('${l10n.help} 기능 준비 중입니다')),
                   );
                 }),
               ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // 언어 선택 다이얼로그 표시
+  void _showLanguageSelectionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final l10n = AppLocalizations.of(context)!;
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.8,
+              maxHeight: MediaQuery.of(context).size.height * 0.6,
+              minWidth: 300,
+              minHeight: 200,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(30.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l10n.languageSelection,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  ...LanguageManager.supportedLocales.map((locale) {
+                    final isSelected = LanguageManager.currentLocale.languageCode == locale.languageCode;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 15),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isSelected ? primaryColor : Colors.grey[200],
+                          foregroundColor: isSelected ? Colors.white : textColor,
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                        onPressed: () async {
+                          await LanguageManager.setLanguage(locale);
+                          Navigator.of(context).pop();
+                          // 앱 전체 재시작을 위해 AngelDiaryApp으로 이동
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                              builder: (context) => const AngelDiaryApp(),
+                            ),
+                            (route) => false,
+                          );
+                        },
+                        child: Text(
+                          LanguageManager.getLanguageName(locale),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
             ),
           ),
         );

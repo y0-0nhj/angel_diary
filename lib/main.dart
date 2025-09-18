@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'generated/l10n/app_localizations.dart';
 import 'character_view.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'home.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'language_manager.dart';
+import 'auth/email_signup.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao_user;
 
 // --- 앱 전체에서 사용할 색상 정의 ---
 const Color bgColor = Color(0xFFF8F5EF);
@@ -18,8 +26,26 @@ const Color cardBgColor = Colors.white;
 
 // 앱의 시작점
 Future<void> main() async {
-  
+  // Flutter 바인딩을 먼저 초기화
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Firebase 초기화
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // supabase 초기화
+  await Supabase.initialize(
+    url: 'https://rxahdcgfmmmohpojvtge.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4YWhkY2dmbW1tb2hwb2p2dGdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1OTExNDMsImV4cCI6MjA2OTE2NzE0M30.94zJ7ElfjD78d35fEhO4x9ROyH6mcA8u6qX6K5i1fAg',
+  );
+  
+  // 카카오톡 초기화
+  KakaoSdk.init(nativeAppKey: '158d3305078dd3af1db44ecee1bb68a2'); 
+
+
+  // 언어 설정 로드
+  await LanguageManager.loadLanguage();
   
   // 타임존 초기화
   tz.initializeTimeZones();
@@ -43,6 +69,7 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
     super.initState();
     _checkAngelStatus();
   }
+
 
   // 천사 등록 여부 확인
   Future<void> _checkAngelStatus() async {
@@ -68,6 +95,14 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
     return MaterialApp(
       title: '천사일기',
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: LanguageManager.supportedLocales,
+      locale: LanguageManager.currentLocale,
       theme: ThemeData(
         scaffoldBackgroundColor: bgColor,
         primaryColor: primaryColor,
@@ -219,9 +254,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       case OnboardingStep.question:
         return QuestionScreen(onYesPressed: _showYesForm, onNoPressed: _showNoForm);
       case OnboardingStep.yesForm:
-        return YesFormScreen();
+        return const YesFormScreen();
       case OnboardingStep.noForm:
-        return NoFormScreen();
+        return const NoFormScreen();
     }
   }
 }
@@ -236,6 +271,8 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
+    
     return Container(
       
       key: const ValueKey('splash'),
@@ -244,13 +281,13 @@ class SplashScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           Text(
-            "오늘의 약속 하나,\n너에게 닿는 발걸음 하나,\n세상 가장 따뜻한 약속",
+            l10n.splashMessage1,
             style: textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
           Column(
             children: [
-               Text("천사일기", style: textTheme.displayLarge),
+               Text(l10n.appTitle, style: textTheme.displayLarge),
                const SizedBox(height: 40),
                Image.asset('assets/images/illustrations/angel_dove.png', width: 250), // 샘플 비둘기 이미지
             ],
@@ -258,7 +295,7 @@ class SplashScreen extends StatelessWidget {
           Column(
             children: [
                Text(
-                "가장 먼 미래는, 가장 소중한 지금으로 만들어집니다.\n마음 속 소망을 눈앞의 현실로 만들어드립니다.",
+                l10n.splashMessage2,
                 style: textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
@@ -271,7 +308,7 @@ class SplashScreen extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                 ),
                 onPressed: onStartPressed,
-                child: const Text("시작하기", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: Text(l10n.startButton, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
             ],
           )
@@ -291,6 +328,8 @@ class QuestionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
+    
     return Center(
       key: const ValueKey('question'),
       child: Padding(
@@ -305,8 +344,8 @@ class QuestionScreen extends StatelessWidget {
               children: [
                 //Image.asset('assets/images/illustrations/angel_question.png', width: 80),
                 const SizedBox(height: 20),
-                Text("반려동물과 함께 추억을\n 쌓은 적이 있으신가요?", style: textTheme.headlineSmall, textAlign: TextAlign.center),
-                Text("(강아지, 고양이)", style: textTheme.bodyMedium),
+                Text(l10n.questionTitle, style: textTheme.headlineSmall, textAlign: TextAlign.center),
+                Text(l10n.questionSubtitle, style: textTheme.bodyMedium),
                 const SizedBox(height: 30),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -315,7 +354,7 @@ class QuestionScreen extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
                   ),
                   onPressed: onYesPressed,
-                  child: const Text("예", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: Text(l10n.yesButton, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(height: 10),
                 ElevatedButton(
@@ -325,7 +364,7 @@ class QuestionScreen extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
                   ),
                   onPressed: onNoPressed,
-                  child: const Text("아니오", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: Text(l10n.noButton, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -470,17 +509,24 @@ class _YesFormScreenState extends State<YesFormScreen> {
       return;
     }
     
-    // 천사 등록 완료
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('✨ 천사 등록이 완료되었어요!')),
+    // 천사 데이터 생성
+    final angelData = AngelData(
+      name: _nameController.text,
+      feature: _selectedPetDesc == '직접 입력' ? _directInputController.text : _selectedPetDesc ?? '',
+      animalType: _selectedPetType == '고양이' ? 'cat' : 'dog',
+      faceType: _selectedFaceType,
+      faceColor: _selectedFaceColor,
+      bodyIndex: 1,
+      emotionIndex: 1,
+      tailIndex: _selectedTailIndex,
+      createdAt: DateTime.now(),
     );
     
-    // 홈 화면으로 이동
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => const HomeScreen(),
-      ),
-    );
+    // 전역 천사 데이터에 저장 (SharedPreferences에 자동 저장)
+    await AngelDataManager.setCurrentAngel(angelData);
+    
+    // 보관하기 확인 다이얼로그 표시
+    _showStorageConfirmationDialog(context, angelData);
   }
 
 
@@ -1187,20 +1233,515 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
     // 팝업 닫기
     Navigator.of(context).pop();
     
-    // 홈 화면으로 이동
+    // 보관하기 확인 다이얼로그 표시
+    _showStorageConfirmationDialog(context, angelData);
+  }
+}
+
+// 보관하기 확인 다이얼로그
+class StorageConfirmationDialog extends StatelessWidget {
+  final AngelData angelData;
+  
+  const StorageConfirmationDialog({super.key, required this.angelData});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.9,
+          maxHeight: MediaQuery.of(context).size.height * 0.6,
+          minWidth: 300,
+          minHeight: 300,
+        ),
+        decoration: BoxDecoration(
+          color: cardBgColor,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(30.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 축하 메시지
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.yellow[100],
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: const Text(
+                  'congratulations!',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple,
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 30),
+              
+              // 메인 메시지
+              const Text(
+                '당신만의\n소중한 천사를 만났어요!\n이 모습, 잃어버리지 않도록 하늘의\n정원에 영원히 보관해 드릴까요?',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: textColor,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              
+              const SizedBox(height: 40),
+              
+              // 보관하기 버튼
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _showLoginScreen(context);
+                  },
+                  child: const Text(
+                    '보관하기',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 15),
+              
+              // 나중에 보관하기 버튼
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: secondaryColor,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) => const HomeScreen(),
       ),
     );
-    
-    // 성공 메시지
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('✨ 천사가 생성되고 저장되었습니다!'),
-        backgroundColor: Colors.green,
+                  },
+                  child: const Column(
+                    children: [
+                      Text(
+                        '나중에 보관하기',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        '(유실될 수 있어요)',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
+}
+
+// 로그인 화면
+class LoginScreen extends StatelessWidget {
+  const LoginScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/backgrounds/bg1.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: Container(
+              margin: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(30),
+              decoration: BoxDecoration(
+                color: cardBgColor,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 제목
+                  const Text(
+                    '천사일기',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    '로그인',
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: textColor,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 40),
+                  
+                  // 카카오톡 로그인
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.yellow[400],
+                        foregroundColor: Colors.black,
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      onPressed: () {
+                        // 카카오톡 로그인 로직
+                        _handleKakaoLogin(context);
+                      },
+                      child: const Text(
+                        '카카오톡으로 로그인',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 15),
+                  
+                  // 네이버 로그인
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[600],
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      onPressed: () {
+                        // 네이버 로그인 로직
+                        _handleNaverLogin(context);
+                      },
+                      child: const Text(
+                        '네이버로 로그인',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 15),
+                  
+                  // 구글 로그인
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          side: const BorderSide(color: Colors.grey),
+                        ),
+                      ),
+                      onPressed: () {
+                        // 구글 로그인 로직
+                        _handleGoogleLogin(context);
+                      },
+                      child: const Text(
+                        '구글로 로그인',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 30),
+                  
+                  // 구분선
+                  Row(
+                    children: [
+                      const Expanded(child: Divider(color: Colors.grey)),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 15),
+                        child: Text('또는', style: TextStyle(color: Colors.grey)),
+                      ),
+                      const Expanded(child: Divider(color: Colors.grey)),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 30),
+                  
+                  // 이메일 로그인
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      onPressed: () {
+                        // 이메일 로그인 로직
+                        _handleEmailLogin(context);
+                      },
+                      child: const Text(
+                        '이메일로 로그인',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 30),
+                  
+                  // 언어 선택 버튼
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[100],
+                        foregroundColor: textColor,
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      onPressed: () {
+                        _showLanguageSelectionDialog(context);
+                      },
+                      icon: const Icon(Icons.language),
+                      label: const Text(
+                        '언어 선택',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  
+                  // 하단 링크
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          // 회원가입 로직
+                          _handleSignUp(context);
+                        },
+                        child: const Text(
+                          '회원가입',
+                          style: TextStyle(color: textColor),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          // 아이디/비밀번호 찾기 로직
+                          _handleFindAccount(context);
+                        },
+                        child: const Text(
+                          '아이디 또는 비밀번호찾기',
+                          style: TextStyle(color: textColor),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// 보관하기 확인 다이얼로그 표시 함수
+void _showStorageConfirmationDialog(BuildContext context, AngelData angelData) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => StorageConfirmationDialog(angelData: angelData),
+  );
+}
+
+// 로그인 화면 표시 함수
+void _showLoginScreen(BuildContext context) {
+  Navigator.of(context).pushReplacement(
+    MaterialPageRoute(
+      builder: (context) => const LoginScreen(),
+    ),
+  );
+}
+
+// 로그인 처리 함수들
+void _handleKakaoLogin(BuildContext context) {
+  // TODO: 카카오톡 로그인 구현
+    _signInWithKakao();
+}
+
+ // Supabase 통해 카카오 로그인 실행 함수
+  Future<void> _signInWithKakao() async {
+    try {
+      await Supabase.instance.client.auth.signInWithOAuth(
+        OAuthProvider.kakao,
+        // ✨ AndroidManifest.xml에 설정한 리다이렉트 주소
+        redirectTo: 'io.supabase.flutterdemo://login-callback',
+      );
+    } catch (error) {
+      print('카카오 로그인 실패: $error');
+      // TODO: 사용자에게 에러 메시지 보여주기
+    }
+  }
+
+
+void _handleNaverLogin(BuildContext context) {
+  // TODO: 네이버 로그인 구현
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('네이버 로그인 기능은 준비 중입니다')),
+  );
+}
+
+void _handleGoogleLogin(BuildContext context) {
+  // TODO: 구글 로그인 구현
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('구글 로그인 기능은 준비 중입니다')),
+  );
+}
+
+void _handleEmailLogin(BuildContext context) {
+  // TODO: 이메일 로그인 구현
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => const EmailSignup(),
+    ),
+  );
+}
+
+void _handleSignUp(BuildContext context) {
+  // TODO: 회원가입 구현
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => const EmailSignup(),
+    ),
+  );
+}
+
+void _handleFindAccount(BuildContext context) {
+  // TODO: 계정 찾기 구현
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('계정 찾기 기능은 준비 중입니다')),
+  );
+}
+
+// 언어 선택 다이얼로그
+class LanguageSelectionDialog extends StatelessWidget {
+  const LanguageSelectionDialog({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.8,
+          maxHeight: MediaQuery.of(context).size.height * 0.6,
+          minWidth: 300,
+          minHeight: 200,
+        ),
+        decoration: BoxDecoration(
+          color: cardBgColor,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(30.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                l10n.languageSelection,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
+              ),
+              const SizedBox(height: 30),
+              ...LanguageManager.supportedLocales.map((locale) {
+                final isSelected = LanguageManager.currentLocale.languageCode == locale.languageCode;
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 15),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isSelected ? primaryColor : Colors.grey[200],
+                      foregroundColor: isSelected ? Colors.white : textColor,
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                    onPressed: () async {
+                      await LanguageManager.setLanguage(locale);
+                      Navigator.of(context).pop();
+                      // 앱 전체 재시작을 위해 AngelDiaryApp으로 이동
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (context) => const AngelDiaryApp(),
+                        ),
+                        (route) => false,
+                      );
+                    },
+                    child: Text(
+                      LanguageManager.getLanguageName(locale),
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// 언어 선택 다이얼로그 표시 함수
+void _showLanguageSelectionDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => const LanguageSelectionDialog(),
+  );
 }
 

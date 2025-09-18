@@ -1,0 +1,183 @@
+{
+  "@@locale": "ko",
+  "appTitle": "천사일기",
+  "@appTitle": {
+    "description": "앱 제목"
+  },
+  "startButton": "시작하기",
+  "@startButton": {
+    "description": "시작하기 버튼 텍스트"
+  },
+  "splashMessage1": "오늘의 약속 하나,\n너에게 닿는 발걸음 하나,\n세상 가장 따뜻한 약속",
+  "@splashMessage1": {
+    "description": "스플래시 화면 첫 번째 메시지"
+  },
+  "splashMessage2": "가장 먼 미래는, 가장 소중한 지금으로 만들어집니다.\n마음 속 소망을 눈앞의 현실로 만들어드립니다.",
+  "@splashMessage2": {
+    "description": "스플래시 화면 두 번째 메시지"
+  },
+  "questionTitle": "반려동물과 함께 추억을\n 쌓은 적이 있으신가요?",
+  "@questionTitle": {
+    "description": "질문 화면 제목"
+  },
+  "questionSubtitle": "(강아지, 고양이)",
+  "@questionSubtitle": {
+    "description": "질문 화면 부제목"
+  },
+  "yesButton": "예",
+  "@yesButton": {
+    "description": "예 버튼"
+  },
+  "noButton": "아니오",
+  "@noButton": {
+    "description": "아니오 버튼"
+  },
+  "angelRegistration": "천사 등록하기",
+  "@angelRegistration": {
+    "description": "천사 등록 제목"
+  },
+  "nameInputLabel": "당신의 마음 속에 품은 아이의 이름을 입력해주세요.",
+  "@nameInputLabel": {
+    "description": "이름 입력 라벨"
+  },
+  "nameInputHint": "ex) 행복, 별이",
+  "@nameInputHint": {
+    "description": "이름 입력 힌트"
+  },
+  "petTypeLabel": "아이는 어떤 종류에요?",
+  "@petTypeLabel": {
+    "description": "펫 타입 라벨"
+  },
+  "petDescriptionLabel": "아이는 어떤 모습이에요?",
+  "@petDescriptionLabel": {
+    "description": "펫 설명 라벨"
+  },
+  "imageSelectionLabel": "가장 아름답고 예뻤던 아이의 전신 모습을 선택해주세요.",
+  "@imageSelectionLabel": {
+    "description": "이미지 선택 라벨"
+  },
+  "registerButton": "천사 등록하기",
+  "@registerButton": {
+    "description": "등록 버튼"
+  },
+  "noFormTitle": "괜찮아요.",
+  "@noFormTitle": {
+    "description": "아니오 폼 제목"
+  },
+  "noFormMessage": "우리에게는 새로운 시작이 있으니까요.\n당신의 마음속에 작은 씨앗을 심어볼까요? 당신의 천사와 함께 하게 될거에요.",
+  "@noFormMessage": {
+    "description": "아니오 폼 메시지"
+  },
+  "plantSeedButton": "마음의 씨앗 심기",
+  "@plantSeedButton": {
+    "description": "씨앗 심기 버튼"
+  },
+  "congratulations": "congratulations!",
+  "@congratulations": {
+    "description": "축하 메시지"
+  },
+  "storageMessage": "당신만의\n소중한 천사를 만났어요!\n이 모습, 잃어버리지 않도록 하늘의\n정원에 영원히 보관해 드릴까요?",
+  "@storageMessage": {
+    "description": "보관하기 메시지"
+  },
+  "saveButton": "보관하기",
+  "@saveButton": {
+    "description": "보관하기 버튼"
+  },
+  "saveLaterButton": "나중에 보관하기",
+  "@saveLaterButton": {
+    "description": "나중에 보관하기 버튼"
+  },
+  "saveLaterWarning": "(유실될 수 있어요)",
+  "@saveLaterWarning": {
+    "description": "나중에 보관하기 경고"
+  },
+  "loginTitle": "로그인",
+  "@loginTitle": {
+    "description": "로그인 제목"
+  },
+  "kakaoLogin": "카카오톡으로 로그인",
+  "@kakaoLogin": {
+    "description": "카카오톡 로그인 버튼"
+  },
+  "naverLogin": "네이버로 로그인",
+  "@naverLogin": {
+    "description": "네이버 로그인 버튼"
+  },
+  "googleLogin": "구글로 로그인",
+  "@googleLogin": {
+    "description": "구글 로그인 버튼"
+  },
+  "emailLogin": "이메일로 로그인",
+  "@emailLogin": {
+    "description": "이메일 로그인 버튼"
+  },
+  "orText": "또는",
+  "@orText": {
+    "description": "또는 텍스트"
+  },
+  "signUp": "회원가입",
+  "@signUp": {
+    "description": "회원가입 링크"
+  },
+  "findAccount": "아이디 또는 비밀번호찾기",
+  "@findAccount": {
+    "description": "계정 찾기 링크"
+  },
+  "languageSelection": "언어 선택",
+  "@languageSelection": {
+    "description": "언어 선택 제목"
+  },
+  "korean": "한국어",
+  "@korean": {
+    "description": "한국어"
+  },
+  "english": "English",
+  "@english": {
+    "description": "영어"
+  },
+  "japanese": "日本語",
+  "@japanese": {
+    "description": "일본어"
+  },
+  "settings": "설정",
+  "@settings": {
+    "description": "설정"
+  },
+  "musicSettings": "음악 설정",
+  "@musicSettings": {
+    "description": "음악 설정"
+  },
+  "notificationSettings": "알림 설정",
+  "@notificationSettings": {
+    "description": "알림 설정"
+  },
+  "themeSettings": "테마 설정",
+  "@themeSettings": {
+    "description": "테마 설정"
+  },
+  "help": "도움말",
+  "@help": {
+    "description": "도움말"
+  },
+  "myPage": "마이페이지",
+  "@myPage": {
+    "description": "마이페이지"
+  },
+  "angelInfo": "천사 정보",
+  "@angelInfo": {
+    "description": "천사 정보"
+  },
+  "diaryHistory": "일기 기록",
+  "@diaryHistory": {
+    "description": "일기 기록"
+  },
+  "dataBackup": "데이터 백업",
+  "@dataBackup": {
+    "description": "데이터 백업"
+  },
+  "appInfo": "앱 정보",
+  "@appInfo": {
+    "description": "앱 정보"
+  }
+}

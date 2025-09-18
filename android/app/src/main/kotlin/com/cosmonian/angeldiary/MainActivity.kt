@@ -1,4 +1,4 @@
-package com.example.angel_diary
+package com.cosmonian.angeldiary
 
 import io.flutter.embedding.android.FlutterActivity
 
