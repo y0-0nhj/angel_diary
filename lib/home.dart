@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:convert';
 import 'dart:async';
 import 'character_view.dart';
+import 'utils/responsive_layout.dart';
 import 'common/constants/strings.dart';
 import 'main.dart' show bgColor, textColor, primaryColor, AngelDiaryApp;
 import 'package:table_calendar/table_calendar.dart';
@@ -1250,38 +1251,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              children: [
-                // 상단 음악 버튼
-                _buildMusicButton(),
-                const SizedBox(height: 12),
+      body: FixedWidthLayout(
+        contentColor: bgColor,
+        child: Column(
+          children: [
+            // 상단 음악 버튼
+            _buildMusicButton(),
+            const SizedBox(height: 12),
 
-                // 상단 말풍선 영역
-                _buildSpeechBubble(),
-                const SizedBox(height: 12),
+            // 상단 말풍선 영역
+            _buildSpeechBubble(),
+            const SizedBox(height: 12),
 
-                // 천사 일러스트 영역
-                _buildAngelIllustration(),
-                const SizedBox(height: 12),
+            // 천사 일러스트 영역
+            _buildAngelIllustration(),
+            const SizedBox(height: 12),
 
-                // 날짜와 기온 정보
-                _buildDateWeatherInfo(),
-                const SizedBox(height: 12),
+            // 날짜와 기온 정보
+            _buildDateWeatherInfo(),
+            const SizedBox(height: 12),
 
-                // 탭과 목록 영역
-                _buildTabSection(),
-                const SizedBox(height: 12),
+            // 탭과 목록 영역
+            _buildTabSection(),
+            const SizedBox(height: 12),
 
-                // 하단 섹션 (일기 쓰기 버튼 + 캘린더 아이콘)
-                _buildBottomSection(),
-              ],
-            ),
-          ),
+            // 하단 섹션 (일기 쓰기 버튼 + 캘린더 아이콘)
+            _buildBottomSection(),
+          ],
         ),
       ),
     );
@@ -2136,7 +2132,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         setState(() {
           _currentEmotionIndex = !wasCompleted
               ? 3
-              : 1; // 체크하면 행복한 표정(2), 해제하면 슬픈 표정(4)
+              : 2; // 체크하면 행복한 표정(2), 해제하면 슬픈 표정(2)
         });
 
         // 3초 후 기본 표정으로 돌아가기
