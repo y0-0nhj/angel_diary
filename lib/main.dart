@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'generated/l10n/app_localizations.dart';
 import 'character_view.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'home.dart';
 import 'package:timezone/data/latest.dart' as tz;
+import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'language_manager.dart';
-import 'auth/email_signup.dart';
-import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao_user;
+// Removed auth imports
 
 // --- 앱 전체에서 사용할 색상 정의 ---
 const Color bgColor = Color(0xFFF8F5EF);
@@ -22,34 +21,26 @@ const Color secondaryColor = Color(0xFFB0B0B0);
 const Color textColor = Color(0xFF3D3D3D);
 const Color cardBgColor = Colors.white;
 
-
-
 // 앱의 시작점
 Future<void> main() async {
   // Flutter 바인딩을 먼저 초기화
   WidgetsFlutterBinding.ensureInitialized();
 
   // Firebase 초기화
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // supabase 초기화
+  // Initialize Supabase
   await Supabase.initialize(
-    url: 'https://rxahdcgfmmmohpojvtge.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4YWhkY2dmbW1tb2hwb2p2dGdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1OTExNDMsImV4cCI6MjA2OTE2NzE0M30.94zJ7ElfjD78d35fEhO4x9ROyH6mcA8u6qX6K5i1fAg',
+    url: 'YOUR_SUPABASE_URL',
+    anonKey: 'YOUR_SUPABASE_ANON_KEY',
   );
-  
-  // 카카오톡 초기화
-  KakaoSdk.init(nativeAppKey: '158d3305078dd3af1db44ecee1bb68a2'); 
-
 
   // 언어 설정 로드
   await LanguageManager.loadLanguage();
-  
+
   // 타임존 초기화
   tz.initializeTimeZones();
-  
+
   runApp(const AngelDiaryApp());
 }
 
@@ -63,13 +54,14 @@ class AngelDiaryApp extends StatefulWidget {
 class _AngelDiaryAppState extends State<AngelDiaryApp> {
   bool _isLoading = true;
   bool _hasAngel = false;
+  // Removed auth subscription
 
   @override
   void initState() {
     super.initState();
     _checkAngelStatus();
+    // Removed auth state listener
   }
-
 
   // 천사 등록 여부 확인
   Future<void> _checkAngelStatus() async {
@@ -77,7 +69,7 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
       // SharedPreferences에서 직접 천사 데이터 확인
       final prefs = await SharedPreferences.getInstance();
       final angelJson = prefs.getString('angel_data');
-      
+
       setState(() {
         _hasAngel = angelJson != null && angelJson.isNotEmpty;
         _isLoading = false;
@@ -111,22 +103,22 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
           // // 대형 제목 - 브랜드/로고용
           // displayLarge: TextStyle(fontFamily: 'Ongeulleap', fontSize: 48, fontWeight: FontWeight.bold, color: textColor),
           // displayMedium: TextStyle(fontFamily: 'Oneprettynight', fontSize: 36, fontWeight: FontWeight.w600, color: textColor),
-          
+
           // // 헤드라인 - 섹션 제목용
           // headlineLarge: TextStyle(fontFamily: 'MaruBuri', fontSize: 28, fontWeight: FontWeight.w700, color: textColor),
           // headlineMedium: TextStyle(fontFamily: 'MaruBuri', fontSize: 24, fontWeight: FontWeight.w600, color: textColor),
           // headlineSmall: TextStyle(fontFamily: 'MaruBuri', fontSize: 22, fontWeight: FontWeight.w500, color: textColor, height: 1.5),
-          
+
           // // 타이틀 - 카드/리스트 제목용
           // titleLarge: TextStyle(fontFamily: 'Pretendard', fontSize: 20, fontWeight: FontWeight.w600, color: textColor),
           // titleMedium: TextStyle(fontFamily: 'Pretendard', fontSize: 18, fontWeight: FontWeight.w500, color: textColor),
           // titleSmall: TextStyle(fontFamily: 'Pretendard', fontSize: 16, fontWeight: FontWeight.w500, color: textColor),
-          
+
           // // 본문 텍스트
           // bodyLarge: TextStyle(fontFamily: 'Pretendard', fontSize: 16, color: textColor, height: 1.6),
           // bodyMedium: TextStyle(fontFamily: 'Pretendard', fontSize: 14, color: textColor, height: 1.6),
           // bodySmall: TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: textColor, height: 1.5),
-          
+
           // // 라벨/버튼 텍스트
           // labelLarge: TextStyle(fontFamily: 'Pretendard', fontSize: 14, fontWeight: FontWeight.w600, color: textColor),
           // labelMedium: TextStyle(fontFamily: 'Pretendard', fontSize: 12, fontWeight: FontWeight.w500, color: textColor),
@@ -137,11 +129,13 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
     );
   }
 
+  // Removed auth subscription disposal
+
   Widget _buildHome() {
     if (_isLoading) {
       return const LoadingScreen();
     }
-    
+
     return _hasAngel ? const HomeScreen() : const OnboardingScreen();
   }
 }
@@ -212,7 +206,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       _currentStep = OnboardingStep.yesForm;
     });
   }
-  
+
   void _showNoForm() {
     setState(() {
       _currentStep = OnboardingStep.noForm;
@@ -223,36 +217,41 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     // Scaffold는 앱 화면의 기본 구조를 제공
     return Scaffold(
-              // 1. 배경 이미지 (맨 아래에 깔림)
-        body: Stack(
-          children: [
-            Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/images/backgrounds/bg1.png'), // 여기에 네 이미지 파일 경로를 적어줘!
-              fit: BoxFit.cover, // 이미지가 화면을 꽉 채우도록 설정
+      // 1. 배경 이미지 (맨 아래에 깔림)
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage(
+                  'assets/images/backgrounds/bg1.png',
+                ), // 여기에 네 이미지 파일 경로를 적어줘!
+                fit: BoxFit.cover, // 이미지가 화면을 꽉 채우도록 설정
+              ),
             ),
           ),
+
+          // 2. 원래 있던 화면 내용 (배경 이미지 위에 보임)
+          SafeArea(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 500),
+              child: _buildCurrentScreen(),
+            ),
           ),
-  
-        // 2. 원래 있던 화면 내용 (배경 이미지 위에 보임)
-        SafeArea(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 500),
-            child: _buildCurrentScreen(),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-  
+        ],
+      ),
+    );
+  }
+
   Widget _buildCurrentScreen() {
     switch (_currentStep) {
       case OnboardingStep.splash:
         return SplashScreen(onStartPressed: _showQuestionScreen);
       case OnboardingStep.question:
-        return QuestionScreen(onYesPressed: _showYesForm, onNoPressed: _showNoForm);
+        return QuestionScreen(
+          onYesPressed: _showYesForm,
+          onNoPressed: _showNoForm,
+        );
       case OnboardingStep.yesForm:
         return const YesFormScreen();
       case OnboardingStep.noForm:
@@ -272,9 +271,8 @@ class SplashScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
-    
+
     return Container(
-      
       key: const ValueKey('splash'),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
       child: Column(
@@ -287,14 +285,17 @@ class SplashScreen extends StatelessWidget {
           ),
           Column(
             children: [
-               Text(l10n.appTitle, style: textTheme.displayLarge),
-               const SizedBox(height: 40),
-               Image.asset('assets/images/illustrations/angel_dove.png', width: 250), // 샘플 비둘기 이미지
+              Text(l10n.appTitle, style: textTheme.displayLarge),
+              const SizedBox(height: 40),
+              Image.asset(
+                'assets/images/illustrations/angel_dove.png',
+                width: 250,
+              ), // 샘플 비둘기 이미지
             ],
           ),
           Column(
             children: [
-               Text(
+              Text(
                 l10n.splashMessage2,
                 style: textTheme.bodyMedium,
                 textAlign: TextAlign.center,
@@ -305,13 +306,21 @@ class SplashScreen extends StatelessWidget {
                   backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 60),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
                 ),
                 onPressed: onStartPressed,
-                child: Text(l10n.startButton, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: Text(
+                  l10n.startButton,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -322,21 +331,27 @@ class SplashScreen extends StatelessWidget {
 class QuestionScreen extends StatelessWidget {
   final VoidCallback onYesPressed;
   final VoidCallback onNoPressed;
-  
-  const QuestionScreen({super.key, required this.onYesPressed, required this.onNoPressed});
+
+  const QuestionScreen({
+    super.key,
+    required this.onYesPressed,
+    required this.onNoPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
-    
+
     return Center(
       key: const ValueKey('question'),
       child: Padding(
         padding: const EdgeInsets.all(10.0),
         child: Card(
           color: cardBgColor.withOpacity(0.7),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(5.0),
             child: Column(
@@ -344,27 +359,49 @@ class QuestionScreen extends StatelessWidget {
               children: [
                 //Image.asset('assets/images/illustrations/angel_question.png', width: 80),
                 const SizedBox(height: 20),
-                Text(l10n.questionTitle, style: textTheme.headlineSmall, textAlign: TextAlign.center),
+                Text(
+                  l10n.questionTitle,
+                  style: textTheme.headlineSmall,
+                  textAlign: TextAlign.center,
+                ),
                 Text(l10n.questionSubtitle, style: textTheme.bodyMedium),
                 const SizedBox(height: 30),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor, foregroundColor: Colors.white,
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
                   ),
                   onPressed: onYesPressed,
-                  child: Text(l10n.yesButton, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    l10n.yesButton,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 10),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: secondaryColor, foregroundColor: Colors.white,
+                    backgroundColor: secondaryColor,
+                    foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
                   ),
                   onPressed: onNoPressed,
-                  child: Text(l10n.noButton, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    l10n.noButton,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -392,17 +429,20 @@ class _YesFormScreenState extends State<YesFormScreen> {
   final List<String> _petTypes = ['강아지', '고양이', '기타'];
   String? _selectedPetType;
 
-  final List<String> _petDescs = ['작고 하얀 복슬강아지', '용감하고 늠름한 친구', '애교많은 개냥이', '직접 입력'];
+  final List<String> _petDescs = [
+    '작고 하얀 복슬강아지',
+    '용감하고 늠름한 친구',
+    '애교많은 개냥이',
+    '직접 입력',
+  ];
   String? _selectedPetDesc;
 
   File? _pickedImage; // 사용자가 선택한 이미지 파일
-  
+
   // 커스터마이징 관련 변수들
   int _selectedFaceType = 1; // 얼굴 타입 (1-4)
   int _selectedFaceColor = 1; // 얼굴 색상 (1-6)
   int _selectedTailIndex = 1; // 꼬리 (1-4)
-
-
 
   // 이미지 선택 함수
   Future<void> _pickImage() async {
@@ -416,8 +456,6 @@ class _YesFormScreenState extends State<YesFormScreen> {
     }
   }
 
-
-
   // 커스터마이징 컨트롤 위젯
   Widget _buildCustomizationControls() {
     return Column(
@@ -429,14 +467,14 @@ class _YesFormScreenState extends State<YesFormScreen> {
             _selectedFaceType = value;
           });
         }),
-        
+
         // 얼굴 색상
         _buildControlSection('얼굴 색상', _selectedFaceColor, 6, (value) {
           setState(() {
             _selectedFaceColor = value;
           });
         }),
-        
+
         // 꼬리
         _buildControlSection('꼬리', _selectedTailIndex, 4, (value) {
           setState(() {
@@ -446,9 +484,14 @@ class _YesFormScreenState extends State<YesFormScreen> {
       ],
     );
   }
-  
+
   // 개별 컨트롤 섹션 위젯
-  Widget _buildControlSection(String title, int currentValue, int maxValue, Function(int) onChanged) {
+  Widget _buildControlSection(
+    String title,
+    int currentValue,
+    int maxValue,
+    Function(int) onChanged,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: Column(
@@ -503,16 +546,18 @@ class _YesFormScreenState extends State<YesFormScreen> {
   // 등록 버튼 함수
   Future<void> _submit() async {
     if (_pickedImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('반려동물의 사진을 먼저 등록해주세요!')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('반려동물의 사진을 먼저 등록해주세요!')));
       return;
     }
-    
+
     // 천사 데이터 생성
     final angelData = AngelData(
       name: _nameController.text,
-      feature: _selectedPetDesc == '직접 입력' ? _directInputController.text : _selectedPetDesc ?? '',
+      feature: _selectedPetDesc == '직접 입력'
+          ? _directInputController.text
+          : _selectedPetDesc ?? '',
       animalType: _selectedPetType == '고양이' ? 'cat' : 'dog',
       faceType: _selectedFaceType,
       faceColor: _selectedFaceColor,
@@ -521,14 +566,15 @@ class _YesFormScreenState extends State<YesFormScreen> {
       tailIndex: _selectedTailIndex,
       createdAt: DateTime.now(),
     );
-    
+
     // 전역 천사 데이터에 저장 (SharedPreferences에 자동 저장)
     await AngelDataManager.setCurrentAngel(angelData);
-    
-    // 보관하기 확인 다이얼로그 표시
-    _showStorageConfirmationDialog(context, angelData);
-  }
 
+    // 천사 등록 완료 - 홈으로 이동
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
+    );
+  }
 
   // 위젯이 화면에서 사라질 때 컨트롤러를 정리해줘야 메모리 누수가 없어
   @override
@@ -538,7 +584,6 @@ class _YesFormScreenState extends State<YesFormScreen> {
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -547,13 +592,17 @@ class _YesFormScreenState extends State<YesFormScreen> {
         elevation: 0,
         color: cardBgColor.withOpacity(0.85), // ✨ 투명도 살짝 조절
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: SingleChildScrollView( // ✨ 스크롤은 Card 안에서만 되도록 구조 변경
+        child: SingleChildScrollView(
+          // ✨ 스크롤은 Card 안에서만 되도록 구조 변경
           child: Padding(
             padding: const EdgeInsets.all(25.0), // ✨ 내부 여백 조절
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('천사 등록하기', style: TextStyle(fontSize: 43, color: textColor)),
+                const Text(
+                  '천사 등록하기',
+                  style: TextStyle(fontSize: 43, color: textColor),
+                ),
                 const SizedBox(height: 30),
 
                 // 1. 이름 입력창
@@ -564,7 +613,8 @@ class _YesFormScreenState extends State<YesFormScreen> {
                 const SizedBox(height: 8), // ✨ Text와 TextField 사이에 간격 추가
                 TextField(
                   controller: _nameController,
-                  decoration: buildInputDecoration().copyWith( // ✨ 공통 스타일 함수 사용
+                  decoration: buildInputDecoration().copyWith(
+                    // ✨ 공통 스타일 함수 사용
                     hintText: "ex) 행복, 별이",
                     hintStyle: TextStyle(fontSize: 16, color: Colors.grey[400]),
                   ),
@@ -579,8 +629,15 @@ class _YesFormScreenState extends State<YesFormScreen> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   decoration: buildInputDecoration(), // ✨ 공통 스타일 함수 사용
-                  value: _selectedPetType,
-                  items: _petTypes.map((type) => DropdownMenuItem<String>(value: type, child: Text(type))).toList(),
+                  initialValue: _selectedPetType,
+                  items: _petTypes
+                      .map(
+                        (type) => DropdownMenuItem<String>(
+                          value: type,
+                          child: Text(type),
+                        ),
+                      )
+                      .toList(),
                   onChanged: (String? value) {
                     setState(() {
                       _selectedPetType = value;
@@ -597,8 +654,15 @@ class _YesFormScreenState extends State<YesFormScreen> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   decoration: buildInputDecoration(), // ✨ 공통 스타일 함수 사용
-                  value: _selectedPetDesc,
-                  items: _petDescs.map((desc) => DropdownMenuItem<String>(value: desc, child: Text(desc))).toList(),
+                  initialValue: _selectedPetDesc,
+                  items: _petDescs
+                      .map(
+                        (desc) => DropdownMenuItem<String>(
+                          value: desc,
+                          child: Text(desc),
+                        ),
+                      )
+                      .toList(),
                   onChanged: (String? value) {
                     setState(() {
                       _selectedPetDesc = value;
@@ -609,7 +673,8 @@ class _YesFormScreenState extends State<YesFormScreen> {
 
                 // '직접 입력' 선택 시 나타나는 TextField
                 if (_selectedPetDesc == '직접 입력')
-                  Padding( // ✨ 약간의 여백 추가
+                  Padding(
+                    // ✨ 약간의 여백 추가
                     padding: const EdgeInsets.only(top: 8.0),
                     child: TextField(
                       controller: _directInputController,
@@ -634,7 +699,11 @@ class _YesFormScreenState extends State<YesFormScreen> {
                       if (_pickedImage != null)
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12.0),
-                          child: Image.file(File(_pickedImage!.path), height: 200, fit: BoxFit.cover),
+                          child: Image.file(
+                            File(_pickedImage!.path),
+                            height: 200,
+                            fit: BoxFit.cover,
+                          ),
                         )
                       else
                         Container(
@@ -647,35 +716,49 @@ class _YesFormScreenState extends State<YesFormScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.add_photo_alternate, size: 50, color: Colors.grey[400]),
+                              Icon(
+                                Icons.add_photo_alternate,
+                                size: 50,
+                                color: Colors.grey[400],
+                              ),
                               const SizedBox(height: 10),
-                              Text('사진을 선택해주세요', style: TextStyle(color: Colors.grey[600])),
+                              Text(
+                                '사진을 선택해주세요',
+                                style: TextStyle(color: Colors.grey[600]),
+                              ),
                             ],
                           ),
                         ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // 이미지 선택 버튼
                       ElevatedButton.icon(
                         onPressed: _pickImage,
                         icon: const Icon(Icons.add_photo_alternate),
-                        label: Text(_pickedImage == null ? "이미지 선택" : "다른 이미지 선택"),
+                        label: Text(
+                          _pickedImage == null ? "이미지 선택" : "다른 이미지 선택",
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primaryColor,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 30,
+                            vertical: 15,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                
+
                 // 이미지가 선택된 경우에만 커스터마이징 뷰 표시
                 if (_pickedImage != null) ...[
                   const SizedBox(height: 30),
-                  
+
                   // 천사 미리보기 섹션
                   Container(
                     padding: const EdgeInsets.all(20),
@@ -691,7 +774,7 @@ class _YesFormScreenState extends State<YesFormScreen> {
                           ),
                         ),
                         const SizedBox(height: 15),
-                        
+
                         // 천사 미리보기 영역
                         Container(
                           height: 300,
@@ -705,7 +788,9 @@ class _YesFormScreenState extends State<YesFormScreen> {
                               // 천사 캐릭터 (앞쪽에)
                               Center(
                                 child: CharacterView(
-                                  animalType: _selectedPetType == '고양이' ? 'cat' : 'dog',
+                                  animalType: _selectedPetType == '고양이'
+                                      ? 'cat'
+                                      : 'dog',
                                   faceType: _selectedFaceType,
                                   faceColor: _selectedFaceColor,
                                   bodyIndex: 1, // 기본값 고정
@@ -717,9 +802,9 @@ class _YesFormScreenState extends State<YesFormScreen> {
                             ],
                           ),
                         ),
-                        
+
                         const SizedBox(height: 20),
-                        
+
                         // 커스터마이징 컨트롤
                         _buildCustomizationControls(),
                       ],
@@ -729,9 +814,12 @@ class _YesFormScreenState extends State<YesFormScreen> {
                 const SizedBox(height: 30),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor, foregroundColor: Colors.white,
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
                   ),
                   onPressed: _submit,
                   child: const Text("천사 등록하기"),
@@ -740,7 +828,7 @@ class _YesFormScreenState extends State<YesFormScreen> {
             ),
           ),
         ),
-      ), 
+      ),
     );
   }
 
@@ -755,7 +843,7 @@ class _YesFormScreenState extends State<YesFormScreen> {
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
     );
-    }
+  }
 }
 
 // 4. "아니오" 폼 화면
@@ -764,13 +852,15 @@ class NoFormScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-     return Center(
+    return Center(
       key: const ValueKey('noForm'),
       child: Padding(
         padding: const EdgeInsets.all(40.0),
         child: Card(
           color: cardBgColor.withOpacity(0.7),
-           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(30.0),
             child: Column(
@@ -785,17 +875,23 @@ class NoFormScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 30),
                 ElevatedButton(
-                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor, foregroundColor: Colors.white,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
                   ),
                   onPressed: () {
                     // 천사 생성 팝업창 표시
                     _showAngelCreationPopup(context);
                   },
-                  child: const Text("마음의 씨앗 심기", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                )
+                  child: const Text(
+                    "마음의 씨앗 심기",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
               ],
             ),
           ),
@@ -827,10 +923,10 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
   final _nameController = TextEditingController();
   final _featureController = TextEditingController();
   String _selectedAnimalType = 'dog';
-  
+
   // 단계 관리
   int _currentStep = 0; // 0: 폼 입력, 1: 커스터마이징
-  
+
   // 커스터마이징 관련 변수들
   int selectedFaceType = 1;
   int selectedFaceColor = 1;
@@ -945,10 +1041,12 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
               ),
               child: _buildResponsiveHeader(),
             ),
-            
+
             // 내용 영역
             Expanded(
-              child: _currentStep == 0 ? _buildFormStep() : _buildCustomizationStep(),
+              child: _currentStep == 0
+                  ? _buildFormStep()
+                  : _buildCustomizationStep(),
             ),
           ],
         ),
@@ -965,10 +1063,14 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
         children: [
           const Text(
             "당신의 천사에 대해 알려주세요",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
           ),
           const SizedBox(height: 30),
-          
+
           // 이름 입력
           TextField(
             controller: _nameController,
@@ -985,7 +1087,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // 특징 입력
           TextField(
             controller: _featureController,
@@ -1002,27 +1104,27 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // 동물 타입 선택
           const Text(
             '동물 타입',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
           ),
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(
-                child: _buildAnimalTypeCard('강아지', 'dog'),
-              ),
+              Expanded(child: _buildAnimalTypeCard('강아지', 'dog')),
               const SizedBox(width: 15),
-              Expanded(
-                child: _buildAnimalTypeCard('고양이', 'cat'),
-              ),
+              Expanded(child: _buildAnimalTypeCard('고양이', 'cat')),
             ],
           ),
-          
+
           const Spacer(),
-          
+
           // 다음 단계 버튼
           SizedBox(
             width: double.infinity,
@@ -1031,7 +1133,9 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
                 backgroundColor: primaryColor,
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
               ),
               onPressed: _validateAndProceed,
               child: const Text(
@@ -1069,7 +1173,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
             ),
           ),
         ),
-        
+
         // 커스터마이징 컨트롤
         Expanded(
           child: SingleChildScrollView(
@@ -1088,14 +1192,14 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
                   setState(() => selectedFaceColor = index);
                 }),
                 const SizedBox(height: 15),
-                
+
                 // 꼬리 선택
                 _buildPartSelector('꼬리', 4, selectedTailIndex, (index) {
                   setState(() => selectedTailIndex = index);
                 }),
-                
+
                 const SizedBox(height: 30),
-                
+
                 // 완료 버튼
                 SizedBox(
                   width: double.infinity,
@@ -1104,12 +1208,17 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
                       backgroundColor: primaryColor,
                       foregroundColor: Colors.white,
                       minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
                     ),
                     onPressed: _completeCreation,
                     child: const Text(
                       '천사 생성 완료',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -1128,7 +1237,9 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
       child: Container(
         height: 50,
         decoration: BoxDecoration(
-          color: _selectedAnimalType == animalType ? primaryColor : Colors.grey[200],
+          color: _selectedAnimalType == animalType
+              ? primaryColor
+              : Colors.grey[200],
           borderRadius: BorderRadius.circular(10),
         ),
         child: Center(
@@ -1137,7 +1248,9 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: _selectedAnimalType == animalType ? Colors.white : textColor,
+              color: _selectedAnimalType == animalType
+                  ? Colors.white
+                  : textColor,
             ),
           ),
         ),
@@ -1146,13 +1259,25 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
   }
 
   // 파츠 선택기
-  Widget _buildPartSelector(String title, int count, int selectedIndex, Function(int) onSelect) {
+  Widget _buildPartSelector(
+    String title,
+    int count,
+    int selectedIndex,
+    Function(int) onSelect,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
+        ),
         const SizedBox(height: 8),
-        Container(
+        SizedBox(
           height: 60,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
@@ -1166,10 +1291,14 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
                   height: 50,
                   margin: const EdgeInsets.only(right: 10),
                   decoration: BoxDecoration(
-                    color: selectedIndex == itemIndex ? primaryColor : Colors.grey[200],
+                    color: selectedIndex == itemIndex
+                        ? primaryColor
+                        : Colors.grey[200],
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: selectedIndex == itemIndex ? primaryColor : Colors.grey[300]!,
+                      color: selectedIndex == itemIndex
+                          ? primaryColor
+                          : Colors.grey[300]!,
                       width: 2,
                     ),
                   ),
@@ -1177,7 +1306,9 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
                     child: Text(
                       '$itemIndex',
                       style: TextStyle(
-                        color: selectedIndex == itemIndex ? Colors.white : textColor,
+                        color: selectedIndex == itemIndex
+                            ? Colors.white
+                            : textColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1194,19 +1325,19 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
   // 폼 검증 및 다음 단계로 진행
   void _validateAndProceed() {
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('천사의 이름을 입력해주세요')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('천사의 이름을 입력해주세요')));
       return;
     }
-    
+
     if (_featureController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('천사의 특징을 입력해주세요')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('천사의 특징을 입력해주세요')));
       return;
     }
-    
+
     setState(() {
       _currentStep = 1;
     });
@@ -1226,442 +1357,25 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
       tailIndex: selectedTailIndex,
       createdAt: DateTime.now(),
     );
-    
+
     // 전역 천사 데이터에 저장 (SharedPreferences에 자동 저장)
     await AngelDataManager.setCurrentAngel(angelData);
-    
+
     // 팝업 닫기
     Navigator.of(context).pop();
-    
-    // 보관하기 확인 다이얼로그 표시
-    _showStorageConfirmationDialog(context, angelData);
-  }
-}
 
-// 보관하기 확인 다이얼로그
-class StorageConfirmationDialog extends StatelessWidget {
-  final AngelData angelData;
-  
-  const StorageConfirmationDialog({super.key, required this.angelData});
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.9,
-          maxHeight: MediaQuery.of(context).size.height * 0.6,
-          minWidth: 300,
-          minHeight: 300,
-        ),
-        decoration: BoxDecoration(
-          color: cardBgColor,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(30.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // 축하 메시지
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.yellow[100],
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: const Text(
-                  'congratulations!',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.purple,
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 30),
-              
-              // 메인 메시지
-              const Text(
-                '당신만의\n소중한 천사를 만났어요!\n이 모습, 잃어버리지 않도록 하늘의\n정원에 영원히 보관해 드릴까요?',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: textColor,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              
-              const SizedBox(height: 40),
-              
-              // 보관하기 버튼
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    _showLoginScreen(context);
-                  },
-                  child: const Text(
-                    '보관하기',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 15),
-              
-              // 나중에 보관하기 버튼
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: secondaryColor,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).pop();
+    // 천사 등록 완료 - 홈으로 이동
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => const HomeScreen(),
-      ),
-    );
-                  },
-                  child: const Column(
-                    children: [
-                      Text(
-                        '나중에 보관하기',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '(유실될 수 있어요)',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
     );
   }
 }
 
-// 로그인 화면
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+// Removed StorageConfirmationDialog - no longer needed
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: bgColor,
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/backgrounds/bg1.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: Container(
-              margin: const EdgeInsets.all(20),
-              padding: const EdgeInsets.all(30),
-              decoration: BoxDecoration(
-                color: cardBgColor,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // 제목
-                  const Text(
-                    '천사일기',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  const Text(
-                    '로그인',
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: textColor,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 40),
-                  
-                  // 카카오톡 로그인
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.yellow[400],
-                        foregroundColor: Colors.black,
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                      ),
-                      onPressed: () {
-                        // 카카오톡 로그인 로직
-                        _handleKakaoLogin(context);
-                      },
-                      child: const Text(
-                        '카카오톡으로 로그인',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 15),
-                  
-                  // 네이버 로그인
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green[600],
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                      ),
-                      onPressed: () {
-                        // 네이버 로그인 로직
-                        _handleNaverLogin(context);
-                      },
-                      child: const Text(
-                        '네이버로 로그인',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 15),
-                  
-                  // 구글 로그인
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          side: const BorderSide(color: Colors.grey),
-                        ),
-                      ),
-                      onPressed: () {
-                        // 구글 로그인 로직
-                        _handleGoogleLogin(context);
-                      },
-                      child: const Text(
-                        '구글로 로그인',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 30),
-                  
-                  // 구분선
-                  Row(
-                    children: [
-                      const Expanded(child: Divider(color: Colors.grey)),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 15),
-                        child: Text('또는', style: TextStyle(color: Colors.grey)),
-                      ),
-                      const Expanded(child: Divider(color: Colors.grey)),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 30),
-                  
-                  // 이메일 로그인
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                      ),
-                      onPressed: () {
-                        // 이메일 로그인 로직
-                        _handleEmailLogin(context);
-                      },
-                      child: const Text(
-                        '이메일로 로그인',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 30),
-                  
-                  // 언어 선택 버튼
-                  Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 20),
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[100],
-                        foregroundColor: textColor,
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                      ),
-                      onPressed: () {
-                        _showLanguageSelectionDialog(context);
-                      },
-                      icon: const Icon(Icons.language),
-                      label: const Text(
-                        '언어 선택',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                  
-                  // 하단 링크
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          // 회원가입 로직
-                          _handleSignUp(context);
-                        },
-                        child: const Text(
-                          '회원가입',
-                          style: TextStyle(color: textColor),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          // 아이디/비밀번호 찾기 로직
-                          _handleFindAccount(context);
-                        },
-                        child: const Text(
-                          '아이디 또는 비밀번호찾기',
-                          style: TextStyle(color: textColor),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+// Removed LoginScreen - no longer needed
 
-// 보관하기 확인 다이얼로그 표시 함수
-void _showStorageConfirmationDialog(BuildContext context, AngelData angelData) {
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => StorageConfirmationDialog(angelData: angelData),
-  );
-}
-
-// 로그인 화면 표시 함수
-void _showLoginScreen(BuildContext context) {
-  Navigator.of(context).pushReplacement(
-    MaterialPageRoute(
-      builder: (context) => const LoginScreen(),
-    ),
-  );
-}
-
-// 로그인 처리 함수들
-void _handleKakaoLogin(BuildContext context) {
-  // TODO: 카카오톡 로그인 구현
-    _signInWithKakao();
-}
-
- // Supabase 통해 카카오 로그인 실행 함수
-  Future<void> _signInWithKakao() async {
-    try {
-      await Supabase.instance.client.auth.signInWithOAuth(
-        OAuthProvider.kakao,
-        // ✨ AndroidManifest.xml에 설정한 리다이렉트 주소
-        redirectTo: 'io.supabase.flutterdemo://login-callback',
-      );
-    } catch (error) {
-      print('카카오 로그인 실패: $error');
-      // TODO: 사용자에게 에러 메시지 보여주기
-    }
-  }
-
-
-void _handleNaverLogin(BuildContext context) {
-  // TODO: 네이버 로그인 구현
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('네이버 로그인 기능은 준비 중입니다')),
-  );
-}
-
-void _handleGoogleLogin(BuildContext context) {
-  // TODO: 구글 로그인 구현
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('구글 로그인 기능은 준비 중입니다')),
-  );
-}
-
-void _handleEmailLogin(BuildContext context) {
-  // TODO: 이메일 로그인 구현
-  Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (context) => const EmailSignup(),
-    ),
-  );
-}
-
-void _handleSignUp(BuildContext context) {
-  // TODO: 회원가입 구현
-  Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (context) => const EmailSignup(),
-    ),
-  );
-}
-
-void _handleFindAccount(BuildContext context) {
-  // TODO: 계정 찾기 구현
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('계정 찾기 기능은 준비 중입니다')),
-  );
-}
+// Removed all login/signup related functions
 
 // 언어 선택 다이얼로그
 class LanguageSelectionDialog extends StatelessWidget {
@@ -1670,7 +1384,7 @@ class LanguageSelectionDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
@@ -1699,12 +1413,16 @@ class LanguageSelectionDialog extends StatelessWidget {
               ),
               const SizedBox(height: 30),
               ...LanguageManager.supportedLocales.map((locale) {
-                final isSelected = LanguageManager.currentLocale.languageCode == locale.languageCode;
+                final isSelected =
+                    LanguageManager.currentLocale.languageCode ==
+                    locale.languageCode;
                 return Container(
                   margin: const EdgeInsets.only(bottom: 15),
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isSelected ? primaryColor : Colors.grey[200],
+                      backgroundColor: isSelected
+                          ? primaryColor
+                          : Colors.grey[200],
                       foregroundColor: isSelected ? Colors.white : textColor,
                       minimumSize: const Size(double.infinity, 50),
                       shape: RoundedRectangleBorder(
@@ -1724,11 +1442,14 @@ class LanguageSelectionDialog extends StatelessWidget {
                     },
                     child: Text(
                       LanguageManager.getLanguageName(locale),
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 );
-              }).toList(),
+              }),
             ],
           ),
         ),
@@ -1744,4 +1465,3 @@ void _showLanguageSelectionDialog(BuildContext context) {
     builder: (context) => const LanguageSelectionDialog(),
   );
 }
-

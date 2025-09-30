@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
 import 'home.dart';
+import 'services/daily.dart';
 
 // 일기 다이얼로그
 class DiaryDialog extends StatefulWidget {
@@ -208,7 +209,7 @@ class _DiaryDialogState extends State<DiaryDialog> {
     );
   }
 
-  void _saveDiary() {
+  Future<void> _saveDiary() async {
     final content = _controller.text.trim();
     
     if (content.isEmpty) {
@@ -218,10 +219,10 @@ class _DiaryDialogState extends State<DiaryDialog> {
       return;
     }
     
-    // 일기 저장
+    // 일기 저장 (로컬만)
     final now = DateTime.now();
     final dateString = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    CalendarDataManager.saveDiary(dateString, content);
+    await CalendarDataManager.saveDiary(dateString, content);
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(widget.isEditMode ? '일기가 수정되었습니다 ✨' : '일기가 저장되었습니다 ✨')),
