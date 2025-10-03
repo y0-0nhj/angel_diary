@@ -148,4 +148,90 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appInfo => 'App Info';
+
+  @override
+  String get wishesTab => 'Wishes';
+
+  @override
+  String get goalsTab => 'Goals';
+
+  @override
+  String get gratitudeTab => 'Gratitude';
+
+  @override
+  String get writeDiary => 'Write Today\'s Diary';
+
+  @override
+  String get editDiary => 'Edit Today\'s Diary';
+
+  @override
+  String angelGreeting(String angelName) {
+    return 'May you have a warm day with $angelName.';
+  }
+
+  @override
+  String get defaultGreeting =>
+      'The love in your heart\nis transmitted beyond time and space.';
+
+  @override
+  String get sunday => 'Sunday';
+
+  @override
+  String get monday => 'Monday';
+
+  @override
+  String get tuesday => 'Tuesday';
+
+  @override
+  String get wednesday => 'Wednesday';
+
+  @override
+  String get thursday => 'Thursday';
+
+  @override
+  String get friday => 'Friday';
+
+  @override
+  String get saturday => 'Saturday';
+
+  @override
+  String get inspirationalMessage1 => 'God is with you';
+
+  @override
+  String get inspirationalMessage2 =>
+      'For I know the plans I have for you, plans to prosper you and not to harm you';
+
+  @override
+  String get inspirationalMessage3 =>
+      'The Lord is my shepherd, I shall not want';
+
+  @override
+  String get inspirationalMessage4 => 'All things work together for good';
+
+  @override
+  String get source1 => 'Genesis 28:15';
+
+  @override
+  String get source2 => 'Jeremiah 29:11';
+
+  @override
+  String get source3 => 'Psalm 23:1';
+
+  @override
+  String get source4 => 'Romans 8:28';
+
+  @override
+  String get encouragement1 => 'You\'re doing really well! 💪';
+
+  @override
+  String get encouragement2 => 'Excellent! Keep it up! ✨';
+
+  @override
+  String get encouragement3 => 'You\'re having a wonderful day today! 🌟';
+
+  @override
+  String get encouragement4 => 'You\'re amazing! I\'m proud of you! 👏';
+
+  @override
+  String get encouragement5 => 'Perfect! You did really well! 🎉';
 }

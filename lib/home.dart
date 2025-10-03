@@ -1,3 +1,4 @@
+import 'package:angel_diary/screens/help/help_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'dart:convert';
@@ -15,6 +16,7 @@ import 'diary_dialog.dart';
 import 'simple_calendar_dialog.dart';
 import 'generated/l10n/app_localizations.dart';
 import 'language_manager.dart';
+import 'screens/help/help_screen.dart';
 
 // 말풍선 꼬리를 그리는 CustomPainter
 class SpeechBubbleTailPainter extends CustomPainter {
@@ -872,9 +874,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   );
                 }),
                 _buildSettingsItem(Icons.help, l10n.help, () {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${l10n.help} 기능 준비 중입니다')),
+                  Navigator.of(context).pop(); // 설정 다이얼로그 닫기
+                  Navigator.push(
+                    context, // 현재 위젯의 빌드 컨텍스트
+                    MaterialPageRoute(
+                      builder: (context) => const HelpScreen(),
+                    ), // 이동할 페이지 위젯
                   );
                 }),
               ],

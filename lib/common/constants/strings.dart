@@ -2,12 +2,7 @@ class AppStrings {
   // 앱 일반
   static const String appName = '천사일기';
 
-  // 탭 제목
-  static const String wishesTab = '소망';
-  static const String goalsTab = '목표';
-  static const String gratitudeTab = '감사';
-
-  // 메시지
+  // 메시지 (기존 home.dart와 home_screen.dart에서 사용 중)
   static const List<Map<String, String>> inspirationalMessages = [
     {'text': '하나님이 너와 함께 하시니라', 'source': '창세기 28:15'},
     {'text': '내가 너를 위하여 정한 계획은 평안이요 재앙이 아니니라', 'source': '예레미야 29:11'},

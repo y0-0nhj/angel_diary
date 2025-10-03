@@ -43,11 +43,8 @@ class Daily {
   }
 
   Map<String, dynamic> toUpdateMap() {
-    return {
-      'goal': goal,
-      'gratitude': gratitude,
-      'diary_entry': diaryEntry,
-    }..removeWhere((key, value) => value == null);
+    return {'goal': goal, 'gratitude': gratitude, 'diary_entry': diaryEntry}
+      ..removeWhere((key, value) => value == null);
   }
 
   static String _formatDate(DateTime dt) {
@@ -79,7 +76,7 @@ class DailyRepository {
         .upsert(data, onConflict: 'user_id,date')
         .select()
         .single();
-    return Daily.fromMap(inserted as Map<String, dynamic>);
+    return Daily.fromMap(inserted);
   }
 
   Future<Daily?> getByDate(DateTime date) async {
@@ -88,24 +85,25 @@ class DailyRepository {
         .select()
         .eq('date', Daily._formatDate(date))
         .limit(1);
-    if (rows is List && rows.isNotEmpty) {
-      return Daily.fromMap(rows.first as Map<String, dynamic>);
+    if (rows.isNotEmpty) {
+      return Daily.fromMap(rows.first);
     }
     return null;
   }
 
-  Future<List<Daily>> listRange({required DateTime start, required DateTime end}) async {
+  Future<List<Daily>> listRange({
+    required DateTime start,
+    required DateTime end,
+  }) async {
     final rows = await _client
         .from('dailies')
         .select()
         .gte('date', Daily._formatDate(start))
         .lte('date', Daily._formatDate(end))
         .order('date');
-    if (rows is List) {
-      return rows
-          .map((e) => Daily.fromMap(e as Map<String, dynamic>))
-          .toList(growable: false);
-    }
+    return rows
+        .map((e) => Daily.fromMap(e as Map<String, dynamic>))
+        .toList(growable: false);
     return [];
   }
 
@@ -127,15 +125,10 @@ class DailyRepository {
         .eq('date', Daily._formatDate(date))
         .select()
         .single();
-    return Daily.fromMap(updated as Map<String, dynamic>);
+    return Daily.fromMap(updated);
   }
 
   Future<void> deleteByDate(DateTime date) async {
-    await _client
-        .from('dailies')
-        .delete()
-        .eq('date', Daily._formatDate(date));
+    await _client.from('dailies').delete().eq('date', Daily._formatDate(date));
   }
 }
-
-

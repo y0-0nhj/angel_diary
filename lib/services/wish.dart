@@ -37,8 +37,19 @@ class WishRepository {
   final SupabaseClient _client = Supabase.instance.client;
 
   static const int maxWishesPerUser = 3;
+  static final Map<String, List<Wish>> _wishes = {};
 
   Future<Wish> create({required String wishText}) async {
+    // 3개 제한 체크: 현재 사용자 세션 기준으로 카운트
+    final countRes = await _client
+        .from('wishes')
+        .select('id', const FetchOptions(count: CountOption.exact))
+        .limit(0);
+    final int current = (countRes.count ?? 0);
+    if (current >= maxWishesPerUser) {
+      throw StateError('소망은 최대 3개까지 저장할 수 있습니다.');
+    }
+
     final inserted = await _client
         .from('wishes')
         .insert({'wish_text': wishText})

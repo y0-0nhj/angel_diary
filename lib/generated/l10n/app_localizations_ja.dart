@@ -145,4 +145,88 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get appInfo => 'アプリ情報';
+
+  @override
+  String get wishesTab => '願い';
+
+  @override
+  String get goalsTab => '目標';
+
+  @override
+  String get gratitudeTab => '感謝';
+
+  @override
+  String get writeDiary => '今日の日記を書く';
+
+  @override
+  String get editDiary => '今日の日記を編集';
+
+  @override
+  String angelGreeting(String angelName) {
+    return '$angelNameと一緒に温かい一日になりますように。';
+  }
+
+  @override
+  String get defaultGreeting => 'あなたの心の中の愛は\n時間と空間を超えて伝わります。';
+
+  @override
+  String get sunday => '日曜日';
+
+  @override
+  String get monday => '月曜日';
+
+  @override
+  String get tuesday => '火曜日';
+
+  @override
+  String get wednesday => '水曜日';
+
+  @override
+  String get thursday => '木曜日';
+
+  @override
+  String get friday => '金曜日';
+
+  @override
+  String get saturday => '土曜日';
+
+  @override
+  String get inspirationalMessage1 => '神があなたと共におられます';
+
+  @override
+  String get inspirationalMessage2 =>
+      'わたしがあなたがたのために立てている計画は、わざわいではなくて、平安を与える計画であり、あなたがたに将来と希望を与えるためのもの';
+
+  @override
+  String get inspirationalMessage3 => '主はわたしの牧者であって、わたしには乏しいことがない';
+
+  @override
+  String get inspirationalMessage4 => 'すべてのことが相働いて益となる';
+
+  @override
+  String get source1 => '創世記 28:15';
+
+  @override
+  String get source2 => 'エレミヤ 29:11';
+
+  @override
+  String get source3 => '詩篇 23:1';
+
+  @override
+  String get source4 => 'ローマ 8:28';
+
+  @override
+  String get encouragement1 => '本当によくやっています！💪';
+
+  @override
+  String get encouragement2 => '素晴らしい！この調子で続けて！✨';
+
+  @override
+  String get encouragement3 => '今日も素敵な一日を過ごしていますね！🌟';
+
+  @override
+  String get encouragement4 => '本当にすごい！誇らしいです！👏';
+
+  @override
+  String get encouragement5 => '完璧です！本当によくやりました！🎉';
 }

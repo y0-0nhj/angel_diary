@@ -145,4 +145,87 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get appInfo => '앱 정보';
+
+  @override
+  String get wishesTab => '소망';
+
+  @override
+  String get goalsTab => '목표';
+
+  @override
+  String get gratitudeTab => '감사';
+
+  @override
+  String get writeDiary => '오늘의 일기 쓰기';
+
+  @override
+  String get editDiary => '오늘의 일기 수정';
+
+  @override
+  String angelGreeting(String angelName) {
+    return '$angelName와(과) 함께하는 따뜻한 하루가 되길 바라요.';
+  }
+
+  @override
+  String get defaultGreeting => '당신의 마음속 사랑은\n시간과 공간을 넘어 전해진다.';
+
+  @override
+  String get sunday => '일요일';
+
+  @override
+  String get monday => '월요일';
+
+  @override
+  String get tuesday => '화요일';
+
+  @override
+  String get wednesday => '수요일';
+
+  @override
+  String get thursday => '목요일';
+
+  @override
+  String get friday => '금요일';
+
+  @override
+  String get saturday => '토요일';
+
+  @override
+  String get inspirationalMessage1 => '하나님이 너와 함께 하시니라';
+
+  @override
+  String get inspirationalMessage2 => '내가 너를 위하여 정한 계획은 평안이요 재앙이 아니니라';
+
+  @override
+  String get inspirationalMessage3 => '여호와는 나의 목자시니 내게 부족함이 없으리로다';
+
+  @override
+  String get inspirationalMessage4 => '모든 일이 합력하여 선을 이룬다';
+
+  @override
+  String get source1 => '창세기 28:15';
+
+  @override
+  String get source2 => '예레미야 29:11';
+
+  @override
+  String get source3 => '시편 23:1';
+
+  @override
+  String get source4 => '로마서 8:28';
+
+  @override
+  String get encouragement1 => '정말 잘하고 있어요! 💪';
+
+  @override
+  String get encouragement2 => '훌륭해요! 계속 이렇게 해요! ✨';
+
+  @override
+  String get encouragement3 => '오늘도 멋진 하루를 보내고 있네요! 🌟';
+
+  @override
+  String get encouragement4 => '정말 대단해요! 자랑스러워요! 👏';
+
+  @override
+  String get encouragement5 => '완벽해요! 정말 잘했어요! 🎉';
 }

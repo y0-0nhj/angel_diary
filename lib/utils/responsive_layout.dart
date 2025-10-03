@@ -11,7 +11,7 @@ class FixedWidthLayout extends StatelessWidget {
   const FixedWidthLayout({
     super.key,
     required this.child,
-    this.contentWidth = 350,
+    this.contentWidth = 400,
     this.backgroundColor = const Color(0xFFE0E0E0), // Colors.grey[200]
     this.contentColor = Colors.white,
     this.padding = const EdgeInsets.all(20.0),

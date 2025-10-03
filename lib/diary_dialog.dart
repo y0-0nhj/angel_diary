@@ -7,12 +7,8 @@ import 'services/daily.dart';
 class DiaryDialog extends StatefulWidget {
   final String? existingContent;
   final bool isEditMode;
-  
-  const DiaryDialog({
-    Key? key,
-    this.existingContent,
-    this.isEditMode = false,
-  }) : super(key: key);
+
+  const DiaryDialog({super.key, this.existingContent, this.isEditMode = false});
 
   @override
   _DiaryDialogState createState() => _DiaryDialogState();
@@ -100,9 +96,7 @@ class _DiaryDialogState extends State<DiaryDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: bgColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.9,
@@ -116,7 +110,7 @@ class _DiaryDialogState extends State<DiaryDialog> {
             // 헤더
             _buildResponsiveHeader(),
             const SizedBox(height: 20),
-            
+
             // 날짜 표시
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -134,7 +128,7 @@ class _DiaryDialogState extends State<DiaryDialog> {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // 일기 입력 영역
             Expanded(
               child: Container(
@@ -168,7 +162,7 @@ class _DiaryDialogState extends State<DiaryDialog> {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // 버튼들
             Row(
               children: [
@@ -211,23 +205,26 @@ class _DiaryDialogState extends State<DiaryDialog> {
 
   Future<void> _saveDiary() async {
     final content = _controller.text.trim();
-    
+
     if (content.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('일기 내용을 입력해주세요')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('일기 내용을 입력해주세요')));
       return;
     }
-    
+
     // 일기 저장 (로컬만)
     final now = DateTime.now();
-    final dateString = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final dateString =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     await CalendarDataManager.saveDiary(dateString, content);
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(widget.isEditMode ? '일기가 수정되었습니다 ✨' : '일기가 저장되었습니다 ✨')),
+      SnackBar(
+        content: Text(widget.isEditMode ? '일기가 수정되었습니다 ✨' : '일기가 저장되었습니다 ✨'),
+      ),
     );
-    
+
     Navigator.of(context).pop();
   }
 }

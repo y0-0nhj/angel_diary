@@ -179,5 +179,118 @@
   "appInfo": "앱 정보",
   "@appInfo": {
     "description": "앱 정보"
+  },
+  "wishesTab": "소망",
+  "@wishesTab": {
+    "description": "소망 탭 제목"
+  },
+  "goalsTab": "목표",
+  "@goalsTab": {
+    "description": "목표 탭 제목"
+  },
+  "gratitudeTab": "감사",
+  "@gratitudeTab": {
+    "description": "감사 탭 제목"
+  },
+  "writeDiary": "오늘의 일기 쓰기",
+  "@writeDiary": {
+    "description": "일기 쓰기 버튼"
+  },
+  "editDiary": "오늘의 일기 수정",
+  "@editDiary": {
+    "description": "일기 수정 버튼"
+  },
+  "angelGreeting": "{angelName}와(과) 함께하는 따뜻한 하루가 되길 바라요.",
+  "@angelGreeting": {
+    "description": "천사 인사말",
+    "placeholders": {
+      "angelName": {
+        "type": "String"
+      }
+    }
+  },
+  "defaultGreeting": "당신의 마음속 사랑은\n시간과 공간을 넘어 전해진다.",
+  "@defaultGreeting": {
+    "description": "기본 인사말"
+  },
+  "sunday": "일요일",
+  "@sunday": {
+    "description": "일요일"
+  },
+  "monday": "월요일",
+  "@monday": {
+    "description": "월요일"
+  },
+  "tuesday": "화요일",
+  "@tuesday": {
+    "description": "화요일"
+  },
+  "wednesday": "수요일",
+  "@wednesday": {
+    "description": "수요일"
+  },
+  "thursday": "목요일",
+  "@thursday": {
+    "description": "목요일"
+  },
+  "friday": "금요일",
+  "@friday": {
+    "description": "금요일"
+  },
+  "saturday": "토요일",
+  "@saturday": {
+    "description": "토요일"
+  },
+  "inspirationalMessage1": "하나님이 너와 함께 하시니라",
+  "@inspirationalMessage1": {
+    "description": "격려 메시지 1"
+  },
+  "inspirationalMessage2": "내가 너를 위하여 정한 계획은 평안이요 재앙이 아니니라",
+  "@inspirationalMessage2": {
+    "description": "격려 메시지 2"
+  },
+  "inspirationalMessage3": "여호와는 나의 목자시니 내게 부족함이 없으리로다",
+  "@inspirationalMessage3": {
+    "description": "격려 메시지 3"
+  },
+  "inspirationalMessage4": "모든 일이 합력하여 선을 이룬다",
+  "@inspirationalMessage4": {
+    "description": "격려 메시지 4"
+  },
+  "source1": "창세기 28:15",
+  "@source1": {
+    "description": "출처 1"
+  },
+  "source2": "예레미야 29:11",
+  "@source2": {
+    "description": "출처 2"
+  },
+  "source3": "시편 23:1",
+  "@source3": {
+    "description": "출처 3"
+  },
+  "source4": "로마서 8:28",
+  "@source4": {
+    "description": "출처 4"
+  },
+  "encouragement1": "정말 잘하고 있어요! 💪",
+  "@encouragement1": {
+    "description": "격려 메시지 1"
+  },
+  "encouragement2": "훌륭해요! 계속 이렇게 해요! ✨",
+  "@encouragement2": {
+    "description": "격려 메시지 2"
+  },
+  "encouragement3": "오늘도 멋진 하루를 보내고 있네요! 🌟",
+  "@encouragement3": {
+    "description": "격려 메시지 3"
+  },
+  "encouragement4": "정말 대단해요! 자랑스러워요! 👏",
+  "@encouragement4": {
+    "description": "격려 메시지 4"
+  },
+  "encouragement5": "완벽해요! 정말 잘했어요! 🎉",
+  "@encouragement5": {
+    "description": "격려 메시지 5"
   }
 }

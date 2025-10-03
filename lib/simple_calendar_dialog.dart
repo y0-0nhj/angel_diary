@@ -4,6 +4,8 @@ import 'home.dart';
 
 // 간단한 캘린더 다이얼로그
 class SimpleCalendarDialog extends StatefulWidget {
+  const SimpleCalendarDialog({super.key});
+
   @override
   _SimpleCalendarDialogState createState() => _SimpleCalendarDialogState();
 }
@@ -70,7 +72,7 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
               ),
             ],
           ),
-          
+
           // 버튼들
           Row(
             children: [
@@ -91,15 +93,18 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
               // 날짜 선택 버튼
               ElevatedButton(
                 onPressed: _selectDate,
-                child: const Icon(Icons.calendar_today, color: Colors.white),
                 style: ElevatedButton.styleFrom(
                   foregroundColor: Colors.white,
                   backgroundColor: primaryColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
+                child: const Icon(Icons.calendar_today, color: Colors.white),
               ),
             ],
           ),
@@ -137,7 +142,7 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
               ],
             ),
           ),
-          
+
           // 버튼들
           Wrap(
             children: [
@@ -158,15 +163,18 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
               // 날짜 선택 버튼
               ElevatedButton(
                 onPressed: _selectDate,
-                child: const Icon(Icons.calendar_today, color: Colors.white),
                 style: ElevatedButton.styleFrom(
                   foregroundColor: Colors.white,
                   backgroundColor: primaryColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
+                child: const Icon(Icons.calendar_today, color: Colors.white),
               ),
             ],
           ),
@@ -195,7 +203,7 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
         );
       },
     );
-    
+
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
@@ -209,9 +217,7 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: bgColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.95,
@@ -243,7 +249,7 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
                 ],
               ),
               const SizedBox(height: 20),
-              
+
               // 날짜 선택 영역
               Container(
                 padding: const EdgeInsets.all(20),
@@ -254,7 +260,7 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
                 child: _buildResponsiveHeader(),
               ),
               const SizedBox(height: 20),
-              
+
               // 하단 영역 (상단: 소망/목표/감사, 하단: 일기)
               Column(
                 children: [
@@ -289,9 +295,9 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
                             ],
                           ),
                         ),
-                        
+
                         // 탭 내용
-                        Container(
+                        SizedBox(
                           height: 200,
                           child: Padding(
                             padding: const EdgeInsets.all(20),
@@ -301,9 +307,9 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // 하단: 일기 영역
                   Container(
                     width: double.infinity, // 상단 탭과 동일한 너비로 설정
@@ -333,7 +339,8 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Expanded( // Container 대신 Expanded 사용하여 남은 공간 모두 사용
+                          Expanded(
+                            // Container 대신 Expanded 사용하여 남은 공간 모두 사용
                             child: SingleChildScrollView(
                               child: _buildDiaryContent(),
                             ),
@@ -353,9 +360,9 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
 
   Widget _buildDiaryContent() {
     final String? diary = _selectedDayData?['diary'] as String?;
-    
+
     if (diary == null || diary.isEmpty) {
-      return Container(
+      return SizedBox(
         width: double.infinity, // 전체 너비 사용
         child: Center(
           child: Text(
@@ -369,23 +376,19 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
         ),
       );
     }
-    
-    return Container(
+
+    return SizedBox(
       width: double.infinity, // 전체 너비 사용
       child: Text(
         diary,
-        style: const TextStyle(
-          fontSize: 16,
-          color: textColor,
-          height: 1.6,
-        ),
+        style: const TextStyle(fontSize: 16, color: textColor, height: 1.6),
       ),
     );
   }
 
   Widget _buildTabButton(int index, String title, Color color) {
     final isSelected = _selectedTabIndex == index;
-    
+
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -427,18 +430,16 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
   }
 
   Widget _buildSimpleDataList(dynamic data) {
-    final List<Map<String, dynamic>> items = data != null ? List<Map<String, dynamic>>.from(data) : [];
-    
+    final List<Map<String, dynamic>> items = data != null
+        ? List<Map<String, dynamic>>.from(data)
+        : [];
+
     if (items.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.inbox_outlined,
-              size: 48,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.inbox_outlined, size: 48, color: Colors.grey[400]),
             const SizedBox(height: 12),
             Text(
               '데이터가 없습니다',
@@ -452,7 +453,7 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
         ),
       );
     }
-    
+
     return ListView.builder(
       itemCount: items.length,
       itemBuilder: (context, index) {
@@ -463,15 +464,14 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.transparent,
-              width: 0,
-            ),
+            border: Border.all(color: Colors.transparent, width: 0),
           ),
           child: Row(
             children: [
               Icon(
-                item['completed'] ? Icons.check_circle : Icons.radio_button_unchecked,
+                item['completed']
+                    ? Icons.check_circle
+                    : Icons.radio_button_unchecked,
                 color: item['completed'] ? Colors.lightGreen : Colors.grey[400],
                 size: 24,
               ),
@@ -482,7 +482,9 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
                   style: TextStyle(
                     fontSize: 16,
                     color: textColor,
-                    decoration: item['completed'] == true ? TextDecoration.lineThrough : null,
+                    decoration: item['completed'] == true
+                        ? TextDecoration.lineThrough
+                        : null,
                   ),
                 ),
               ),

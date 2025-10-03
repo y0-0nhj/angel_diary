@@ -36,7 +36,7 @@ Future<void> main() async {
   );
 
   // 언어 설정 로드
-  await LanguageManager.loadLanguage();
+  await LanguageManager.loadSavedLanguage();
 
   // 타임존 초기화
   tz.initializeTimeZones();
@@ -60,7 +60,21 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
   void initState() {
     super.initState();
     _checkAngelStatus();
+    // LanguageManager의 변경사항을 감지하기 위해 리스너 추가
+    LanguageManager().addListener(_onLanguageChanged);
     // Removed auth state listener
+  }
+
+  @override
+  void dispose() {
+    LanguageManager().removeListener(_onLanguageChanged);
+    super.dispose();
+  }
+
+  void _onLanguageChanged() {
+    setState(() {
+      // 언어가 변경되면 UI를 다시 빌드
+    });
   }
 
   // 천사 등록 여부 확인
@@ -1432,13 +1446,7 @@ class LanguageSelectionDialog extends StatelessWidget {
                     onPressed: () async {
                       await LanguageManager.setLanguage(locale);
                       Navigator.of(context).pop();
-                      // 앱 전체 재시작을 위해 AngelDiaryApp으로 이동
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (context) => const AngelDiaryApp(),
-                        ),
-                        (route) => false,
-                      );
+                      // 언어 변경이 즉시 적용됨 (리스너를 통해)
                     },
                     child: Text(
                       LanguageManager.getLanguageName(locale),

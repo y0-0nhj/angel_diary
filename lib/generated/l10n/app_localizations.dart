@@ -369,6 +369,168 @@ abstract class AppLocalizations {
   /// In ko, this message translates to:
   /// **'앱 정보'**
   String get appInfo;
+
+  /// 소망 탭 제목
+  ///
+  /// In ko, this message translates to:
+  /// **'소망'**
+  String get wishesTab;
+
+  /// 목표 탭 제목
+  ///
+  /// In ko, this message translates to:
+  /// **'목표'**
+  String get goalsTab;
+
+  /// 감사 탭 제목
+  ///
+  /// In ko, this message translates to:
+  /// **'감사'**
+  String get gratitudeTab;
+
+  /// 일기 쓰기 버튼
+  ///
+  /// In ko, this message translates to:
+  /// **'오늘의 일기 쓰기'**
+  String get writeDiary;
+
+  /// 일기 수정 버튼
+  ///
+  /// In ko, this message translates to:
+  /// **'오늘의 일기 수정'**
+  String get editDiary;
+
+  /// 천사 인사말
+  ///
+  /// In ko, this message translates to:
+  /// **'{angelName}와(과) 함께하는 따뜻한 하루가 되길 바라요.'**
+  String angelGreeting(String angelName);
+
+  /// 기본 인사말
+  ///
+  /// In ko, this message translates to:
+  /// **'당신의 마음속 사랑은\n시간과 공간을 넘어 전해진다.'**
+  String get defaultGreeting;
+
+  /// 일요일
+  ///
+  /// In ko, this message translates to:
+  /// **'일요일'**
+  String get sunday;
+
+  /// 월요일
+  ///
+  /// In ko, this message translates to:
+  /// **'월요일'**
+  String get monday;
+
+  /// 화요일
+  ///
+  /// In ko, this message translates to:
+  /// **'화요일'**
+  String get tuesday;
+
+  /// 수요일
+  ///
+  /// In ko, this message translates to:
+  /// **'수요일'**
+  String get wednesday;
+
+  /// 목요일
+  ///
+  /// In ko, this message translates to:
+  /// **'목요일'**
+  String get thursday;
+
+  /// 금요일
+  ///
+  /// In ko, this message translates to:
+  /// **'금요일'**
+  String get friday;
+
+  /// 토요일
+  ///
+  /// In ko, this message translates to:
+  /// **'토요일'**
+  String get saturday;
+
+  /// 격려 메시지 1
+  ///
+  /// In ko, this message translates to:
+  /// **'하나님이 너와 함께 하시니라'**
+  String get inspirationalMessage1;
+
+  /// 격려 메시지 2
+  ///
+  /// In ko, this message translates to:
+  /// **'내가 너를 위하여 정한 계획은 평안이요 재앙이 아니니라'**
+  String get inspirationalMessage2;
+
+  /// 격려 메시지 3
+  ///
+  /// In ko, this message translates to:
+  /// **'여호와는 나의 목자시니 내게 부족함이 없으리로다'**
+  String get inspirationalMessage3;
+
+  /// 격려 메시지 4
+  ///
+  /// In ko, this message translates to:
+  /// **'모든 일이 합력하여 선을 이룬다'**
+  String get inspirationalMessage4;
+
+  /// 출처 1
+  ///
+  /// In ko, this message translates to:
+  /// **'창세기 28:15'**
+  String get source1;
+
+  /// 출처 2
+  ///
+  /// In ko, this message translates to:
+  /// **'예레미야 29:11'**
+  String get source2;
+
+  /// 출처 3
+  ///
+  /// In ko, this message translates to:
+  /// **'시편 23:1'**
+  String get source3;
+
+  /// 출처 4
+  ///
+  /// In ko, this message translates to:
+  /// **'로마서 8:28'**
+  String get source4;
+
+  /// 격려 메시지 1
+  ///
+  /// In ko, this message translates to:
+  /// **'정말 잘하고 있어요! 💪'**
+  String get encouragement1;
+
+  /// 격려 메시지 2
+  ///
+  /// In ko, this message translates to:
+  /// **'훌륭해요! 계속 이렇게 해요! ✨'**
+  String get encouragement2;
+
+  /// 격려 메시지 3
+  ///
+  /// In ko, this message translates to:
+  /// **'오늘도 멋진 하루를 보내고 있네요! 🌟'**
+  String get encouragement3;
+
+  /// 격려 메시지 4
+  ///
+  /// In ko, this message translates to:
+  /// **'정말 대단해요! 자랑스러워요! 👏'**
+  String get encouragement4;
+
+  /// 격려 메시지 5
+  ///
+  /// In ko, this message translates to:
+  /// **'완벽해요! 정말 잘했어요! 🎉'**
+  String get encouragement5;
 }
 
 class _AppLocalizationsDelegate

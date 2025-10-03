@@ -1,277 +1,221 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../common/widgets/custom_text_field.dart';
+import '../../common/constants/colors.dart';
 
-class BackupAuthPage extends StatelessWidget {
-  const BackupAuthPage({super.key});
+class EmailSignupScreen extends StatefulWidget {
+  const EmailSignupScreen({super.key});
 
-  static const Color _olive = Color(0xFF788454);
+  @override
+  State<EmailSignupScreen> createState() => _EmailSignupScreenState();
+}
+
+class _EmailSignupScreenState extends State<EmailSignupScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _nicknameController = TextEditingController();
+  final _birthController = TextEditingController();
+  String _selectedGender = '여자';
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _nicknameController.dispose();
+    _birthController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSignUp() async {
+    try {
+      // Validate password
+      if (_passwordController.text.length < 6) {
+        throw 'Password must be at least 6 characters';
+      }
+
+      // Create user in Supabase Authentication
+      final response = await Supabase.instance.client.auth.signUp(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+
+      if (response.user == null) throw 'Sign up failed';
+
+      // Store additional user data in Supabase database
+      await Supabase.instance.client.from('user_profiles').insert({
+        'id': response.user!.id,
+        'email': _emailController.text,
+        'nickname': _nicknameController.text,
+        'birth_date': _birthController.text,
+        'gender': _selectedGender,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      if (mounted) {
+        Navigator.of(context).pop(); // Return to previous screen
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('회원가입이 완료되었습니다.')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F3EC),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 16.0,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.text),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 20),
+            // Q1: 이메일
+            Text(
+              'Q1',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(color: AppColors.text),
             ),
-            child: Container(
+            const SizedBox(height: 8),
+            const Text('이메일 주소를 적어주세요.'),
+            const SizedBox(height: 8),
+            CustomTextField(
+              controller: _emailController,
+              hintText: '@gmail.com',
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 24),
+
+            // Q2: 비밀번호
+            Text(
+              'Q2',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(color: AppColors.text),
+            ),
+            const SizedBox(height: 8),
+            const Text('비밀번호를 생성해주세요.'),
+            const Text(
+              '*영문/숫자/특수문자 중 2개 이상 입력하세요.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            CustomTextField(
+              controller: _passwordController,
+              hintText: '비밀번호 입력',
+              obscureText: true,
+            ),
+            const SizedBox(height: 8),
+            CustomTextField(hintText: '비밀번호 확인', obscureText: true),
+            const SizedBox(height: 24),
+
+            // Q3: 닉네임
+            Text(
+              'Q3',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(color: AppColors.text),
+            ),
+            const SizedBox(height: 8),
+            const Text('닉네임을 입력해주세요.'),
+            const SizedBox(height: 8),
+            CustomTextField(controller: _nicknameController, hintText: '해피천사'),
+            const SizedBox(height: 24),
+
+            // Q4: 생년월일
+            Text(
+              'Q4',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(color: AppColors.text),
+            ),
+            const SizedBox(height: 8),
+            const Text('생년월일을 입력해주세요.'),
+            const SizedBox(height: 8),
+            CustomTextField(
+              controller: _birthController,
+              hintText: '0000-00-00',
+              keyboardType: TextInputType.datetime,
+            ),
+            const SizedBox(height: 24),
+
+            // Q5: 성별
+            Text(
+              'Q5',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(color: AppColors.text),
+            ),
+            const SizedBox(height: 8),
+            const Text('성별을 입력해주세요.'),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x14000000),
-                    blurRadius: 16,
-                    offset: Offset(0, 8),
-                  ),
-                ],
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _TopBar(color: _olive),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 28),
-                        const Text(
-                          '회원가입',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 36,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF1F2937),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        _SocialButton(
-                          backgroundColor: const Color(0xFFFEE500),
-                          foregroundColor: const Color(0xFF191600),
-                          icon: const Icon(
-                            Icons.chat_bubble,
-                            color: Color(0xFF191600),
-                          ),
-                          label: '카카오톡으로 시작하기',
-                          onPressed: () {},
-                        ),
-                        const SizedBox(height: 12),
-                        _SocialButton(
-                          backgroundColor: const Color(0xFF03C75A),
-                          foregroundColor: Colors.white,
-                          icon: _naverIcon(),
-                          label: '네이버로 시작하기',
-                          onPressed: () {},
-                        ),
-                        const SizedBox(height: 12),
-                        _SocialButton(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF3C4043),
-                          borderColor: const Color(0xFFE0E0E0),
-                          icon: _googleIcon(),
-                          label: '구글로 시작하기',
-                          onPressed: () {},
-                        ),
-                        const SizedBox(height: 28),
-                        const _OrDivider(),
-                        const SizedBox(height: 20),
-                        FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: _olive,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 18),
-                            shape: const StadiumBorder(),
-                            textStyle: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          onPressed: () {},
-                          child: const Text('이메일로 가입하기'),
-                        ),
-                        const SizedBox(height: 16),
-                        Center(
-                          child: TextButton(
-                            onPressed: () {},
-                            style: TextButton.styleFrom(
-                              foregroundColor: const Color(0xFF4F5563),
-                              textStyle: const TextStyle(
-                                decoration: TextDecoration.underline,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            child: const Text('이미 아이디가 있어요!'),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
-                ],
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedGender,
+                  isExpanded: true,
+                  items: ['여자', '남자'].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedGender = newValue;
+                      });
+                    }
+                  },
+                ),
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
+            const SizedBox(height: 32),
 
-  static Widget _googleIcon() {
-    return Container(
-      width: 22,
-      height: 22,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
-        color: Colors.white,
-      ),
-      child: Center(
-        child: Text(
-          'G',
-          style: TextStyle(
-            color: Colors.red.shade600,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      ),
-    );
-  }
-
-  static Widget _naverIcon() {
-    return Container(
-      width: 22,
-      height: 22,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: const Text(
-        'N',
-        style: TextStyle(
-          color: Color(0xFF03C75A),
-          fontSize: 16,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-    );
-  }
-}
-
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.color});
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 40,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(16),
-          topRight: Radius.circular(16),
-        ),
-      ),
-      padding: const EdgeInsets.only(right: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: const [
-          _Dot(),
-          SizedBox(width: 8),
-          _Dot(),
-          SizedBox(width: 8),
-          _Dot(),
-        ],
-      ),
-    );
-  }
-}
-
-class _Dot extends StatelessWidget {
-  const _Dot();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 18,
-      height: 18,
-      decoration: BoxDecoration(
-        color: Colors.white70,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
-      ),
-    );
-  }
-}
-
-class _SocialButton extends StatelessWidget {
-  const _SocialButton({
-    required this.backgroundColor,
-    required this.foregroundColor,
-    required this.icon,
-    required this.label,
-    this.borderColor,
-    this.onPressed,
-  });
-
-  final Color backgroundColor;
-  final Color foregroundColor;
-  final Color? borderColor;
-  final Widget icon;
-  final String label;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 52,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          elevation: 0,
-          backgroundColor: backgroundColor,
-          foregroundColor: foregroundColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-            side: BorderSide(color: borderColor ?? Colors.transparent),
-          ),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [icon, const SizedBox(width: 10), Text(label)],
-        ),
-      ),
-    );
-  }
-}
-
-class _OrDivider extends StatelessWidget {
-  const _OrDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: Container(height: 1, color: const Color(0xFFE5E7EB))),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12.0),
-          child: Text(
-            '또는',
-            style: TextStyle(
-              color: Color(0xFF6B7280),
-              fontWeight: FontWeight.w600,
+            // Submit Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _handleSignUp,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  '입력하기',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
-          ),
+          ],
         ),
-        Expanded(child: Container(height: 1, color: const Color(0xFFE5E7EB))),
-      ],
+      ),
     );
   }
 }
