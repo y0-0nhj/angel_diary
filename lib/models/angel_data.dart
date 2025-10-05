@@ -1,5 +1,6 @@
-import 'dart:convert';
-
+/// 천사 데이터 모델
+/// 
+/// 천사의 모든 속성과 JSON 변환 기능을 포함합니다.
 class AngelData {
   final String name;
   final String feature;
@@ -23,6 +24,7 @@ class AngelData {
     required this.createdAt,
   });
 
+  /// JSON 변환을 위한 메서드
   Map<String, dynamic> toJson() {
     return {
       'name': name,
@@ -37,6 +39,7 @@ class AngelData {
     };
   }
 
+  /// JSON에서 AngelData 객체를 생성하는 팩토리 생성자
   factory AngelData.fromJson(Map<String, dynamic> json) {
     return AngelData(
       name: json['name'],

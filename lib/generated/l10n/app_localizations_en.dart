@@ -234,4 +234,85 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get encouragement5 => 'Perfect! You did really well! 🎉';
+
+  @override
+  String get customizationTitle => 'Angel Customization';
+
+  @override
+  String get faceType => 'Face Type';
+
+  @override
+  String get faceColor => 'Face Color';
+
+  @override
+  String get tail => 'Tail';
+
+  @override
+  String get body => 'Body';
+
+  @override
+  String get emotion => 'Emotion';
+
+  @override
+  String get nextStep => 'Next Step';
+
+  @override
+  String get completeCreation => 'Complete Angel Creation';
+
+  @override
+  String get nameRequired => 'Please enter the angel\'s name';
+
+  @override
+  String get featureRequired => 'Please enter the angel\'s features';
+
+  @override
+  String get petTypeDog => 'Dog';
+
+  @override
+  String get petTypeCat => 'Cat';
+
+  @override
+  String get petTypeOther => 'Other';
+
+  @override
+  String get petDesc1 => 'Small white fluffy puppy';
+
+  @override
+  String get petDesc2 => 'Brave and gallant friend';
+
+  @override
+  String get petDesc3 => 'Affectionate cat-dog';
+
+  @override
+  String get petDesc4 => 'Direct input';
+
+  @override
+  String get selectImage => 'Select Image';
+
+  @override
+  String get angelNameLabel => 'Angel\'s Name';
+
+  @override
+  String get angelFeatureLabel => 'Angel\'s Features';
+
+  @override
+  String get animalTypeLabel => 'Animal Type';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get previous => 'Previous';
+
+  @override
+  String get next => 'Next';
+
+  @override
+  String get submit => 'Submit';
+
+  @override
+  String get feedbackSubmitted => 'Feedback has been submitted. Thank you!';
+
+  @override
+  String get tailSelector => 'Tail';
 }

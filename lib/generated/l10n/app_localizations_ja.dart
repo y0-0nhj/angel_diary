@@ -229,4 +229,85 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get encouragement5 => '完璧です！本当によくやりました！🎉';
+
+  @override
+  String get customizationTitle => '天使カスタマイズ';
+
+  @override
+  String get faceType => '顔タイプ';
+
+  @override
+  String get faceColor => '顔色';
+
+  @override
+  String get tail => 'しっぽ';
+
+  @override
+  String get body => '体';
+
+  @override
+  String get emotion => '表情';
+
+  @override
+  String get nextStep => '次のステップ';
+
+  @override
+  String get completeCreation => '天使作成完了';
+
+  @override
+  String get nameRequired => '天使の名前を入力してください';
+
+  @override
+  String get featureRequired => '天使の特徴を入力してください';
+
+  @override
+  String get petTypeDog => '犬';
+
+  @override
+  String get petTypeCat => '猫';
+
+  @override
+  String get petTypeOther => 'その他';
+
+  @override
+  String get petDesc1 => '小さくて白いふわふわの子犬';
+
+  @override
+  String get petDesc2 => '勇敢で立派な友達';
+
+  @override
+  String get petDesc3 => '甘えん坊の猫犬';
+
+  @override
+  String get petDesc4 => '直接入力';
+
+  @override
+  String get selectImage => '画像選択';
+
+  @override
+  String get angelNameLabel => '天使の名前';
+
+  @override
+  String get angelFeatureLabel => '天使の特徴';
+
+  @override
+  String get animalTypeLabel => '動物の種類';
+
+  @override
+  String get cancel => 'キャンセル';
+
+  @override
+  String get previous => '前へ';
+
+  @override
+  String get next => '次へ';
+
+  @override
+  String get submit => '送信';
+
+  @override
+  String get feedbackSubmitted => 'フィードバックが送信されました。ありがとうございます！';
+
+  @override
+  String get tailSelector => 'しっぽ';
 }

@@ -228,4 +228,85 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get encouragement5 => '완벽해요! 정말 잘했어요! 🎉';
+
+  @override
+  String get customizationTitle => '천사 커스터마이징';
+
+  @override
+  String get faceType => '얼굴 타입';
+
+  @override
+  String get faceColor => '얼굴 색상';
+
+  @override
+  String get tail => '꼬리';
+
+  @override
+  String get body => '몸체';
+
+  @override
+  String get emotion => '표정';
+
+  @override
+  String get nextStep => '다음 단계';
+
+  @override
+  String get completeCreation => '천사 생성 완료';
+
+  @override
+  String get nameRequired => '천사의 이름을 입력해주세요';
+
+  @override
+  String get featureRequired => '천사의 특징을 입력해주세요';
+
+  @override
+  String get petTypeDog => '강아지';
+
+  @override
+  String get petTypeCat => '고양이';
+
+  @override
+  String get petTypeOther => '기타';
+
+  @override
+  String get petDesc1 => '작고 하얀 복슬강아지';
+
+  @override
+  String get petDesc2 => '용감하고 늠름한 친구';
+
+  @override
+  String get petDesc3 => '애교많은 개냥이';
+
+  @override
+  String get petDesc4 => '직접 입력';
+
+  @override
+  String get selectImage => '이미지 선택';
+
+  @override
+  String get angelNameLabel => '천사의 이름';
+
+  @override
+  String get angelFeatureLabel => '천사의 특징';
+
+  @override
+  String get animalTypeLabel => '동물 종류';
+
+  @override
+  String get cancel => '취소';
+
+  @override
+  String get previous => '이전';
+
+  @override
+  String get next => '다음';
+
+  @override
+  String get submit => '제출';
+
+  @override
+  String get feedbackSubmitted => '피드백이 제출되었습니다. 감사합니다!';
+
+  @override
+  String get tailSelector => '꼬리';
 }

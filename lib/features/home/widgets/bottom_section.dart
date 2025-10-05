@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../../generated/l10n/app_localizations.dart';
 import '../../../main.dart' show primaryColor;
 
 class BottomSection extends StatelessWidget {

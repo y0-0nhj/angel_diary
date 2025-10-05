@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// Removed supabase_flutter import
 import 'generated/l10n/app_localizations.dart';
 import 'character_view.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'language_manager.dart';
+// Removed flutter_dotenv import
 // Removed auth imports
 
 // --- 앱 전체에서 사용할 색상 정의 ---
@@ -26,14 +27,18 @@ Future<void> main() async {
   // Flutter 바인딩을 먼저 초기화
   WidgetsFlutterBinding.ensureInitialized();
 
+  //await dotenv.load(fileName: ".env");
+
   // Firebase 초기화
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  /*
   // Initialize Supabase
   await Supabase.initialize(
-    url: 'YOUR_SUPABASE_URL',
-    anonKey: 'YOUR_SUPABASE_ANON_KEY',
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
+*/
 
   // 언어 설정 로드
   await LanguageManager.loadSavedLanguage();
@@ -99,7 +104,7 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '천사일기',
+      title: 'Angel Diary',
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -112,7 +117,7 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
       theme: ThemeData(
         scaffoldBackgroundColor: bgColor,
         primaryColor: primaryColor,
-        fontFamily: 'Oneprettynight', // 기본 폰트를 Pretendard로 설정
+        fontFamily: 'Cafe24Oneprettynight', // 기본 폰트를 Cafe24Oneprettynight로 설정
         textTheme: const TextTheme(
           // // 대형 제목 - 브랜드/로고용
           // displayLarge: TextStyle(fontFamily: 'Ongeulleap', fontSize: 48, fontWeight: FontWeight.bold, color: textColor),
@@ -277,10 +282,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 // --- 각 화면을 구성하는 위젯들 ---
 
 // 1. 스플래시 화면
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends StatefulWidget {
   final VoidCallback onStartPressed;
   const SplashScreen({super.key, required this.onStartPressed});
 
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -290,13 +300,20 @@ class SplashScreen extends StatelessWidget {
       key: const ValueKey('splash'),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
+          // 언어 선택 아이콘 (우상단)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [_buildLanguageSelector(context)],
+          ),
           Text(
             l10n.splashMessage1,
             style: textTheme.bodyMedium,
             textAlign: TextAlign.center,
+            textScaleFactor: 1.2,
           ),
+          const SizedBox(height: 10), // 메시지와 제목 사이 간격
           Column(
             children: [
               Text(l10n.appTitle, style: textTheme.displayLarge),
@@ -307,12 +324,14 @@ class SplashScreen extends StatelessWidget {
               ), // 샘플 비둘기 이미지
             ],
           ),
+          const SizedBox(height: 30), // 이미지와 하단 메시지 사이 간격
           Column(
             children: [
               Text(
                 l10n.splashMessage2,
                 style: textTheme.bodyMedium,
                 textAlign: TextAlign.center,
+                textScaleFactor: 1.2,
               ),
               const SizedBox(height: 20),
               ElevatedButton(
@@ -324,18 +343,191 @@ class SplashScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(25),
                   ),
                 ),
-                onPressed: onStartPressed,
+                onPressed: widget.onStartPressed,
                 child: Text(
                   l10n.startButton,
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ],
           ),
+          const Spacer(), // 하단에 여백 추가
         ],
+      ),
+    );
+  }
+
+  Widget _buildLanguageSelector(BuildContext context) {
+    final currentLocale = LanguageManager.currentLocale;
+
+    // 현재 언어에 따른 플래그 아이콘과 텍스트
+    String flagEmoji;
+    String languageName;
+
+    switch (currentLocale.languageCode) {
+      case 'ko':
+        flagEmoji = '🇰🇷';
+        languageName = AppLocalizations.of(context)!.korean;
+        break;
+      case 'en':
+        flagEmoji = '🇺🇸';
+        languageName = AppLocalizations.of(context)!.english;
+        break;
+      case 'ja':
+        flagEmoji = '🇯🇵';
+        languageName = AppLocalizations.of(context)!.japanese;
+        break;
+      default:
+        flagEmoji = '🌐';
+        languageName = 'Language';
+    }
+
+    return GestureDetector(
+      onTap: () => _showLanguageDialog(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: primaryColor.withOpacity(0.3), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(flagEmoji, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 6),
+            Text(
+              languageName,
+              style: TextStyle(
+                fontFamily: currentLocale.languageCode == 'ko'
+                    ? 'Cafe24Oneprettynight'
+                    : null,
+                fontSize: 14,
+                color: textColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.keyboard_arrow_down,
+              size: 16,
+              color: textColor.withOpacity(0.7),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showLanguageDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            '언어 선택 / Language / 言語選択',
+            style: TextStyle(
+              fontFamily: LanguageManager.currentLocale.languageCode == 'ko'
+                  ? 'Cafe24Oneprettynight'
+                  : null,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildLanguageOption(
+                context,
+                'ko',
+                '🇰🇷',
+                AppLocalizations.of(context)!.korean,
+              ),
+              const SizedBox(height: 12),
+              _buildLanguageOption(
+                context,
+                'en',
+                '🇺🇸',
+                AppLocalizations.of(context)!.english,
+              ),
+              const SizedBox(height: 12),
+              _buildLanguageOption(
+                context,
+                'ja',
+                '🇯🇵',
+                AppLocalizations.of(context)!.japanese,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLanguageOption(
+    BuildContext context,
+    String languageCode,
+    String flag,
+    String languageName,
+  ) {
+    final isSelected =
+        LanguageManager.currentLocale.languageCode == languageCode;
+
+    return GestureDetector(
+      onTap: () {
+        LanguageManager.setLanguage(Locale(languageCode));
+        Navigator.of(context).pop();
+        setState(() {}); // 화면 새로고침
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? primaryColor.withOpacity(0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? primaryColor : Colors.grey.withOpacity(0.3),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Text(flag, style: const TextStyle(fontSize: 24)),
+            const SizedBox(width: 12),
+            Text(
+              languageName,
+              style: TextStyle(
+                fontFamily: languageCode == 'ko'
+                    ? 'Cafe24Oneprettynight'
+                    : null,
+                fontSize: 16,
+                color: isSelected ? primaryColor : textColor,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            const Spacer(),
+            if (isSelected)
+              Icon(Icons.check_circle, color: primaryColor, size: 20),
+          ],
+        ),
       ),
     );
   }
@@ -378,7 +570,11 @@ class QuestionScreen extends StatelessWidget {
                   style: textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),
-                Text(l10n.questionSubtitle, style: textTheme.bodyMedium),
+                Text(
+                  l10n.questionSubtitle,
+                  style: textTheme.bodyMedium,
+                  textScaleFactor: 1.4,
+                ),
                 const SizedBox(height: 30),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -393,7 +589,7 @@ class QuestionScreen extends StatelessWidget {
                   child: Text(
                     l10n.yesButton,
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -412,7 +608,7 @@ class QuestionScreen extends StatelessWidget {
                   child: Text(
                     l10n.noButton,
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -440,15 +636,10 @@ class _YesFormScreenState extends State<YesFormScreen> {
   final _directInputController = TextEditingController();
 
   // 폼 위젯들의 상태를 관리할 변수들
-  final List<String> _petTypes = ['강아지', '고양이', '기타'];
+  List<String> _petTypes = [];
   String? _selectedPetType;
 
-  final List<String> _petDescs = [
-    '작고 하얀 복슬강아지',
-    '용감하고 늠름한 친구',
-    '애교많은 개냥이',
-    '직접 입력',
-  ];
+  List<String> _petDescs = [];
   String? _selectedPetDesc;
 
   File? _pickedImage; // 사용자가 선택한 이미지 파일
@@ -476,25 +667,40 @@ class _YesFormScreenState extends State<YesFormScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 얼굴 타입
-        _buildControlSection('얼굴 타입', _selectedFaceType, 4, (value) {
-          setState(() {
-            _selectedFaceType = value;
-          });
-        }),
+        _buildControlSection(
+          AppLocalizations.of(context)!.faceType,
+          _selectedFaceType,
+          4,
+          (value) {
+            setState(() {
+              _selectedFaceType = value;
+            });
+          },
+        ),
 
         // 얼굴 색상
-        _buildControlSection('얼굴 색상', _selectedFaceColor, 6, (value) {
-          setState(() {
-            _selectedFaceColor = value;
-          });
-        }),
+        _buildControlSection(
+          AppLocalizations.of(context)!.faceColor,
+          _selectedFaceColor,
+          6,
+          (value) {
+            setState(() {
+              _selectedFaceColor = value;
+            });
+          },
+        ),
 
         // 꼬리
-        _buildControlSection('꼬리', _selectedTailIndex, 4, (value) {
-          setState(() {
-            _selectedTailIndex = value;
-          });
-        }),
+        _buildControlSection(
+          AppLocalizations.of(context)!.tail,
+          _selectedTailIndex,
+          4,
+          (value) {
+            setState(() {
+              _selectedTailIndex = value;
+            });
+          },
+        ),
       ],
     );
   }
@@ -569,10 +775,12 @@ class _YesFormScreenState extends State<YesFormScreen> {
     // 천사 데이터 생성
     final angelData = AngelData(
       name: _nameController.text,
-      feature: _selectedPetDesc == '직접 입력'
+      feature: _selectedPetDesc == AppLocalizations.of(context)!.petDesc4
           ? _directInputController.text
           : _selectedPetDesc ?? '',
-      animalType: _selectedPetType == '고양이' ? 'cat' : 'dog',
+      animalType: _selectedPetType == AppLocalizations.of(context)!.petTypeCat
+          ? 'cat'
+          : 'dog',
       faceType: _selectedFaceType,
       faceColor: _selectedFaceColor,
       bodyIndex: 1,
@@ -592,6 +800,19 @@ class _YesFormScreenState extends State<YesFormScreen> {
 
   // 위젯이 화면에서 사라질 때 컨트롤러를 정리해줘야 메모리 누수가 없어
   @override
+  void initState() {
+    super.initState();
+    // initState에서는 다국어 데이터 초기화를 하지 않음
+    // build() 메서드에서 동적으로 처리
+  }
+
+  void _initializePetData() {
+    final l10n = AppLocalizations.of(context)!;
+    _petTypes = [l10n.petTypeDog, l10n.petTypeCat, l10n.petTypeOther];
+    _petDescs = [l10n.petDesc1, l10n.petDesc2, l10n.petDesc3, l10n.petDesc4];
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _directInputController.dispose(); // ✨ 직접 입력 컨트롤러도 dispose 추가
@@ -600,6 +821,9 @@ class _YesFormScreenState extends State<YesFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // build() 메서드에서 다국어 데이터 초기화
+    _initializePetData();
+
     return Padding(
       padding: const EdgeInsets.all(37.0),
       child: Card(
@@ -613,32 +837,53 @@ class _YesFormScreenState extends State<YesFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '천사 등록하기',
-                  style: TextStyle(fontSize: 43, color: textColor),
+                Text(
+                  AppLocalizations.of(context)!.angelRegistration,
+                  style: TextStyle(
+                    fontSize: 43,
+                    color: textColor,
+                    fontFamily:
+                        LanguageManager.currentLocale.languageCode == 'ko'
+                        ? 'Cafe24Oneprettynight'
+                        : null,
+                  ),
                 ),
                 const SizedBox(height: 30),
 
                 // 1. 이름 입력창
-                const Text(
-                  '당신의 마음 속에 품은 아이의 이름을 입력해주세요.',
-                  style: TextStyle(fontSize: 24, color: textColor),
+                Text(
+                  AppLocalizations.of(context)!.nameInputLabel,
+                  style: TextStyle(
+                    fontSize: 24,
+                    color: textColor,
+                    fontFamily:
+                        LanguageManager.currentLocale.languageCode == 'ko'
+                        ? 'Cafe24Oneprettynight'
+                        : null,
+                  ),
                 ),
                 const SizedBox(height: 8), // ✨ Text와 TextField 사이에 간격 추가
                 TextField(
                   controller: _nameController,
                   decoration: buildInputDecoration().copyWith(
                     // ✨ 공통 스타일 함수 사용
-                    hintText: "ex) 행복, 별이",
+                    hintText: AppLocalizations.of(context)!.nameInputHint,
                     hintStyle: TextStyle(fontSize: 16, color: Colors.grey[400]),
                   ),
                 ),
                 const SizedBox(height: 30),
 
                 // 2. 펫 타입 선택
-                const Text(
-                  '아이는 어떤 종류에요?',
-                  style: TextStyle(fontSize: 24, color: textColor),
+                Text(
+                  AppLocalizations.of(context)!.petTypeLabel,
+                  style: TextStyle(
+                    fontSize: 24,
+                    color: textColor,
+                    fontFamily:
+                        LanguageManager.currentLocale.languageCode == 'ko'
+                        ? 'Cafe24Oneprettynight'
+                        : null,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
@@ -802,7 +1047,11 @@ class _YesFormScreenState extends State<YesFormScreen> {
                               // 천사 캐릭터 (앞쪽에)
                               Center(
                                 child: CharacterView(
-                                  animalType: _selectedPetType == '고양이'
+                                  animalType:
+                                      _selectedPetType ==
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.petTypeCat
                                       ? 'cat'
                                       : 'dog',
                                   faceType: _selectedFaceType,
@@ -1070,17 +1319,21 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
 
   // 폼 입력 단계
   Widget _buildFormStep() {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.all(30.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "당신의 천사에 대해 알려주세요",
+          Text(
+            l10n.customizationTitle,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: textColor,
+              fontFamily: LanguageManager.currentLocale.languageCode == 'ko'
+                  ? 'Cafe24Oneprettynight'
+                  : null,
             ),
           ),
           const SizedBox(height: 30),
@@ -1089,8 +1342,8 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
           TextField(
             controller: _nameController,
             decoration: InputDecoration(
-              labelText: '천사의 이름',
-              hintText: '예: 루나, 별이, 소망이',
+              labelText: l10n.angelNameLabel,
+              hintText: l10n.nameInputHint,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
               ),
@@ -1106,8 +1359,8 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
           TextField(
             controller: _featureController,
             decoration: InputDecoration(
-              labelText: '천사의 특징',
-              hintText: '예: 따뜻한, 용감한, 지혜로운',
+              labelText: l10n.angelFeatureLabel,
+              hintText: l10n.featureRequired,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
               ),
@@ -1120,20 +1373,23 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
           const SizedBox(height: 20),
 
           // 동물 타입 선택
-          const Text(
-            '동물 타입',
+          Text(
+            l10n.animalTypeLabel,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: textColor,
+              fontFamily: LanguageManager.currentLocale.languageCode == 'ko'
+                  ? 'Cafe24Oneprettynight'
+                  : null,
             ),
           ),
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(child: _buildAnimalTypeCard('강아지', 'dog')),
+              Expanded(child: _buildAnimalTypeCard(l10n.petTypeDog, 'dog')),
               const SizedBox(width: 15),
-              Expanded(child: _buildAnimalTypeCard('고양이', 'cat')),
+              Expanded(child: _buildAnimalTypeCard(l10n.petTypeCat, 'cat')),
             ],
           ),
 
@@ -1152,9 +1408,15 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
                 ),
               ),
               onPressed: _validateAndProceed,
-              child: const Text(
-                '다음 단계',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              child: Text(
+                l10n.nextStep,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: LanguageManager.currentLocale.languageCode == 'ko'
+                      ? 'Cafe24Oneprettynight'
+                      : null,
+                ),
               ),
             ),
           ),
@@ -1165,6 +1427,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
 
   // 커스터마이징 단계
   Widget _buildCustomizationStep() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         // 캐릭터 미리보기
@@ -1208,9 +1471,14 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
                 const SizedBox(height: 15),
 
                 // 꼬리 선택
-                _buildPartSelector('꼬리', 4, selectedTailIndex, (index) {
-                  setState(() => selectedTailIndex = index);
-                }),
+                _buildPartSelector(
+                  AppLocalizations.of(context)!.tailSelector,
+                  4,
+                  selectedTailIndex,
+                  (index) {
+                    setState(() => selectedTailIndex = index);
+                  },
+                ),
 
                 const SizedBox(height: 30),
 
@@ -1227,11 +1495,15 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
                       ),
                     ),
                     onPressed: _completeCreation,
-                    child: const Text(
-                      '천사 생성 완료',
+                    child: Text(
+                      l10n.completeCreation,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        fontFamily:
+                            LanguageManager.currentLocale.languageCode == 'ko'
+                            ? 'Cafe24Oneprettynight'
+                            : null,
                       ),
                     ),
                   ),
@@ -1339,16 +1611,16 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
   // 폼 검증 및 다음 단계로 진행
   void _validateAndProceed() {
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('천사의 이름을 입력해주세요')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.nameRequired)),
+      );
       return;
     }
 
     if (_featureController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('천사의 특징을 입력해주세요')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.featureRequired)),
+      );
       return;
     }
 

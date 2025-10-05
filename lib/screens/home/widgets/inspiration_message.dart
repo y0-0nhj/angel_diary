@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../common/constants/strings.dart';
 
 class InspirationMessage extends StatelessWidget {
   final Map<String, String> message;

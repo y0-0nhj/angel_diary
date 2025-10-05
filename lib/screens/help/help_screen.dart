@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../generated/l10n/app_localizations.dart';
+import 'widgets/feedback_dialog.dart';
+import '../../clients/discode_webhook.dart';
 
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
@@ -7,7 +9,7 @@ class HelpScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.help),
@@ -38,8 +40,16 @@ class HelpScreen extends StatelessWidget {
             leading: const Icon(Icons.contact_support),
             title: const Text('고객 지원'),
             subtitle: const Text('문의 사항이나 피드백 보내기'),
-            onTap: () {
-              // 고객 지원 페이지로 이동
+            onTap: () async {
+              //TODO: 고객문의/제안 페이지로 이동
+              //1. 문의 유형 선택(기능 제안, 버그 신고, 기타 문제)
+              //2. 문의 내용 입력
+              //3. 이메일 주소 입력(선택사항)
+              var feedback = await FeedbackDialog.show(context);
+              print(feedback);
+
+              // 4. 제출 버튼 클릭 시 마지막 사용자로부터 받은 메시지를 디스코드로 전송
+              await DiscodeWebhook().sendMessage();
             },
           ),
           ListTile(

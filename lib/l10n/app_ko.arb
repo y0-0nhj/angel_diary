@@ -292,5 +292,113 @@
   "encouragement5": "완벽해요! 정말 잘했어요! 🎉",
   "@encouragement5": {
     "description": "격려 메시지 5"
+  },
+  "customizationTitle": "천사 커스터마이징",
+  "@customizationTitle": {
+    "description": "커스터마이징 제목"
+  },
+  "faceType": "얼굴 타입",
+  "@faceType": {
+    "description": "얼굴 타입"
+  },
+  "faceColor": "얼굴 색상",
+  "@faceColor": {
+    "description": "얼굴 색상"
+  },
+  "tail": "꼬리",
+  "@tail": {
+    "description": "꼬리"
+  },
+  "body": "몸체",
+  "@body": {
+    "description": "몸체"
+  },
+  "emotion": "표정",
+  "@emotion": {
+    "description": "표정"
+  },
+  "nextStep": "다음 단계",
+  "@nextStep": {
+    "description": "다음 단계 버튼"
+  },
+  "completeCreation": "천사 생성 완료",
+  "@completeCreation": {
+    "description": "천사 생성 완료 버튼"
+  },
+  "nameRequired": "천사의 이름을 입력해주세요",
+  "@nameRequired": {
+    "description": "이름 필수 입력 메시지"
+  },
+  "featureRequired": "천사의 특징을 입력해주세요",
+  "@featureRequired": {
+    "description": "특징 필수 입력 메시지"
+  },
+  "petTypeDog": "강아지",
+  "@petTypeDog": {
+    "description": "강아지"
+  },
+  "petTypeCat": "고양이",
+  "@petTypeCat": {
+    "description": "고양이"
+  },
+  "petTypeOther": "기타",
+  "@petTypeOther": {
+    "description": "기타"
+  },
+  "petDesc1": "작고 하얀 복슬강아지",
+  "@petDesc1": {
+    "description": "펫 설명 1"
+  },
+  "petDesc2": "용감하고 늠름한 친구",
+  "@petDesc2": {
+    "description": "펫 설명 2"
+  },
+  "petDesc3": "애교많은 개냥이",
+  "@petDesc3": {
+    "description": "펫 설명 3"
+  },
+  "petDesc4": "직접 입력",
+  "@petDesc4": {
+    "description": "직접 입력"
+  },
+  "selectImage": "이미지 선택",
+  "@selectImage": {
+    "description": "이미지 선택 버튼"
+  },
+  "angelNameLabel": "천사의 이름",
+  "@angelNameLabel": {
+    "description": "천사 이름 라벨"
+  },
+  "angelFeatureLabel": "천사의 특징",
+  "@angelFeatureLabel": {
+    "description": "천사 특징 라벨"
+  },
+  "animalTypeLabel": "동물 종류",
+  "@animalTypeLabel": {
+    "description": "동물 종류 라벨"
+  },
+  "cancel": "취소",
+  "@cancel": {
+    "description": "취소 버튼"
+  },
+  "previous": "이전",
+  "@previous": {
+    "description": "이전 버튼"
+  },
+  "next": "다음",
+  "@next": {
+    "description": "다음 버튼"
+  },
+  "submit": "제출",
+  "@submit": {
+    "description": "제출 버튼"
+  },
+  "feedbackSubmitted": "피드백이 제출되었습니다. 감사합니다!",
+  "@feedbackSubmitted": {
+    "description": "피드백 제출 완료 메시지"
+  },
+  "tailSelector": "꼬리",
+  "@tailSelector": {
+    "description": "꼬리 선택"
   }
 }

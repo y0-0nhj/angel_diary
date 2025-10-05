@@ -42,7 +42,9 @@ class WishesService {
     await _loadFromStorage();
 
     int totalWishes = 0;
-    _wishes.values.forEach((wishList) => totalWishes += wishList.length);
+    for (final wishList in _wishes.values) {
+      totalWishes += wishList.length;
+    }
 
     if (totalWishes >= maxTotalWishes) {
       throw Exception(

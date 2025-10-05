@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../../generated/l10n/app_localizations.dart';
 import '../../../features/angel/models/angel_model.dart';
 import '../../../utils/constants.dart';
 
@@ -11,7 +11,6 @@ class SpeechBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final angelName = angelData?.name ?? '천사';
 
     return Container(

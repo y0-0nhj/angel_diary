@@ -531,6 +531,168 @@ abstract class AppLocalizations {
   /// In ko, this message translates to:
   /// **'완벽해요! 정말 잘했어요! 🎉'**
   String get encouragement5;
+
+  /// 커스터마이징 제목
+  ///
+  /// In ko, this message translates to:
+  /// **'천사 커스터마이징'**
+  String get customizationTitle;
+
+  /// 얼굴 타입
+  ///
+  /// In ko, this message translates to:
+  /// **'얼굴 타입'**
+  String get faceType;
+
+  /// 얼굴 색상
+  ///
+  /// In ko, this message translates to:
+  /// **'얼굴 색상'**
+  String get faceColor;
+
+  /// 꼬리
+  ///
+  /// In ko, this message translates to:
+  /// **'꼬리'**
+  String get tail;
+
+  /// 몸체
+  ///
+  /// In ko, this message translates to:
+  /// **'몸체'**
+  String get body;
+
+  /// 표정
+  ///
+  /// In ko, this message translates to:
+  /// **'표정'**
+  String get emotion;
+
+  /// 다음 단계 버튼
+  ///
+  /// In ko, this message translates to:
+  /// **'다음 단계'**
+  String get nextStep;
+
+  /// 천사 생성 완료 버튼
+  ///
+  /// In ko, this message translates to:
+  /// **'천사 생성 완료'**
+  String get completeCreation;
+
+  /// 이름 필수 입력 메시지
+  ///
+  /// In ko, this message translates to:
+  /// **'천사의 이름을 입력해주세요'**
+  String get nameRequired;
+
+  /// 특징 필수 입력 메시지
+  ///
+  /// In ko, this message translates to:
+  /// **'천사의 특징을 입력해주세요'**
+  String get featureRequired;
+
+  /// 강아지
+  ///
+  /// In ko, this message translates to:
+  /// **'강아지'**
+  String get petTypeDog;
+
+  /// 고양이
+  ///
+  /// In ko, this message translates to:
+  /// **'고양이'**
+  String get petTypeCat;
+
+  /// 기타
+  ///
+  /// In ko, this message translates to:
+  /// **'기타'**
+  String get petTypeOther;
+
+  /// 펫 설명 1
+  ///
+  /// In ko, this message translates to:
+  /// **'작고 하얀 복슬강아지'**
+  String get petDesc1;
+
+  /// 펫 설명 2
+  ///
+  /// In ko, this message translates to:
+  /// **'용감하고 늠름한 친구'**
+  String get petDesc2;
+
+  /// 펫 설명 3
+  ///
+  /// In ko, this message translates to:
+  /// **'애교많은 개냥이'**
+  String get petDesc3;
+
+  /// 직접 입력
+  ///
+  /// In ko, this message translates to:
+  /// **'직접 입력'**
+  String get petDesc4;
+
+  /// 이미지 선택 버튼
+  ///
+  /// In ko, this message translates to:
+  /// **'이미지 선택'**
+  String get selectImage;
+
+  /// 천사 이름 라벨
+  ///
+  /// In ko, this message translates to:
+  /// **'천사의 이름'**
+  String get angelNameLabel;
+
+  /// 천사 특징 라벨
+  ///
+  /// In ko, this message translates to:
+  /// **'천사의 특징'**
+  String get angelFeatureLabel;
+
+  /// 동물 종류 라벨
+  ///
+  /// In ko, this message translates to:
+  /// **'동물 종류'**
+  String get animalTypeLabel;
+
+  /// 취소 버튼
+  ///
+  /// In ko, this message translates to:
+  /// **'취소'**
+  String get cancel;
+
+  /// 이전 버튼
+  ///
+  /// In ko, this message translates to:
+  /// **'이전'**
+  String get previous;
+
+  /// 다음 버튼
+  ///
+  /// In ko, this message translates to:
+  /// **'다음'**
+  String get next;
+
+  /// 제출 버튼
+  ///
+  /// In ko, this message translates to:
+  /// **'제출'**
+  String get submit;
+
+  /// 피드백 제출 완료 메시지
+  ///
+  /// In ko, this message translates to:
+  /// **'피드백이 제출되었습니다. 감사합니다!'**
+  String get feedbackSubmitted;
+
+  /// 꼬리 선택
+  ///
+  /// In ko, this message translates to:
+  /// **'꼬리'**
+  String get tailSelector;
 }
 
 class _AppLocalizationsDelegate

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
 import 'home.dart';
-import 'services/daily.dart';
 
 // 일기 다이얼로그
 class DiaryDialog extends StatefulWidget {
