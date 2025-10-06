@@ -180,6 +180,8 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
     );
     Navigator.pop(context, {
       'category': _category,
+      // 문자열로 전달해 downstream에서 타입 오류가 나지 않도록 처리
+      'title': _getTitle(),
       'message': _messageController.text.trim(),
       'email': _emailController.text.trim(),
     });

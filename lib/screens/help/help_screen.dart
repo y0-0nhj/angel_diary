@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 import '../../generated/l10n/app_localizations.dart';
 import 'widgets/feedback_dialog.dart';
 import '../../clients/discode_webhook.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'dart:io';
 
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
+
+  Future<PackageInfo> _getPackageInfo() async {
+    return await PackageInfo.fromPlatform();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,11 +51,39 @@ class HelpScreen extends StatelessWidget {
               //1. 문의 유형 선택(기능 제안, 버그 신고, 기타 문제)
               //2. 문의 내용 입력
               //3. 이메일 주소 입력(선택사항)
-              var feedback = await FeedbackDialog.show(context);
-              print(feedback);
 
-              // 4. 제출 버튼 클릭 시 마지막 사용자로부터 받은 메시지를 디스코드로 전송
-              await DiscodeWebhook().sendMessage();
+              final feedback = await FeedbackDialog.show(context);
+              if (feedback == null) return;
+
+              // 마지막 사용자로부터 받은 메시지를 디스코드로 전송
+              // 1 타이틀
+              // 문의 카테고리, 앱 이름, 앱 버전
+              final packageInfo = await _getPackageInfo();
+              final title =
+                  '${feedback['category']} :: ${packageInfo.appName} ${packageInfo.version}';
+              // 2. 메시지
+              // 문의 내용 + 기기 정보
+              final deviceInfo =
+                  '${Platform.operatingSystem} ${Platform.operatingSystemVersion}';
+              String message = '💬 ${feedback['message']}';
+              message +=
+                  '\n\n📧 ${feedback['email']!.isNotEmpty ? feedback['email'] : '제공하지 않음'}';
+              message += '\n\n💻$deviceInfo';
+
+              // 3. 우선순위
+              // 문의 카테고리에 따라 스위치 문으로 우선순위 지정
+              // Priority 매핑: 카테고리에 따라 우선순위 지정
+              final priority = switch (feedback['category']) {
+                '기능 제안' => Priority.medium,
+                '버그 신고' => Priority.high,
+                _ => Priority.low,
+              };
+
+              await DiscodeWebhookClient().sendMessage(
+                title,
+                message,
+                priority,
+              );
             },
           ),
           ListTile(

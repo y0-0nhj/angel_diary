@@ -12,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'language_manager.dart';
-// Removed flutter_dotenv import
+// import 'package:flutter_dotenv/flutter_dotenv.dart';
 // Removed auth imports
 
 // --- 앱 전체에서 사용할 색상 정의 ---
@@ -27,7 +27,7 @@ Future<void> main() async {
   // Flutter 바인딩을 먼저 초기화
   WidgetsFlutterBinding.ensureInitialized();
 
-  //await dotenv.load(fileName: ".env");
+  // await dotenv.load(fileName: ".env");
 
   // Firebase 초기화
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -864,11 +864,12 @@ class _YesFormScreenState extends State<YesFormScreen> {
                 ),
                 const SizedBox(height: 8), // ✨ Text와 TextField 사이에 간격 추가
                 TextField(
+                  style: TextStyle(fontSize: 24),
                   controller: _nameController,
                   decoration: buildInputDecoration().copyWith(
                     // ✨ 공통 스타일 함수 사용
                     hintText: AppLocalizations.of(context)!.nameInputHint,
-                    hintStyle: TextStyle(fontSize: 16, color: Colors.grey[400]),
+                    hintStyle: TextStyle(fontSize: 24, color: Colors.grey[400]),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -1085,7 +1086,17 @@ class _YesFormScreenState extends State<YesFormScreen> {
                     ),
                   ),
                   onPressed: _submit,
-                  child: const Text("천사 등록하기"),
+                  child: Text(
+                    AppLocalizations.of(context)!.angelRegistration,
+                    style: TextStyle(
+                      fontSize: 24,
+                      color: Colors.white,
+                      fontFamily:
+                          LanguageManager.currentLocale.languageCode == 'ko'
+                          ? 'Cafe24Oneprettynight'
+                          : null,
+                    ),
+                  ),
                 ),
               ],
             ),
