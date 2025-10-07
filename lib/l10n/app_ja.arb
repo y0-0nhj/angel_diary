@@ -98,5 +98,19 @@
   "next": "次へ",
   "submit": "送信",
   "feedbackSubmitted": "フィードバックが送信されました。ありがとうございます！",
-  "tailSelector": "しっぽ"
+  "tailSelector": "しっぽ",
+  "angelCreated": "あなただけの\n大切な天使に出会いました！",
+  "angelCreatedSubtitle": "この姿を失わないように\n天国の庭に\n永遠に保管してあげましょうか？",
+  "saveNow": "保管する",
+  "saveLater": "後で保管する",
+  "saveLaterWarning": "（失われる可能性があります）",
+  "angelSaved": "天使が天国の庭に安全に保管されました！",
+  "angelNotSaved": "天使の情報が一時的に保存されました。\n後でいつでも保管できます。",
+  "signUp": "会員登録",
+  "startWithKakao": "カカオトークで始める",
+  "startWithNaver": "ネイバーで始める",
+  "startWithGoogle": "グーグルで始める",
+  "or": "または",
+  "signUpWithEmail": "メールで登録する",
+  "alreadyHaveAccount": "すでにアカウントがあります！"
 }

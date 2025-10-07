@@ -309,4 +309,40 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get tailSelector => '꼬리';
+
+  @override
+  String get angelCreated => '당신만의\n소중한 천사를 만났어요!';
+
+  @override
+  String get angelCreatedSubtitle => '이 모습, 잃어버리지 않도록\n하늘의 정원에\n영원히 보관해 드릴까요?';
+
+  @override
+  String get saveNow => '보관하기';
+
+  @override
+  String get saveLater => '나중에 보관하기';
+
+  @override
+  String get angelSaved => '천사가 하늘의 정원에 안전하게 보관되었습니다!';
+
+  @override
+  String get angelNotSaved => '천사 정보가 임시로 저장되었습니다.\n나중에 언제든지 보관할 수 있어요.';
+
+  @override
+  String get startWithKakao => '카카오톡으로 시작하기';
+
+  @override
+  String get startWithNaver => '네이버로 시작하기';
+
+  @override
+  String get startWithGoogle => '구글로 시작하기';
+
+  @override
+  String get or => '또는';
+
+  @override
+  String get signUpWithEmail => '이메일로 가입하기';
+
+  @override
+  String get alreadyHaveAccount => '이미 아이디가 있어요!';
 }

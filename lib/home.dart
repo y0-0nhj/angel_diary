@@ -8,6 +8,7 @@ import 'common/constants/strings.dart';
 import 'main.dart' show bgColor, textColor, primaryColor, AngelDiaryApp;
 import 'package:table_calendar/table_calendar.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'models/angel_data.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -38,59 +39,7 @@ class SpeechBubbleTailPainter extends CustomPainter {
   bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
 
-// --- 천사 데이터 모델 ---
-class AngelData {
-  final String name;
-  final String feature;
-  final String animalType;
-  final int faceType;
-  final int faceColor;
-  final int bodyIndex;
-  final int emotionIndex;
-  final int tailIndex;
-  final DateTime createdAt;
-
-  AngelData({
-    required this.name,
-    required this.feature,
-    required this.animalType,
-    required this.faceType,
-    required this.faceColor,
-    required this.bodyIndex,
-    required this.emotionIndex,
-    required this.tailIndex,
-    required this.createdAt,
-  });
-
-  // JSON 변환을 위한 메서드들
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'feature': feature,
-      'animalType': animalType,
-      'faceType': faceType,
-      'faceColor': faceColor,
-      'bodyIndex': bodyIndex,
-      'emotionIndex': emotionIndex,
-      'tailIndex': tailIndex,
-      'createdAt': createdAt.toIso8601String(),
-    };
-  }
-
-  factory AngelData.fromJson(Map<String, dynamic> json) {
-    return AngelData(
-      name: json['name'],
-      feature: json['feature'],
-      animalType: json['animalType'],
-      faceType: json['faceType'],
-      faceColor: json['faceColor'],
-      bodyIndex: json['bodyIndex'],
-      emotionIndex: json['emotionIndex'],
-      tailIndex: json['tailIndex'],
-      createdAt: DateTime.parse(json['createdAt']),
-    );
-  }
-}
+// AngelData 클래스는 models/angel_data.dart에서 import하여 사용
 
 // --- 전역 천사 데이터 관리자 ---
 class AngelDataManager {
@@ -387,6 +336,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     // 일일 데이터 확인 및 관리
     await _checkAndManageDailyData();
+
+    // 앱 시작 시 자동으로 음악 재생
+    _startAutoPlay();
   }
 
   // Removed Supabase data loading - using local data only
@@ -657,6 +609,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String _getMusicName(String path) {
     final fileName = path.split('/').last;
     return fileName.replaceAll('.mp3', '').replaceAll('_', ' ');
+  }
+
+  // 자동 재생 시작
+  Future<void> _startAutoPlay() async {
+    // 약간의 지연 후 자동 재생 시작 (앱 초기화 완료 후)
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (mounted) {
+      await _playCurrentMusic();
+    }
   }
 
   // 알림 초기화

@@ -81,7 +81,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveLaterButton => 'Save Later';
 
   @override
-  String get saveLaterWarning => '(It might be lost)';
+  String get saveLaterWarning => '(May be lost)';
 
   @override
   String get loginTitle => 'Login';
@@ -315,4 +315,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tailSelector => 'Tail';
+
+  @override
+  String get angelCreated => 'You\'ve met your own\nprecious angel!';
+
+  @override
+  String get angelCreatedSubtitle =>
+      'Would you like to keep this form\nforever in the heavenly garden\nso you don\'t lose it?';
+
+  @override
+  String get saveNow => 'Save Now';
+
+  @override
+  String get saveLater => 'Save Later';
+
+  @override
+  String get angelSaved =>
+      'Your angel has been safely stored in the heavenly garden!';
+
+  @override
+  String get angelNotSaved =>
+      'Angel information has been temporarily saved.\nYou can save it anytime later.';
+
+  @override
+  String get startWithKakao => 'Start with KakaoTalk';
+
+  @override
+  String get startWithNaver => 'Start with Naver';
+
+  @override
+  String get startWithGoogle => 'Start with Google';
+
+  @override
+  String get or => 'or';
+
+  @override
+  String get signUpWithEmail => 'Sign up with email';
+
+  @override
+  String get alreadyHaveAccount => 'I already have an account!';
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:angel_diary/clients/supabase_client.dart';
 // Removed supabase_flutter import
 import 'generated/l10n/app_localizations.dart';
 import 'character_view.dart';
@@ -12,6 +13,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'language_manager.dart';
+import 'screens/auth/intro_signup.dart';
+import 'models/angel_data.dart';
 // import 'package:flutter_dotenv/flutter_dotenv.dart';
 // Removed auth imports
 
@@ -32,13 +35,8 @@ Future<void> main() async {
   // Firebase 초기화
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  /*
-  // Initialize Supabase
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  );
-*/
+  // Supabase 초기화
+  await SupabaseClient().init();
 
   // 언어 설정 로드
   await LanguageManager.loadSavedLanguage();
@@ -1655,20 +1653,221 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
       createdAt: DateTime.now(),
     );
 
-    // 전역 천사 데이터에 저장 (SharedPreferences에 자동 저장)
-    await AngelDataManager.setCurrentAngel(angelData);
+    // 저장 확인 다이얼로그 표시
+    final shouldSave = await _showStorageConfirmationDialog(context, angelData);
 
-    // 팝업 닫기
-    Navigator.of(context).pop();
+    if (shouldSave == true) {
+      // 팝업 닫기
+      Navigator.of(context).pop();
 
-    // 천사 등록 완료 - 홈으로 이동
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
+      // 회원가입 화면으로 이동 (천사 데이터를 전달)
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => IntroSignupScreen(angelData: angelData),
+        ),
+      );
+    } else if (shouldSave == false) {
+      // 임시 저장 (메모리에만 보관)
+      // 팝업 닫기
+      Navigator.of(context).pop();
+
+      // 안내 메시지 표시
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.angelNotSaved)),
+      );
+
+      // 천사 등록 완료 - 홈으로 이동
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    }
+    // shouldSave == null인 경우 (다이얼로그 취소) 아무것도 하지 않음
+  }
+
+  // 저장 확인 다이얼로그 표시
+  Future<bool?> _showStorageConfirmationDialog(
+    BuildContext context,
+    AngelData angelData,
+  ) {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StorageConfirmationDialog(angelData: angelData),
     );
   }
 }
 
-// Removed StorageConfirmationDialog - no longer needed
+// 저장 확인 다이얼로그
+class StorageConfirmationDialog extends StatelessWidget {
+  final AngelData angelData;
+
+  const StorageConfirmationDialog({super.key, required this.angelData});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 천사 이미지 미리보기
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(
+                  color: primaryColor.withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
+              child: CharacterView(
+                animalType: angelData.animalType,
+                faceType: angelData.faceType,
+                faceColor: angelData.faceColor,
+                bodyIndex: angelData.bodyIndex,
+                emotionIndex: angelData.emotionIndex,
+                tailIndex: angelData.tailIndex,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // 제목
+            Text(
+              l10n.angelCreated,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: primaryColor,
+                fontFamily: LanguageManager.currentLocale.languageCode == 'ko'
+                    ? 'Cafe24Oneprettynight'
+                    : null,
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            const SizedBox(height: 15),
+
+            // 부제목
+            Text(
+              l10n.angelCreatedSubtitle,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[700],
+                fontFamily: LanguageManager.currentLocale.languageCode == 'ko'
+                    ? 'Cafe24Oneprettynight'
+                    : null,
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            const SizedBox(height: 30),
+
+            // 보관하기 버튼
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
+                onPressed: () {
+                  // 다이얼로그 닫기
+                  Navigator.of(context).pop(true);
+
+                  // 회원가입 화면으로 이동
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          IntroSignupScreen(angelData: angelData),
+                    ),
+                  );
+                },
+                child: Text(
+                  l10n.saveNow,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    fontFamily:
+                        LanguageManager.currentLocale.languageCode == 'ko'
+                        ? 'Cafe24Oneprettynight'
+                        : null,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // 나중에 보관하기 버튼
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[300],
+                  foregroundColor: Colors.grey[700],
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      l10n.saveLater,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        fontFamily:
+                            LanguageManager.currentLocale.languageCode == 'ko'
+                            ? 'Cafe24Oneprettynight'
+                            : null,
+                      ),
+                    ),
+                    Text(
+                      l10n.saveLaterWarning,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontFamily:
+                            LanguageManager.currentLocale.languageCode == 'ko'
+                            ? 'Cafe24Oneprettynight'
+                            : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 // Removed LoginScreen - no longer needed
 

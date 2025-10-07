@@ -693,6 +693,78 @@ abstract class AppLocalizations {
   /// In ko, this message translates to:
   /// **'꼬리'**
   String get tailSelector;
+
+  /// No description provided for @angelCreated.
+  ///
+  /// In ko, this message translates to:
+  /// **'당신만의\n소중한 천사를 만났어요!'**
+  String get angelCreated;
+
+  /// No description provided for @angelCreatedSubtitle.
+  ///
+  /// In ko, this message translates to:
+  /// **'이 모습, 잃어버리지 않도록\n하늘의 정원에\n영원히 보관해 드릴까요?'**
+  String get angelCreatedSubtitle;
+
+  /// No description provided for @saveNow.
+  ///
+  /// In ko, this message translates to:
+  /// **'보관하기'**
+  String get saveNow;
+
+  /// No description provided for @saveLater.
+  ///
+  /// In ko, this message translates to:
+  /// **'나중에 보관하기'**
+  String get saveLater;
+
+  /// No description provided for @angelSaved.
+  ///
+  /// In ko, this message translates to:
+  /// **'천사가 하늘의 정원에 안전하게 보관되었습니다!'**
+  String get angelSaved;
+
+  /// No description provided for @angelNotSaved.
+  ///
+  /// In ko, this message translates to:
+  /// **'천사 정보가 임시로 저장되었습니다.\n나중에 언제든지 보관할 수 있어요.'**
+  String get angelNotSaved;
+
+  /// No description provided for @startWithKakao.
+  ///
+  /// In ko, this message translates to:
+  /// **'카카오톡으로 시작하기'**
+  String get startWithKakao;
+
+  /// No description provided for @startWithNaver.
+  ///
+  /// In ko, this message translates to:
+  /// **'네이버로 시작하기'**
+  String get startWithNaver;
+
+  /// No description provided for @startWithGoogle.
+  ///
+  /// In ko, this message translates to:
+  /// **'구글로 시작하기'**
+  String get startWithGoogle;
+
+  /// No description provided for @or.
+  ///
+  /// In ko, this message translates to:
+  /// **'또는'**
+  String get or;
+
+  /// No description provided for @signUpWithEmail.
+  ///
+  /// In ko, this message translates to:
+  /// **'이메일로 가입하기'**
+  String get signUpWithEmail;
+
+  /// No description provided for @alreadyHaveAccount.
+  ///
+  /// In ko, this message translates to:
+  /// **'이미 아이디가 있어요!'**
+  String get alreadyHaveAccount;
 }
 
 class _AppLocalizationsDelegate

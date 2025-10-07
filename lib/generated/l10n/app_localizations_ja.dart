@@ -310,4 +310,40 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get tailSelector => 'しっぽ';
+
+  @override
+  String get angelCreated => 'あなただけの\n大切な天使に出会いました！';
+
+  @override
+  String get angelCreatedSubtitle => 'この姿を失わないように\n天国の庭に\n永遠に保管してあげましょうか？';
+
+  @override
+  String get saveNow => '保管する';
+
+  @override
+  String get saveLater => '後で保管する';
+
+  @override
+  String get angelSaved => '天使が天国の庭に安全に保管されました！';
+
+  @override
+  String get angelNotSaved => '天使の情報が一時的に保存されました。\n後でいつでも保管できます。';
+
+  @override
+  String get startWithKakao => 'カカオトークで始める';
+
+  @override
+  String get startWithNaver => 'ネイバーで始める';
+
+  @override
+  String get startWithGoogle => 'グーグルで始める';
+
+  @override
+  String get or => 'または';
+
+  @override
+  String get signUpWithEmail => 'メールで登録する';
+
+  @override
+  String get alreadyHaveAccount => 'すでにアカウントがあります！';
 }

@@ -98,5 +98,19 @@
   "next": "Next",
   "submit": "Submit",
   "feedbackSubmitted": "Feedback has been submitted. Thank you!",
-  "tailSelector": "Tail"
+  "tailSelector": "Tail",
+  "angelCreated": "You've met your own\nprecious angel!",
+  "angelCreatedSubtitle": "Would you like to keep this form\nforever in the heavenly garden\nso you don't lose it?",
+  "saveNow": "Save Now",
+  "saveLater": "Save Later",
+  "saveLaterWarning": "(May be lost)",
+  "angelSaved": "Your angel has been safely stored in the heavenly garden!",
+  "angelNotSaved": "Angel information has been temporarily saved.\nYou can save it anytime later.",
+  "signUp": "Sign Up",
+  "startWithKakao": "Start with KakaoTalk",
+  "startWithNaver": "Start with Naver",
+  "startWithGoogle": "Start with Google",
+  "or": "or",
+  "signUpWithEmail": "Sign up with email",
+  "alreadyHaveAccount": "I already have an account!"
 }
