@@ -4,6 +4,9 @@ import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart' as kakao;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk_common.dart' as kakao;
 import 'auth_service.dart';
+import '../user_profile_service.dart';
+import '../../models/user_profile.dart';
+import '../../language_manager.dart';
 
 class KakaoAuthService {
   static final KakaoAuthService _instance = KakaoAuthService._internal();
@@ -12,6 +15,7 @@ class KakaoAuthService {
 
   final supabase = Supabase.instance.client;
   final AuthService _authService = AuthService();
+  final UserProfileService _userProfileService = UserProfileService();
 
   /// 카카오 SDK를 사용하여 네이티브 로그인을 수행하고 Supabase에 인증합니다.
   Future<void> signInWithKakao() async {
@@ -77,6 +81,9 @@ class KakaoAuthService {
       if (user?.email != null) {
         await _authService.saveLoginState(user!.email!);
         print('로그인 상태 저장 완료: ${user.email}');
+
+        // user_profiles 테이블에 사용자 정보 저장
+        await _createOrUpdateUserProfile(user);
       }
     } on AuthException catch (e) {
       print('Supabase 로그인 오류: ${e.message}');
@@ -85,6 +92,47 @@ class KakaoAuthService {
     } catch (e) {
       print('알 수 없는 오류 발생: $e');
       rethrow;
+    }
+  }
+
+  /// user_profiles 테이블에 사용자 정보를 생성하거나 업데이트합니다
+  Future<void> _createOrUpdateUserProfile(User user) async {
+    try {
+      // 카카오 사용자 정보 가져오기
+      final kakaoUser = await kakao.UserApi.instance.me();
+      final nickname = kakaoUser.kakaoAccount?.profile?.nickname ?? '익명의 천사';
+      final profileImageUrl = kakaoUser.kakaoAccount?.profile?.profileImageUrl;
+
+      // 현재 언어 설정 가져오기
+      final currentLanguage = LanguageManager.currentLocale.languageCode;
+
+      // UserProfile 객체 생성
+      final userProfile = UserProfile(
+        id: user.id,
+        email: user.email!,
+        nickname: nickname,
+        profileImageUrl: profileImageUrl,
+        createdAt: DateTime.now(),
+        lastActiveAt: DateTime.now(),
+        fcmToken: null, // FCM 토큰은 별도로 설정
+        pushNotificationEnabled: true,
+        languagePreference: currentLanguage,
+        exp: 0,
+        level: 1,
+        acorns: 0,
+        isPremiumUser: false,
+        currentAngelId: null,
+        currentIslandId: null,
+        angelData: null,
+        updatedAt: DateTime.now(),
+      );
+
+      // user_profiles 테이블에 저장
+      await _userProfileService.upsertUserProfile(userProfile);
+      print('사용자 프로필 저장 완료: ${user.email}');
+    } catch (e) {
+      print('사용자 프로필 저장 실패: $e');
+      // 프로필 저장 실패는 로그인을 막지 않음
     }
   }
 
