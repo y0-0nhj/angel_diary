@@ -219,7 +219,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   int _selectedTabIndex = 0; // 0: 소망, 1: 목표, 2: 감사
   int _currentEmotionIndex = 1; // 현재 표정 인덱스
   final DateTime _selectedDate = DateTime.now(); // 선택된 날짜
@@ -291,6 +292,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _initializeHeartAnimation();
     _initializeApp();
     _startMessageRotation();
+
+    // 앱 생명주기 상태 감지를 위한 observer 등록
+    WidgetsBinding.instance.addObserver(this);
   }
 
   // 하트 애니메이션 초기화
@@ -418,9 +422,43 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    // 앱 생명주기 observer 해제
+    WidgetsBinding.instance.removeObserver(this);
+
     _audioPlayer.dispose();
     _heartAnimationController.dispose();
     super.dispose();
+  }
+
+  // 앱 생명주기 상태 변경 감지
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+        // 앱이 백그라운드로 갈 때 음악 일시정지
+        if (_isPlaying) {
+          _audioPlayer.pause();
+        }
+        break;
+      case AppLifecycleState.resumed:
+        // 앱이 포그라운드로 돌아올 때 음악 재생
+        if (_isPlaying) {
+          _audioPlayer.resume();
+        }
+        break;
+      case AppLifecycleState.detached:
+        // 앱이 완전히 종료될 때
+        break;
+      case AppLifecycleState.hidden:
+        // 앱이 숨겨질 때 (iOS에서만 사용)
+        if (_isPlaying) {
+          _audioPlayer.pause();
+        }
+        break;
+    }
   }
 
   // 랜덤 목표 생성 (기존 소망 내용을 목표로 사용)

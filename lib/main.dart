@@ -1661,7 +1661,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
       Navigator.of(context).pop();
 
       // 회원가입 화면으로 이동 (천사 데이터를 전달)
-      Navigator.of(context).pushReplacement(
+      Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => IntroSignupScreen(angelData: angelData),
         ),
@@ -1793,16 +1793,8 @@ class StorageConfirmationDialog extends StatelessWidget {
                   ),
                 ),
                 onPressed: () {
-                  // 다이얼로그 닫기
+                  // 다이얼로그 닫기 (true 반환)
                   Navigator.of(context).pop(true);
-
-                  // 회원가입 화면으로 이동
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          IntroSignupScreen(angelData: angelData),
-                    ),
-                  );
                 },
                 child: Text(
                   l10n.saveNow,
