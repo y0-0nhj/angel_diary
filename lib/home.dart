@@ -17,6 +17,8 @@ import 'simple_calendar_dialog.dart';
 import 'generated/l10n/app_localizations.dart';
 import 'language_manager.dart';
 import 'screens/help/help_screen.dart';
+import 'screens/auth/intro_signup.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // 말풍선 꼬리를 그리는 CustomPainter
 class SpeechBubbleTailPainter extends CustomPainter {
@@ -1047,14 +1049,146 @@ class _HomeScreenState extends State<HomeScreen>
                 }),
                 _buildMyPageItem(Icons.backup, '데이터 백업', () {
                   Navigator.of(context).pop();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const HomeScreen()),
-                  );
+                  _handleDataBackup(context);
                 }),
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+
+  // 데이터 백업 처리
+  Future<void> _handleDataBackup(BuildContext context) async {
+    try {
+      // 로그인 상태 확인
+      final supabase = Supabase.instance.client;
+      final session = supabase.auth.currentSession;
+
+      if (session != null) {
+        // 로그인된 상태 - 데이터 백업 실행
+        await _performDataBackup(context);
+      } else {
+        // 로그인되지 않은 상태 - 로그인 화면으로 이동
+        _showLoginRequiredDialog(context);
+      }
+    } catch (error) {
+      // 에러 발생 시 로그인 화면으로 이동
+      _showLoginRequiredDialog(context);
+    }
+  }
+
+  // 데이터 백업 실행
+  Future<void> _performDataBackup(BuildContext context) async {
+    try {
+      // 로딩 표시
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // 현재 천사 데이터 가져오기
+      final angelData = AngelDataManager.currentAngel;
+
+      if (angelData != null) {
+        // 천사 데이터를 Supabase에 저장
+        final supabase = Supabase.instance.client;
+
+        // 사용자 프로필에 천사 데이터 저장
+        await supabase.from('user_profiles').upsert({
+          'user_id': supabase.auth.currentUser?.id,
+          'angel_data': angelData.toJson(),
+          'updated_at': DateTime.now().toIso8601String(),
+        });
+
+        // 로딩 다이얼로그 닫기
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+
+        // 성공 메시지 표시
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('데이터 백업이 완료되었습니다!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        // 로딩 다이얼로그 닫기
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+
+        // 천사 데이터가 없는 경우
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('백업할 천사 데이터가 없습니다.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } catch (error) {
+      // 로딩 다이얼로그 닫기
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // 에러 메시지 표시
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('데이터 백업 실패: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // 로그인 필요 다이얼로그 표시
+  void _showLoginRequiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('로그인 필요'),
+          content: const Text('데이터 백업을 위해서는 로그인이 필요합니다.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('취소'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // 로그인 화면으로 이동
+                final currentAngel = AngelDataManager.currentAngel;
+                if (currentAngel != null) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          IntroSignupScreen(angelData: currentAngel),
+                    ),
+                  );
+                } else {
+                  // 천사 데이터가 없는 경우 알림
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('천사 데이터가 없습니다. 먼저 천사를 생성해주세요.'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+              },
+              child: const Text('로그인'),
+            ),
+          ],
         );
       },
     );
@@ -1972,11 +2106,21 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  // 랜덤 기온 생성 (25~29도)
+  int _getRandomTemperature() {
+    final now = DateTime.now();
+    // 날짜를 기반으로 시드값 생성 (같은 날에는 같은 기온)
+    final seed = now.year * 10000 + now.month * 100 + now.day;
+    final random = Random(seed);
+    return 25 + random.nextInt(5); // 25, 26, 27, 28, 29 중 랜덤
+  }
+
   // 날짜와 기온 정보 위젯
   Widget _buildDateWeatherInfo() {
     final now = DateTime.now();
     final weekdays = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
     final weekday = weekdays[now.weekday % 7];
+    final temperature = _getRandomTemperature();
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
@@ -2011,7 +2155,7 @@ class _HomeScreenState extends State<HomeScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '기온: 25°C',
+                    '기온: $temperature°C',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,

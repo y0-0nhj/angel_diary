@@ -15,6 +15,8 @@ import 'firebase_options.dart';
 import 'language_manager.dart';
 import 'screens/auth/intro_signup.dart';
 import 'models/angel_data.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart' as kakao;
+import 'services/auth/auth_service.dart';
 // import 'package:flutter_dotenv/flutter_dotenv.dart';
 // Removed auth imports
 
@@ -38,11 +40,22 @@ Future<void> main() async {
   // Supabase 초기화
   await SupabaseClient().init();
 
+  // 카카오 SDK 초기화
+  kakao.KakaoSdk.init(
+    nativeAppKey: 'a004cf01cc27b393d207ac79d3a34355', // 실제 네이티브 앱 키로 교체 필요
+    javaScriptAppKey:
+        'd66b0ce362169f1ec3552dd9efff3965', // 실제 JavaScript 앱 키로 교체 필요
+  );
+
   // 언어 설정 로드
   await LanguageManager.loadSavedLanguage();
 
   // 타임존 초기화
   tz.initializeTimeZones();
+
+  // 자동 로그인 세션 복원
+  final authService = AuthService();
+  await authService.restoreSession();
 
   runApp(const AngelDiaryApp());
 }
@@ -57,6 +70,7 @@ class AngelDiaryApp extends StatefulWidget {
 class _AngelDiaryAppState extends State<AngelDiaryApp> {
   bool _isLoading = true;
   bool _hasAngel = false;
+  bool _isLoggedIn = false;
   // Removed auth subscription
 
   @override
@@ -80,20 +94,31 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
     });
   }
 
-  // 천사 등록 여부 확인
+  // 천사 등록 여부 및 로그인 상태 확인
   Future<void> _checkAngelStatus() async {
     try {
       // SharedPreferences에서 직접 천사 데이터 확인
       final prefs = await SharedPreferences.getInstance();
       final angelJson = prefs.getString('angel_data');
 
+      // 로그인 상태 확인
+      final authService = AuthService();
+      final isLoggedIn = authService.isLoggedIn();
+
       setState(() {
         _hasAngel = angelJson != null && angelJson.isNotEmpty;
+        _isLoggedIn = isLoggedIn;
         _isLoading = false;
       });
+
+      print('=== 앱 시작 상태 확인 ===');
+      print('천사 등록 여부: $_hasAngel');
+      print('로그인 상태: $_isLoggedIn');
+      print('=======================');
     } catch (e) {
       setState(() {
         _hasAngel = false;
+        _isLoggedIn = false;
         _isLoading = false;
       });
     }
@@ -153,7 +178,17 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
       return const LoadingScreen();
     }
 
-    return _hasAngel ? const HomeScreen() : const OnboardingScreen();
+    // 로그인 상태와 천사 등록 상태에 따라 초기 화면 결정
+    if (_isLoggedIn && _hasAngel) {
+      // 로그인되어 있고 천사도 등록되어 있으면 홈 화면
+      return const HomeScreen();
+    } else if (_isLoggedIn && !_hasAngel) {
+      // 로그인되어 있지만 천사가 없으면 온보딩 화면
+      return const OnboardingScreen();
+    } else {
+      // 로그인되어 있지 않으면 온보딩 화면 (로그인 유도)
+      return const OnboardingScreen();
+    }
   }
 }
 

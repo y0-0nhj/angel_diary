@@ -5,6 +5,7 @@ import '../../language_manager.dart';
 import '../../models/angel_data.dart';
 import '../../managers/angel_data_manager.dart';
 import '../../screens/home/home_screen.dart';
+import '../../services/auth/kakao_auth_service.dart';
 
 class IntroSignupScreen extends StatelessWidget {
   final AngelData angelData;
@@ -201,6 +202,10 @@ class IntroSignupScreen extends StatelessWidget {
 
   // 로그인/가입 완료 후 처리
   Future<void> _handleAuthSuccess(BuildContext context) async {
+    // 현재 라우트 디버그 로그
+    debugPrint('=== 인증 성공 후 라우트 이동 ===');
+    debugPrint('현재 라우트: ${ModalRoute.of(context)?.settings.name}');
+
     // 천사 데이터를 SharedPreferences에 저장
     await AngelDataManager.setCurrentAngel(angelData);
 
@@ -209,17 +214,53 @@ class IntroSignupScreen extends StatelessWidget {
       SnackBar(content: Text(AppLocalizations.of(context)!.angelSaved)),
     );
 
-    // 홈 화면으로 이동
-    Navigator.of(context).pushReplacement(
+    // 모든 라우트 스택을 정리하고 홈 화면으로 이동
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const HomeScreen()),
+      (route) => false, // 모든 이전 라우트 제거
     );
+
+    debugPrint('홈 화면으로 이동 완료');
   }
 
   // 카카오 로그인 처리
-  void _handleKakaoLogin(BuildContext context) {
-    // TODO: 카카오 로그인 구현
-    // 임시로 성공 처리
-    _handleAuthSuccess(context);
+  Future<void> _handleKakaoLogin(BuildContext context) async {
+    try {
+      // 로딩 표시
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // 카카오 로그인 실행
+      await KakaoAuthService().signInWithKakao();
+
+      // 로딩 다이얼로그 닫기
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // 성공 처리
+      if (context.mounted) {
+        _handleAuthSuccess(context);
+      }
+    } catch (error) {
+      // 로딩 다이얼로그 닫기
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // 에러 메시지 표시
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('카카오 로그인 실패: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   // 네이버 로그인 처리

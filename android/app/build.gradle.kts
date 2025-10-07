@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -6,6 +9,17 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// 파일 상단에 key.properties 파일을 읽는 함수 추가
+fun getProperty(key: String, file: java.io.File): String {
+    if (!file.exists()) {
+        println("Missing file: ${file.absolutePath}. Create one at the project root for local development.")
+        return ""
+    }
+    val properties = Properties()
+    properties.load(FileInputStream(file))
+    return properties.getProperty(key) ?: ""
 }
 
 android {
@@ -34,11 +48,29 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") { // release 서명 설정
+            val keystoreFile = rootProject.file(getProperty("storeFile", rootProject.file("key.properties")))
+            if (keystoreFile.exists()) {
+                storeFile = keystoreFile
+                storePassword = getProperty("storePassword", rootProject.file("key.properties"))
+                keyAlias = getProperty("keyAlias", rootProject.file("key.properties"))
+                keyPassword = getProperty("keyPassword", rootProject.file("key.properties"))
+            } else {
+                println("Release keystore file not found at ${keystoreFile.absolutePath}. Please create it and configure key.properties.")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release") // release 빌드 시 위에서 정의한 release 서명 사용
+            isMinifyEnabled = false
+            isShrinkResources = false // 리소스 축소 비활성화
+            // proguardFiles 제거 - isMinifyEnabled가 false일 때는 불필요
+        }
+        debug {
+            // debug 빌드 설정 (보통 signingConfig를 따로 명시하지 않음)
         }
     }
 }

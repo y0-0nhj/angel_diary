@@ -2,6 +2,8 @@ import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart' as kakao;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk_common.dart' as kakao;
+import 'auth_service.dart';
 
 class KakaoAuthService {
   static final KakaoAuthService _instance = KakaoAuthService._internal();
@@ -9,6 +11,7 @@ class KakaoAuthService {
   KakaoAuthService._internal();
 
   final supabase = Supabase.instance.client;
+  final AuthService _authService = AuthService();
 
   /// 카카오 SDK를 사용하여 네이티브 로그인을 수행하고 Supabase에 인증합니다.
   Future<void> signInWithKakao() async {
@@ -61,13 +64,20 @@ class KakaoAuthService {
       print('Supabase에 ID 토큰으로 로그인 시도');
       print('Provider: ${OAuthProvider.kakao}');
       print('ID Token: ${token.idToken!.substring(0, 50)}...');
-      
+
       await supabase.auth.signInWithIdToken(
         provider: OAuthProvider.kakao,
         idToken: token.idToken!,
         accessToken: token.accessToken,
       );
       print('Supabase 로그인 성공');
+
+      // 로그인 상태 저장
+      final user = supabase.auth.currentUser;
+      if (user?.email != null) {
+        await _authService.saveLoginState(user!.email!);
+        print('로그인 상태 저장 완료: ${user.email}');
+      }
     } on AuthException catch (e) {
       print('Supabase 로그인 오류: ${e.message}');
       print('오류 코드: ${e.statusCode}');
@@ -136,6 +146,8 @@ class KakaoAuthService {
       await supabase.auth.signOut();
       // 카카오 SDK 로그아웃도 함께 호출하여 세션을 완전히 정리합니다.
       await kakao.UserApi.instance.logout();
+      // 로그인 상태 정리
+      await _authService.clearLoginState();
       print('로그아웃 성공');
     } catch (e) {
       print('로그아웃 오류: $e');
