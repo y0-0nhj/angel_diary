@@ -55,35 +55,38 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          const BackgroundImage(),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: InspirationMessage(message: _currentMessage),
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        body: Stack(
+          children: [
+            const BackgroundImage(),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: InspirationMessage(message: _currentMessage),
+              ),
             ),
-          ),
-          Column(
-            children: [
-              // Tab bar
-              TabBar(
-                tabs: [
-                  Tab(text: '소망'),
-                  Tab(text: '목표'),
-                  Tab(text: '감사'),
-                ],
-              ),
-              // Tab content
-              Expanded(
-                child: TabBarView(
-                  children: [WishTab(), GoalTab(), GratitudeTab()],
+            Column(
+              children: [
+                // Tab bar
+                TabBar(
+                  tabs: [
+                    Tab(text: '소망'),
+                    Tab(text: '목표'),
+                    Tab(text: '감사'),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ],
+                // Tab content
+                Expanded(
+                  child: TabBarView(
+                    children: [WishTab(), GoalTab(), GratitudeTab()],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -17,6 +17,7 @@ import 'screens/auth/intro_signup.dart';
 import 'models/angel_data.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart' as kakao;
 import 'services/auth/auth_service.dart';
+import 'managers/angel_data_manager.dart' as adm;
 // import 'package:flutter_dotenv/flutter_dotenv.dart';
 // Removed auth imports
 
@@ -97,16 +98,15 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
   // 천사 등록 여부 및 로그인 상태 확인
   Future<void> _checkAngelStatus() async {
     try {
-      // SharedPreferences에서 직접 천사 데이터 확인
-      final prefs = await SharedPreferences.getInstance();
-      final angelJson = prefs.getString('angel_data');
+      // AngelDataManager에서 천사 데이터 로드
+      final angelData = await adm.AngelDataManager.loadAngelFromStorage();
 
       // 로그인 상태 확인
       final authService = AuthService();
       final isLoggedIn = authService.isLoggedIn();
 
       setState(() {
-        _hasAngel = angelJson != null && angelJson.isNotEmpty;
+        _hasAngel = angelData != null;
         _isLoggedIn = isLoggedIn;
         _isLoading = false;
       });
@@ -114,6 +114,9 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
       print('=== 앱 시작 상태 확인 ===');
       print('천사 등록 여부: $_hasAngel');
       print('로그인 상태: $_isLoggedIn');
+      if (angelData != null) {
+        print('천사 이름: ${angelData.name}');
+      }
       print('=======================');
     } catch (e) {
       setState(() {
@@ -823,7 +826,7 @@ class _YesFormScreenState extends State<YesFormScreen> {
     );
 
     // 전역 천사 데이터에 저장 (SharedPreferences에 자동 저장)
-    await AngelDataManager.setCurrentAngel(angelData);
+    await adm.AngelDataManager.setCurrentAngel(angelData);
 
     // 천사 등록 완료 - 홈으로 이동
     Navigator.of(context).pushReplacement(

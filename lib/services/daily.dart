@@ -4,9 +4,9 @@ class Daily {
   final String id;
   final String userId;
   final DateTime date; // stored as DATE in DB, but we use DateTime (midnight)
-  final String? goal;
-  final String? gratitude;
-  final String? diaryEntry;
+  final Map<String, dynamic>? goal; // JSONB for checklist items
+  final Map<String, dynamic>? gratitude; // JSONB for checklist items
+  final String? diary; // renamed from diaryEntry to match schema
   final DateTime createdAt;
 
   Daily({
@@ -15,7 +15,7 @@ class Daily {
     required this.date,
     this.goal,
     this.gratitude,
-    this.diaryEntry,
+    this.diary,
     required this.createdAt,
   });
 
@@ -24,9 +24,9 @@ class Daily {
       id: map['id'] as String,
       userId: map['user_id'] as String,
       date: DateTime.parse(map['date'] as String),
-      goal: map['goal'] as String?,
-      gratitude: map['gratitude'] as String?,
-      diaryEntry: map['diary_entry'] as String?,
+      goal: map['goal'] as Map<String, dynamic>?,
+      gratitude: map['gratitude'] as Map<String, dynamic>?,
+      diary: map['diary'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
     );
   }
@@ -38,12 +38,12 @@ class Daily {
       'date': _formatDate(date),
       'goal': goal,
       'gratitude': gratitude,
-      'diary_entry': diaryEntry,
+      'diary': diary,
     }..removeWhere((key, value) => value == null);
   }
 
   Map<String, dynamic> toUpdateMap() {
-    return {'goal': goal, 'gratitude': gratitude, 'diary_entry': diaryEntry}
+    return {'goal': goal, 'gratitude': gratitude, 'diary': diary}
       ..removeWhere((key, value) => value == null);
   }
 
@@ -60,15 +60,15 @@ class DailyRepository {
 
   Future<Daily> createOrUpsert({
     required DateTime date,
-    String? goal,
-    String? gratitude,
-    String? diaryEntry,
+    Map<String, dynamic>? goal,
+    Map<String, dynamic>? gratitude,
+    String? diary,
   }) async {
     final data = {
       'date': Daily._formatDate(date),
       if (goal != null) 'goal': goal,
       if (gratitude != null) 'gratitude': gratitude,
-      if (diaryEntry != null) 'diary_entry': diaryEntry,
+      if (diary != null) 'diary': diary,
     };
 
     final inserted = await _client
@@ -109,14 +109,14 @@ class DailyRepository {
 
   Future<Daily> updateByDate({
     required DateTime date,
-    String? goal,
-    String? gratitude,
-    String? diaryEntry,
+    Map<String, dynamic>? goal,
+    Map<String, dynamic>? gratitude,
+    String? diary,
   }) async {
     final payload = <String, dynamic>{
       if (goal != null) 'goal': goal,
       if (gratitude != null) 'gratitude': gratitude,
-      if (diaryEntry != null) 'diary_entry': diaryEntry,
+      if (diary != null) 'diary': diary,
     };
 
     final updated = await _client

@@ -9,6 +9,7 @@ import 'main.dart' show bgColor, textColor, primaryColor, AngelDiaryApp;
 import 'package:table_calendar/table_calendar.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'models/angel_data.dart';
+import 'managers/angel_data_manager.dart' as adm;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,6 +20,9 @@ import 'language_manager.dart';
 import 'screens/help/help_screen.dart';
 import 'screens/auth/intro_signup.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'services/data_backup_service.dart';
+import 'services/wish_service.dart';
+import 'models/wish.dart';
 
 // 말풍선 꼬리를 그리는 CustomPainter
 class SpeechBubbleTailPainter extends CustomPainter {
@@ -347,7 +351,23 @@ class _HomeScreenState extends State<HomeScreen>
     _startAutoPlay();
   }
 
-  // Removed Supabase data loading - using local data only
+  // 소망 데이터 로드 (Supabase)
+  Future<void> _loadWishes() async {
+    try {
+      final wishes = await _wishService.getUserWishes();
+      setState(() {
+        _wishes.clear();
+        _wishes.addAll(wishes);
+      });
+      print('소망 로드 성공: ${wishes.length}개');
+    } catch (e) {
+      print('소망 로드 실패: $e');
+      // 로그인되지 않은 경우 빈 리스트로 초기화
+      setState(() {
+        _wishes.clear();
+      });
+    }
+  }
 
   // 저장된 데이터 로드
   Future<void> _loadStoredData() async {
@@ -356,6 +376,9 @@ class _HomeScreenState extends State<HomeScreen>
 
     // 캘린더 데이터 로드
     await CalendarDataManager.loadCalendarFromStorage();
+
+    // 소망 데이터 로드 (Supabase)
+    await _loadWishes();
 
     // 일일 데이터 날짜 로드
     final prefs = await SharedPreferences.getInstance();
@@ -395,6 +418,7 @@ class _HomeScreenState extends State<HomeScreen>
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('daily_goals', jsonEncode(_goals));
     await prefs.setString('daily_gratitudes', jsonEncode(_gratitudes));
+    // 소망은 Supabase에 저장되므로 SharedPreferences에는 저장하지 않음
   }
 
   // 일일 데이터 로드
@@ -416,6 +440,8 @@ class _HomeScreenState extends State<HomeScreen>
           .map((item) => Map<String, dynamic>.from(item))
           .toList();
     }
+
+    // 소망은 Supabase에서 로드되므로 여기서는 로드하지 않음
 
     if (mounted) {
       setState(() {});
@@ -797,11 +823,32 @@ class _HomeScreenState extends State<HomeScreen>
       builder: (BuildContext context) {
         return WishDialog(
           currentCount: _wishes.length,
-          onWishAdded: (wishText) {
-            setState(() {
-              _wishes.add({'text': wishText, 'completed': false});
-            });
-            _saveToCalendar(); // 캘린더에 저장
+          onWishAdded: (wishText) async {
+            try {
+              // Supabase에 소망 저장
+              final newWish = await _wishService.createWish(wishText);
+              setState(() {
+                _wishes.add(newWish);
+              });
+              _saveToCalendar();
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('소망이 저장되었습니다! 💙'),
+                  backgroundColor: Colors.lightBlue[600],
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            } catch (e) {
+              print('소망 저장 실패: $e');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('소망 저장 실패: $e'),
+                  backgroundColor: Colors.red[600],
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            }
           },
         );
       },
@@ -1089,46 +1136,43 @@ class _HomeScreenState extends State<HomeScreen>
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
-      // 현재 천사 데이터 가져오기
-      final angelData = AngelDataManager.currentAngel;
+      // 데이터 백업 서비스 사용
+      final backupService = DataBackupService();
+      final result = await backupService.backupAllData();
 
-      if (angelData != null) {
-        // 천사 데이터를 Supabase에 저장
-        final supabase = Supabase.instance.client;
+      // 로딩 다이얼로그 닫기
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
 
-        // 사용자 프로필에 천사 데이터 저장
-        await supabase.from('user_profiles').upsert({
-          'user_id': supabase.auth.currentUser?.id,
-          'angel_data': angelData.toJson(),
-          'updated_at': DateTime.now().toIso8601String(),
-        });
+      // 결과에 따른 메시지 표시
+      if (context.mounted) {
+        if (result['success']) {
+          final backedUpItems = result['backedUpItems'] as List<String>;
+          final errors = result['errors'] as List<String>;
 
-        // 로딩 다이얼로그 닫기
-        if (context.mounted) {
-          Navigator.of(context).pop();
-        }
+          String message = '데이터 백업이 완료되었습니다!\n';
+          if (backedUpItems.isNotEmpty) {
+            message += '백업된 항목: ${backedUpItems.join(', ')}\n';
+          }
+          if (errors.isNotEmpty) {
+            message += '오류: ${errors.join(', ')}';
+          }
 
-        // 성공 메시지 표시
-        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('데이터 백업이 완료되었습니다!'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: Text(message),
+              backgroundColor: errors.isEmpty ? Colors.green : Colors.orange,
+              duration: const Duration(seconds: 5),
             ),
           );
-        }
-      } else {
-        // 로딩 다이얼로그 닫기
-        if (context.mounted) {
-          Navigator.of(context).pop();
-        }
-
-        // 천사 데이터가 없는 경우
-        if (context.mounted) {
+        } else {
+          final errors = result['errors'] as List<String>;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('백업할 천사 데이터가 없습니다.'),
-              backgroundColor: Colors.orange,
+            SnackBar(
+              content: Text('데이터 백업 실패: ${errors.join(', ')}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
             ),
           );
         }
@@ -1149,6 +1193,141 @@ class _HomeScreenState extends State<HomeScreen>
         );
       }
     }
+  }
+
+  // 소망 저장을 위한 로그인 유도 다이얼로그
+  void _showLoginRequiredForWishDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: bgColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.favorite, color: Colors.lightBlue, size: 28),
+              const SizedBox(width: 12),
+              Text(
+                '소망을 저장하려면 로그인이 필요해요',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                  fontFamily: LanguageManager.currentLocale.languageCode == 'ko'
+                      ? 'Cafe24Oneprettynight'
+                      : null,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '소망은 클라우드에 안전하게 저장되어 언제든지 확인할 수 있어요.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  fontFamily: LanguageManager.currentLocale.languageCode == 'ko'
+                      ? 'Cafe24Oneprettynight'
+                      : null,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.lightBlue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.lightBlue[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.cloud_upload,
+                      color: Colors.lightBlue[600],
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '로그인하면 소망이 자동으로 백업됩니다',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.lightBlue[700],
+                          fontFamily:
+                              LanguageManager.currentLocale.languageCode == 'ko'
+                              ? 'Cafe24Oneprettynight'
+                              : null,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                '나중에',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontFamily: LanguageManager.currentLocale.languageCode == 'ko'
+                      ? 'Cafe24Oneprettynight'
+                      : null,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // 다이얼로그 닫기
+                // 로그인 화면으로 이동
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => IntroSignupScreen(
+                      angelData:
+                          adm.AngelDataManager.currentAngel ??
+                          AngelData(
+                            name: '기본 천사',
+                            feature: '친근한',
+                            animalType: 'dog',
+                            faceType: 1,
+                            faceColor: 1,
+                            bodyIndex: 1,
+                            emotionIndex: 1,
+                            tailIndex: 1,
+                            createdAt: DateTime.now(),
+                          ),
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.lightBlue[300],
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                '로그인하기',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontFamily: LanguageManager.currentLocale.languageCode == 'ko'
+                      ? 'Cafe24Oneprettynight'
+                      : null,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // 로그인 필요 다이얼로그 표시
@@ -1373,7 +1552,8 @@ class _HomeScreenState extends State<HomeScreen>
   };
 
   // 체크박스 상태를 포함한 데이터 구조
-  final List<Map<String, dynamic>> _wishes = [];
+  final List<Wish> _wishes = [];
+  final WishService _wishService = WishService();
 
   List<Map<String, dynamic>> _goals = [];
 
@@ -1858,7 +2038,13 @@ class _HomeScreenState extends State<HomeScreen>
                 // 목표와 감사 탭의 기존 리스트
                 ..._getCurrentList().asMap().entries.map((entry) {
                   final item = entry.value;
-                  final isCompleted = item['completed'] as bool;
+                  // 소망 탭일 때는 Wish 객체, 다른 탭일 때는 Map<String, dynamic>
+                  final isCompleted = _selectedTabIndex == 0
+                      ? false
+                      : (item as Map<String, dynamic>)['completed'] as bool;
+                  final itemText = _selectedTabIndex == 0
+                      ? (item as Wish).wishText
+                      : (item as Map<String, dynamic>)['text'] as String;
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 0),
@@ -1887,7 +2073,7 @@ class _HomeScreenState extends State<HomeScreen>
                         // 텍스트 (가운데)
                         Expanded(
                           child: Text(
-                            item['text'],
+                            itemText,
                             style: TextStyle(
                               fontSize: 17,
                               color: _selectedTabIndex == 0
@@ -2078,7 +2264,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildAngelCharacter() {
-    final angelData = AngelDataManager.currentAngel;
+    final angelData = adm.AngelDataManager.currentAngel;
 
     if (angelData == null) {
       // 천사가 없을 때 기본 이모지 표시
@@ -2248,7 +2434,7 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  List<Map<String, dynamic>> _getCurrentList() {
+  List<dynamic> _getCurrentList() {
     switch (_selectedTabIndex) {
       case 0:
         return _wishes;
@@ -2348,13 +2534,46 @@ class _HomeScreenState extends State<HomeScreen>
       context: context,
       builder: (BuildContext context) {
         return EditDialog(
-          initialText: item['text'] as String,
+          initialText: _selectedTabIndex == 0
+              ? (item as Wish).wishText
+              : item['text'] as String,
           tabIndex: _selectedTabIndex,
-          onItemEdited: (newText) {
-            setState(() {
-              currentList[index]['text'] = newText;
-            });
-            _saveToCalendar();
+          onItemEdited: (newText) async {
+            // 소망 탭일 때는 Supabase에 저장
+            if (_selectedTabIndex == 0) {
+              try {
+                final wish = item as Wish;
+                final updatedWish = await _wishService.updateWish(
+                  wish.id,
+                  newText,
+                );
+                setState(() {
+                  _wishes[index] = updatedWish;
+                });
+                _saveToCalendar();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('소망이 수정되었습니다! 💙'),
+                    backgroundColor: Colors.lightBlue,
+                  ),
+                );
+              } catch (e) {
+                print('소망 수정 실패: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('소망 수정 실패: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            } else {
+              // 목표나 감사는 기존대로 처리
+              setState(() {
+                currentList[index]['text'] = newText;
+              });
+              _saveToCalendar();
+            }
           },
         );
       },
@@ -2366,7 +2585,7 @@ class _HomeScreenState extends State<HomeScreen>
     final dateString = _getDateString(_selectedDate);
 
     final dayData = {
-      'wishes': List<Map<String, dynamic>>.from(_wishes),
+      'wishes': _wishes.map((wish) => wish.toMap()).toList(),
       'goals': List<Map<String, dynamic>>.from(_goals),
       'gratitudes': List<Map<String, dynamic>>.from(_gratitudes),
       'diary': CalendarDataManager.getDiary(dateString) ?? '',
@@ -2376,7 +2595,10 @@ class _HomeScreenState extends State<HomeScreen>
     await CalendarDataManager.saveDayData(dateString, dayData);
 
     // 소망도 별도로 저장 (지속적 유지를 위해)
-    await CalendarDataManager.saveWishes(dateString, _wishes);
+    await CalendarDataManager.saveWishes(
+      dateString,
+      _wishes.map((wish) => wish.toMap()).toList(),
+    );
   }
 
   String _getDateString(DateTime date) {
@@ -2407,19 +2629,42 @@ class _HomeScreenState extends State<HomeScreen>
       return;
     }
 
+    // 첫 번째 소망이면 로그인 유도 팝업 표시
+    if (_wishes.isEmpty) {
+      _showLoginRequiredForWishDialog();
+      return;
+    }
+
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return WishDialog(
           currentCount: _wishes.length,
-          onWishAdded: (wishText) {
-            setState(() {
-              _wishes.add({'text': wishText, 'completed': false});
-            });
-            _saveToCalendar();
-            // 소망도 별도로 저장
-            final dateString = _getDateString(_selectedDate);
-            CalendarDataManager.saveWishes(dateString, _wishes);
+          onWishAdded: (wishText) async {
+            try {
+              // Supabase에 소망 저장
+              final newWish = await _wishService.createWish(wishText);
+              setState(() {
+                _wishes.add(newWish);
+              });
+              _saveToCalendar();
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('소망이 저장되었습니다! 💙'),
+                  backgroundColor: Colors.lightBlue,
+                ),
+              );
+            } catch (e) {
+              print('소망 저장 실패: $e');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('소망 저장 실패: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
           },
         );
       },
@@ -3730,14 +3975,6 @@ class _WishDialogState extends State<WishDialog> {
 
     widget.onWishAdded(wishText);
     Navigator.of(context).pop();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('소망이 추가되었습니다! 💙'),
-        backgroundColor: Colors.lightBlue[600],
-        duration: const Duration(seconds: 2),
-      ),
-    );
   }
 }
 

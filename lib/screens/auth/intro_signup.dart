@@ -3,8 +3,8 @@ import '../../generated/l10n/app_localizations.dart';
 import '../../main.dart' show bgColor, primaryColor;
 import '../../language_manager.dart';
 import '../../models/angel_data.dart';
-import '../../managers/angel_data_manager.dart';
-import '../../screens/home/home_screen.dart';
+import '../../managers/angel_data_manager.dart' as adm;
+import '../../home.dart';
 import '../../services/auth/kakao_auth_service.dart';
 
 class IntroSignupScreen extends StatelessWidget {
@@ -207,7 +207,7 @@ class IntroSignupScreen extends StatelessWidget {
     debugPrint('현재 라우트: ${ModalRoute.of(context)?.settings.name}');
 
     // 천사 데이터를 SharedPreferences에 저장
-    await AngelDataManager.setCurrentAngel(angelData);
+    await adm.AngelDataManager.setCurrentAngel(angelData);
 
     // 성공 메시지 표시
     ScaffoldMessenger.of(context).showSnackBar(
