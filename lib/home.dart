@@ -185,6 +185,23 @@ class CalendarDataManager {
         );
         _calendarData.clear();
         _calendarData.addAll(calendarData);
+
+        // completed 필드가 null인 경우 false로 설정
+        for (String dateKey in _calendarData.keys) {
+          final dayData = _calendarData[dateKey]!;
+          for (String category in ['wishes', 'goals', 'gratitudes']) {
+            final items = dayData[category] as List<dynamic>?;
+            if (items != null) {
+              for (var item in items) {
+                if (item is Map<String, dynamic>) {
+                  if (item['completed'] == null) {
+                    item['completed'] = false;
+                  }
+                }
+              }
+            }
+          }
+        }
       }
 
       // 소망 데이터 로드
@@ -654,7 +671,7 @@ class _HomeScreenState extends State<HomeScreen>
         _isPlaying = true;
       });
 
-      // 음악이 끝나면 다음 곡으로 자동 이동
+      // 음악이 끝나면 다음 곡으로 자동 이동 (전체 반복)
       _audioPlayer.onPlayerComplete.listen((_) {
         _playNextMusic();
       });
@@ -689,7 +706,7 @@ class _HomeScreenState extends State<HomeScreen>
     await _playCurrentMusic();
   }
 
-  // 다음 곡 재생
+  // 다음 곡 재생 (전체 반복)
   Future<void> _playNextMusic() async {
     setState(() {
       _currentMusicIndex = (_currentMusicIndex + 1) % _musicPlaylist.length;
@@ -2064,13 +2081,27 @@ class _HomeScreenState extends State<HomeScreen>
                 // 목표와 감사 탭의 기존 리스트
                 ..._getCurrentList().asMap().entries.map((entry) {
                   final item = entry.value;
-                  // 소망 탭일 때는 Wish 객체, 다른 탭일 때는 Map<String, dynamic>
+
+                  // 소망 탭일 때는 Wish 객체를 Map으로 변환
+                  Map<String, dynamic> itemMap;
+                  if (_selectedTabIndex == 0 && item is Wish) {
+                    itemMap = item.toMap();
+                    // completed 필드가 없으면 false로 설정
+                    if (itemMap['completed'] == null) {
+                      itemMap['completed'] = false;
+                    }
+                  } else if (item is Map<String, dynamic>) {
+                    itemMap = item;
+                  } else {
+                    itemMap = <String, dynamic>{};
+                  }
+
                   final isCompleted = _selectedTabIndex == 0
                       ? false
-                      : (item as Map<String, dynamic>)['completed'] as bool;
+                      : (itemMap['completed'] as bool?) ?? false;
                   final itemText = _selectedTabIndex == 0
-                      ? (item as Wish).wishText
-                      : (item as Map<String, dynamic>)['text'] as String;
+                      ? (item is Wish ? item.wishText : '')
+                      : (itemMap['text'] as String?) ?? '';
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 0),
@@ -2116,7 +2147,7 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                         ),
                         const SizedBox(width: 8),
-                        // 수정 버튼
+                        // 수정 버튼 (모든 탭에서 표시)
                         IconButton(
                           onPressed: () => _showEditDialog(entry.key),
                           icon: Icon(
@@ -2477,8 +2508,12 @@ class _HomeScreenState extends State<HomeScreen>
   void _toggleItem(int index) {
     setState(() {
       final currentList = _getCurrentList();
-      final wasCompleted = currentList[index]['completed'] as bool;
-      currentList[index]['completed'] = !wasCompleted;
+      final item = currentList[index];
+      bool wasCompleted = false;
+      if (item is Map<String, dynamic>) {
+        wasCompleted = (item['completed'] as bool?) ?? false;
+        item['completed'] = !wasCompleted;
+      }
 
       // 선택된 날짜의 데이터를 캘린더에 저장
       _saveToCalendar();
@@ -2561,16 +2596,17 @@ class _HomeScreenState extends State<HomeScreen>
       builder: (BuildContext context) {
         return EditDialog(
           initialText: _selectedTabIndex == 0
-              ? (item as Wish).wishText
-              : item['text'] as String,
+              ? (item is Wish ? item.wishText : '')
+              : (item is Map<String, dynamic>
+                    ? (item['text'] as String?) ?? ''
+                    : ''),
           tabIndex: _selectedTabIndex,
           onItemEdited: (newText) async {
             // 소망 탭일 때는 Supabase에 저장
-            if (_selectedTabIndex == 0) {
+            if (_selectedTabIndex == 0 && item is Wish) {
               try {
-                final wish = item as Wish;
                 final updatedWish = await _wishService.updateWish(
-                  wish.id,
+                  item.id,
                   newText,
                 );
                 setState(() {
@@ -2593,10 +2629,10 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 );
               }
-            } else {
+            } else if (item is Map<String, dynamic>) {
               // 목표나 감사는 기존대로 처리
               setState(() {
-                currentList[index]['text'] = newText;
+                item['text'] = newText;
               });
               _saveToCalendar();
             }
@@ -2610,10 +2646,27 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _saveToCalendar() async {
     final dateString = _getDateString(_selectedDate);
 
+    // goals와 gratitudes의 completed 필드가 null인 경우 false로 설정
+    final safeGoals = _goals.map((goal) {
+      final safeGoal = Map<String, dynamic>.from(goal);
+      if (safeGoal['completed'] == null) {
+        safeGoal['completed'] = false;
+      }
+      return safeGoal;
+    }).toList();
+
+    final safeGratitudes = _gratitudes.map((gratitude) {
+      final safeGratitude = Map<String, dynamic>.from(gratitude);
+      if (safeGratitude['completed'] == null) {
+        safeGratitude['completed'] = false;
+      }
+      return safeGratitude;
+    }).toList();
+
     final dayData = {
       'wishes': _wishes.map((wish) => wish.toMap()).toList(),
-      'goals': List<Map<String, dynamic>>.from(_goals),
-      'gratitudes': List<Map<String, dynamic>>.from(_gratitudes),
+      'goals': safeGoals,
+      'gratitudes': safeGratitudes,
       'diary': CalendarDataManager.getDiary(dateString) ?? '',
     };
 
@@ -3084,30 +3137,57 @@ class _CalendarDialogState extends State<CalendarDialog> {
   List<Map<String, dynamic>> _getEventsForDay(DateTime day) {
     final dateString = _getDateString(day);
 
-    // 전역 데이터에서 먼저 확인, 없으면 샘플 데이터에서 확인
-    final dayData =
-        CalendarDataManager.getDayData(dateString) ??
-        _sampleData[dateString] ??
-        {
-          'wishes': <Map<String, dynamic>>[],
-          'goals': <Map<String, dynamic>>[],
-          'gratitudes': <Map<String, dynamic>>[],
-        };
+    try {
+      // 소망 탭의 경우 SharedPreferences에서 직접 불러오기
+      if (_selectedCategory == 0) {
+        final wishes = CalendarDataManager.getWishes(dateString);
+        return wishes.map((wish) {
+          // completed 필드가 null인 경우 false로 설정
+          if (wish['completed'] == null) {
+            wish['completed'] = false;
+          }
+          return wish;
+        }).toList();
+      }
 
-    String categoryKey = '';
-    switch (_selectedCategory) {
-      case 0:
-        categoryKey = 'wishes';
-        break;
-      case 1:
-        categoryKey = 'goals';
-        break;
-      case 2:
-        categoryKey = 'gratitudes';
-        break;
+      // 목표와 감사 탭의 경우 기존 방식 사용
+      final dayData =
+          CalendarDataManager.getDayData(dateString) ??
+          _sampleData[dateString] ??
+          {
+            'goals': <Map<String, dynamic>>[],
+            'gratitudes': <Map<String, dynamic>>[],
+          };
+
+      String categoryKey = '';
+      switch (_selectedCategory) {
+        case 1:
+          categoryKey = 'goals';
+          break;
+        case 2:
+          categoryKey = 'gratitudes';
+          break;
+      }
+
+      final items = dayData[categoryKey] ?? [];
+      if (items is List) {
+        return items.map((item) {
+          if (item is Map<String, dynamic>) {
+            // completed 필드가 null인 경우 false로 설정
+            if (item['completed'] == null) {
+              item['completed'] = false;
+            }
+            return item;
+          } else {
+            return <String, dynamic>{};
+          }
+        }).toList();
+      }
+      return [];
+    } catch (e) {
+      print('Error in _getEventsForDay: $e');
+      return [];
     }
-
-    return dayData[categoryKey] ?? [];
   }
 
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
@@ -3381,15 +3461,30 @@ class _CalendarDialogState extends State<CalendarDialog> {
   // 해당 날짜에 이벤트가 있는지 확인
   bool _hasEventsForDay(DateTime day) {
     final dateString = _getDateString(day);
-    final dayData =
-        CalendarDataManager.getDayData(dateString) ?? _sampleData[dateString];
-    if (dayData == null) return false;
 
-    for (String category in ['wishes', 'goals', 'gratitudes']) {
-      final items = dayData[category] ?? [];
-      if (items.isNotEmpty) return true;
+    try {
+      // 소망 탭의 경우 SharedPreferences에서 직접 확인
+      if (_selectedCategory == 0) {
+        final wishes = CalendarDataManager.getWishes(dateString);
+        return wishes.isNotEmpty;
+      }
+
+      // 목표와 감사 탭의 경우 기존 방식 사용
+      final dayData =
+          CalendarDataManager.getDayData(dateString) ?? _sampleData[dateString];
+      if (dayData == null) return false;
+
+      for (String category in ['goals', 'gratitudes']) {
+        final items = dayData[category] ?? [];
+        if (items is List && items.isNotEmpty) {
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      print('Error in _hasEventsForDay: $e');
+      return false;
     }
-    return false;
   }
 
   // 요일 축약형 가져오기

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 class Wish {
   final String id;
   final String userId;
