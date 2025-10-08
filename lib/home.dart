@@ -23,6 +23,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/data_backup_service.dart';
 import 'services/wish_service.dart';
 import 'models/wish.dart';
+import 'services/auth/auth_service.dart';
 
 // 말풍선 꼬리를 그리는 CustomPainter
 class SpeechBubbleTailPainter extends CustomPainter {
@@ -349,6 +350,27 @@ class _HomeScreenState extends State<HomeScreen>
 
     // 앱 시작 시 자동으로 음악 재생
     _startAutoPlay();
+
+    // 로그인 성공 콜백 설정
+    _setupLoginSuccessCallback();
+  }
+
+  // 로그인 성공 콜백 설정
+  void _setupLoginSuccessCallback() {
+    AuthService.setOnLoginSuccess(() {
+      // 로그인 성공 시 소망 데이터 다시 로드
+      _loadWishes();
+
+      // 로그인 상태 확인 후 소망이 비어있으면 소망 추가 다이얼로그 표시
+      final authService = AuthService();
+      if (authService.isLoggedIn() && _wishes.isEmpty) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            _showWishDialog();
+          }
+        });
+      }
+    });
   }
 
   // 소망 데이터 로드 (Supabase)
@@ -455,6 +477,10 @@ class _HomeScreenState extends State<HomeScreen>
 
     _audioPlayer.dispose();
     _heartAnimationController.dispose();
+
+    // 로그인 성공 콜백 정리
+    AuthService.clearLoginSuccessCallback();
+
     super.dispose();
   }
 
@@ -2629,8 +2655,9 @@ class _HomeScreenState extends State<HomeScreen>
       return;
     }
 
-    // 첫 번째 소망이면 로그인 유도 팝업 표시
-    if (_wishes.isEmpty) {
+    // 로그인 상태 확인 후 첫 번째 소망이면 로그인 유도 팝업 표시
+    final authService = AuthService();
+    if (_wishes.isEmpty && !authService.isLoggedIn()) {
       _showLoginRequiredForWishDialog();
       return;
     }

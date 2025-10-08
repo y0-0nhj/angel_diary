@@ -1,7 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart' as kakao;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk_common.dart' as kakao;
 import 'auth_service.dart';
 import '../user_profile_service.dart';
@@ -84,6 +83,9 @@ class KakaoAuthService {
 
         // user_profiles 테이블에 사용자 정보 저장
         await _createOrUpdateUserProfile(user);
+
+        // 로그인 성공 콜백 호출
+        AuthService.triggerLoginSuccess();
       }
     } on AuthException catch (e) {
       print('Supabase 로그인 오류: ${e.message}');

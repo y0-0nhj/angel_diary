@@ -6,7 +6,7 @@ class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
   static const String _isLoggedInKey = 'is_logged_in';
   static const String _userEmailKey = 'user_email';
-  
+
   // 로그인 완료 콜백
   static VoidCallback? _onLoginSuccess;
 
