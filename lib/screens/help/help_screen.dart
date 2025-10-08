@@ -4,6 +4,8 @@ import 'widgets/feedback_dialog.dart';
 import '../../clients/discode_webhook.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:io';
+import 'terms_of_service_screen.dart';
+import 'privacy_policy_screen.dart';
 
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
@@ -91,7 +93,11 @@ class HelpScreen extends StatelessWidget {
             title: const Text('개인정보 처리방침'),
             subtitle: const Text('앱의 개인정보 처리방침 보기'),
             onTap: () {
-              // 개인정보 처리방침 페이지로 이동
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const PrivacyPolicyScreen(),
+                ),
+              );
             },
           ),
           ListTile(
@@ -99,7 +105,11 @@ class HelpScreen extends StatelessWidget {
             title: const Text('이용 약관'),
             subtitle: const Text('앱의 이용 약관 보기'),
             onTap: () {
-              // 이용 약관 페이지로 이동
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const TermsOfServiceScreen(),
+                ),
+              );
             },
           ),
         ],

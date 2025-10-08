@@ -1,10 +1,14 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
 
 class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
   static const String _isLoggedInKey = 'is_logged_in';
   static const String _userEmailKey = 'user_email';
+  
+  // 로그인 완료 콜백
+  static VoidCallback? _onLoginSuccess;
 
   // Sign in with email and password
   Future<AuthResponse> signInWithEmailPassword(
@@ -91,5 +95,20 @@ class AuthService {
       await clearLoginState();
       return false;
     }
+  }
+
+  // 로그인 성공 콜백 설정
+  static void setOnLoginSuccess(VoidCallback? callback) {
+    _onLoginSuccess = callback;
+  }
+
+  // 로그인 성공 콜백 호출
+  static void triggerLoginSuccess() {
+    _onLoginSuccess?.call();
+  }
+
+  // 로그인 성공 콜백 제거
+  static void clearLoginSuccessCallback() {
+    _onLoginSuccess = null;
   }
 }

@@ -52,6 +52,7 @@ dependencies:
   package_info_plus: ^8.3.0
   kakao_flutter_sdk: ^1.9.7+3
   kakao_flutter_sdk_user: ^1.9.7+3
+  webview_flutter: ^4.4.2
 
 
 dev_dependencies:
@@ -76,6 +77,8 @@ flutter:
     - assets/icons/
     - assets/images/illustrations/
     - assets/images/backgrounds/
+    - lib/screens/help/terms_of_service.html
+    - lib/screens/help/privacy_policy.html
     - assets/images/characters/cat/face/
     - assets/images/characters/cat/body/
     - assets/images/characters/cat/emotion/

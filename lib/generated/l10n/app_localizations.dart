@@ -277,7 +277,7 @@ abstract class AppLocalizations {
   /// 회원가입 링크
   ///
   /// In ko, this message translates to:
-  /// **'회원가입'**
+  /// **'로그인'**
   String get signUp;
 
   /// 계정 찾기 링크

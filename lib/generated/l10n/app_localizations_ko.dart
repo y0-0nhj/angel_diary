@@ -99,7 +99,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get orText => '또는';
 
   @override
-  String get signUp => '회원가입';
+  String get signUp => '로그인';
 
   @override
   String get findAccount => '아이디 또는 비밀번호찾기';
