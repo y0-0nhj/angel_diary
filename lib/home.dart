@@ -1184,7 +1184,7 @@ class _HomeScreenState extends State<HomeScreen>
               Icon(Icons.favorite, color: Colors.lightBlue, size: 28),
               const SizedBox(width: 12),
               Text(
-                '소망을 저장하려면 로그인이 필요해요',
+                '소망을 저장하려면\n 로그인이 필요해요',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -1467,7 +1467,14 @@ class _HomeScreenState extends State<HomeScreen>
           children: [
             Icon(icon, color: Colors.blue[600], size: 20),
             const SizedBox(width: 12),
-            Text(title, style: const TextStyle(fontSize: 16, color: textColor)),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            ),
             const Spacer(),
             const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
           ],
@@ -1635,7 +1642,14 @@ class _HomeScreenState extends State<HomeScreen>
           children: [
             Icon(icon, color: Colors.purple[600], size: 20),
             const SizedBox(width: 12),
-            Text(title, style: const TextStyle(fontSize: 16, color: textColor)),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            ),
             const Spacer(),
             const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
           ],

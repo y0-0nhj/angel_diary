@@ -922,6 +922,7 @@ class _YesFormScreenState extends State<YesFormScreen> {
                   AppLocalizations.of(context)!.angelRegistration,
                   style: TextStyle(
                     fontSize: 36,
+                    fontWeight: FontWeight.bold,
                     color: textColor,
                     fontFamily:
                         LanguageManager.currentLocale.languageCode == 'ko'
@@ -936,6 +937,7 @@ class _YesFormScreenState extends State<YesFormScreen> {
                   AppLocalizations.of(context)!.nameInputLabel,
                   style: TextStyle(
                     fontSize: 20,
+                    fontWeight: FontWeight.bold,
                     color: textColor,
                     fontFamily:
                         LanguageManager.currentLocale.languageCode == 'ko'
@@ -945,12 +947,16 @@ class _YesFormScreenState extends State<YesFormScreen> {
                 ),
                 const SizedBox(height: 8), // ✨ Text와 TextField 사이에 간격 추가
                 TextField(
-                  style: TextStyle(fontSize: 20),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   controller: _nameController,
                   decoration: buildInputDecoration().copyWith(
                     // ✨ 공통 스타일 함수 사용
                     hintText: AppLocalizations.of(context)!.nameInputHint,
-                    hintStyle: TextStyle(fontSize: 20, color: Colors.grey[400]),
+                    hintStyle: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[400],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -960,6 +966,7 @@ class _YesFormScreenState extends State<YesFormScreen> {
                   AppLocalizations.of(context)!.petTypeLabel,
                   style: TextStyle(
                     fontSize: 20,
+                    fontWeight: FontWeight.bold,
                     color: textColor,
                     fontFamily:
                         LanguageManager.currentLocale.languageCode == 'ko'
@@ -990,7 +997,11 @@ class _YesFormScreenState extends State<YesFormScreen> {
                 // 3. 펫 설명 선택 드롭다운
                 const Text(
                   '아이는 어떤 모습이에요?',
-                  style: TextStyle(fontSize: 20, color: textColor),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
@@ -1029,7 +1040,11 @@ class _YesFormScreenState extends State<YesFormScreen> {
                 // 4. 이미지 선택 버튼
                 const Text(
                   '가장 아름답고 예뻤던 아이의 전신 모습을 선택해주세요.',
-                  style: TextStyle(fontSize: 20, color: textColor),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
                 ),
                 const SizedBox(height: 15),
 
@@ -1171,6 +1186,7 @@ class _YesFormScreenState extends State<YesFormScreen> {
                     AppLocalizations.of(context)!.angelRegistration,
                     style: TextStyle(
                       fontSize: 20,
+                      fontWeight: FontWeight.bold,
                       color: Colors.white,
                       fontFamily:
                           LanguageManager.currentLocale.languageCode == 'ko'
