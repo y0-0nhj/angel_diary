@@ -12,7 +12,7 @@
 
     <meta-data
             android:name="com.kakao.sdk.AppKey"
-            android:value="a004cf01cc27b393d207ac79d3a34355" />
+            android:value="41bafe186ed2ce2ceef68c2dd004b0b0" />
     <activity
         android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
         android:exported="true">
@@ -21,7 +21,7 @@
             <category android:name="android.intent.category.DEFAULT" />
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:host="oauth"
-                android:scheme="a004cf01cc27b393d207ac79d3a34355" />
+                android:scheme="41bafe186ed2ce2ceef68c2dd004b0b0" />
         </intent-filter>
     </activity>
 

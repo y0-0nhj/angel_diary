@@ -5,6 +5,7 @@ import '../../models/angel_data.dart';
 import '../../managers/angel_data_manager.dart' as adm;
 import '../../home.dart';
 import '../../services/auth/kakao_auth_service.dart';
+import '../../services/auth/auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/user_profile_service.dart';
 import '../../models/user_profile.dart';
@@ -255,9 +256,15 @@ class IntroSignupScreen extends StatelessWidget {
       // 천사 데이터를 SharedPreferences에 저장
       await adm.AngelDataManager.setCurrentAngel(angelData);
 
-      // Supabase user_profiles 테이블에 천사 데이터 저장
+      // 로그인 상태를 SharedPreferences에 저장
+      final authService = AuthService();
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) {
+        // 로그인 상태 저장
+        await authService.saveLoginState(user.email ?? '');
+
+        // 로그인 성공 콜백 트리거
+        AuthService.triggerLoginSuccess();
         final userProfileService = UserProfileService();
 
         // 기존 사용자 프로필 조회

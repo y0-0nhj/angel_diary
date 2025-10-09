@@ -1141,10 +1141,22 @@ class _HomeScreenState extends State<HomeScreen>
                     const SnackBar(content: Text('통계 기능 준비 중입니다')),
                   );
                 }),
-                _buildMyPageItem(Icons.logout, '로그아웃', () {
-                  Navigator.of(context).pop();
-                  _showLogoutDialog();
-                }),
+                // 로그인 상태에 따라 버튼 변경 (비동기 처리)
+                FutureBuilder<bool>(
+                  future: AuthService().isLoggedInAsync(),
+                  builder: (context, snapshot) {
+                    final isLoggedIn = snapshot.data ?? false;
+                    return isLoggedIn
+                        ? _buildMyPageItem(Icons.logout, '로그아웃', () {
+                            Navigator.of(context).pop();
+                            _showLogoutDialog();
+                          })
+                        : _buildMyPageItem(Icons.login, '로그인', () {
+                            Navigator.of(context).pop();
+                            _showLoginDialog();
+                          });
+                  },
+                ),
                 // _buildMyPageItem(Icons.backup, '데이터 백업', () {
                 //   Navigator.of(context).pop();
                 //   _showLoginRequiredDialog(context);
@@ -1497,6 +1509,69 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  // 로그인 다이얼로그 표시
+  void _showLoginDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: bgColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.login, color: Colors.blue, size: 24),
+              SizedBox(width: 8),
+              Text('로그인'),
+            ],
+          ),
+          content: const Text('로그인하여 더 많은 기능을 이용해보세요.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('취소'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // 로그인 화면으로 이동
+                final currentAngel = adm.AngelDataManager.currentAngel;
+                if (currentAngel != null) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          IntroSignupScreen(angelData: currentAngel),
+                    ),
+                  );
+                } else {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => IntroSignupScreen(
+                        angelData: AngelData(
+                          name: '기본 천사',
+                          feature: '친근한',
+                          animalType: 'dog',
+                          faceType: 1,
+                          faceColor: 1,
+                          bodyIndex: 1,
+                          emotionIndex: 1,
+                          tailIndex: 1,
+                          createdAt: DateTime.now(),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: const Text('로그인'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // 로그아웃 실행
   Future<void> _performLogout() async {
     try {
@@ -1504,9 +1579,8 @@ class _HomeScreenState extends State<HomeScreen>
       final authService = AuthService();
       await authService.signOut();
 
-      // SharedPreferences에서 로그인 상태 제거
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('isLoggedIn');
+      // AuthService의 clearLoginState 호출
+      await authService.clearLoginState();
 
       // 성공 메시지 표시
       ScaffoldMessenger.of(context).showSnackBar(

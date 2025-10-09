@@ -43,9 +43,9 @@ Future<void> main() async {
 
   // 카카오 SDK 초기화
   kakao.KakaoSdk.init(
-    nativeAppKey: 'a004cf01cc27b393d207ac79d3a34355', // 실제 네이티브 앱 키로 교체 필요
+    nativeAppKey: '41bafe186ed2ce2ceef68c2dd004b0b0', // 실제 네이티브 앱 키로 교체 필요
     javaScriptAppKey:
-        'd66b0ce362169f1ec3552dd9efff3965', // 실제 JavaScript 앱 키로 교체 필요
+        'fdb84d1114ec854e0e72d1e4661247d9', // 실제 JavaScript 앱 키로 교체 필요
   );
 
   // 언어 설정 로드
@@ -120,7 +120,8 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
 
       // 재방문: 로그인 상태 확인
       final authService = AuthService();
-      final isLoggedIn = authService.isLoggedIn();
+      final isLoggedIn = await authService.isLoggedInAsync();
+      print('재방문 & 로그인 상태: $isLoggedIn');
 
       if (!isLoggedIn) {
         // 로그아웃 상태: 로그인 화면으로
@@ -398,7 +399,7 @@ class _SplashScreenState extends State<SplashScreen> {
             children: [
               Text(
                 l10n.splashMessage2,
-                style: textTheme.bodyMedium,
+                style: textTheme.bodySmall,
                 textAlign: TextAlign.center,
                 textScaleFactor: 1.2,
               ),
@@ -416,7 +417,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 child: Text(
                   l10n.startButton,
                   style: const TextStyle(
-                    fontSize: 24,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -667,7 +668,7 @@ class QuestionScreen extends StatelessWidget {
                   child: Text(
                     l10n.yesButton,
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -686,7 +687,7 @@ class QuestionScreen extends StatelessWidget {
                   child: Text(
                     l10n.noButton,
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -920,7 +921,7 @@ class _YesFormScreenState extends State<YesFormScreen> {
                 Text(
                   AppLocalizations.of(context)!.angelRegistration,
                   style: TextStyle(
-                    fontSize: 43,
+                    fontSize: 36,
                     color: textColor,
                     fontFamily:
                         LanguageManager.currentLocale.languageCode == 'ko'
@@ -934,7 +935,7 @@ class _YesFormScreenState extends State<YesFormScreen> {
                 Text(
                   AppLocalizations.of(context)!.nameInputLabel,
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 20,
                     color: textColor,
                     fontFamily:
                         LanguageManager.currentLocale.languageCode == 'ko'
@@ -944,12 +945,12 @@ class _YesFormScreenState extends State<YesFormScreen> {
                 ),
                 const SizedBox(height: 8), // ✨ Text와 TextField 사이에 간격 추가
                 TextField(
-                  style: TextStyle(fontSize: 24),
+                  style: TextStyle(fontSize: 20),
                   controller: _nameController,
                   decoration: buildInputDecoration().copyWith(
                     // ✨ 공통 스타일 함수 사용
                     hintText: AppLocalizations.of(context)!.nameInputHint,
-                    hintStyle: TextStyle(fontSize: 24, color: Colors.grey[400]),
+                    hintStyle: TextStyle(fontSize: 20, color: Colors.grey[400]),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -958,7 +959,7 @@ class _YesFormScreenState extends State<YesFormScreen> {
                 Text(
                   AppLocalizations.of(context)!.petTypeLabel,
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 20,
                     color: textColor,
                     fontFamily:
                         LanguageManager.currentLocale.languageCode == 'ko'
@@ -989,7 +990,7 @@ class _YesFormScreenState extends State<YesFormScreen> {
                 // 3. 펫 설명 선택 드롭다운
                 const Text(
                   '아이는 어떤 모습이에요?',
-                  style: TextStyle(fontSize: 24, color: textColor),
+                  style: TextStyle(fontSize: 20, color: textColor),
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
@@ -1028,7 +1029,7 @@ class _YesFormScreenState extends State<YesFormScreen> {
                 // 4. 이미지 선택 버튼
                 const Text(
                   '가장 아름답고 예뻤던 아이의 전신 모습을 선택해주세요.',
-                  style: TextStyle(fontSize: 24, color: textColor),
+                  style: TextStyle(fontSize: 20, color: textColor),
                 ),
                 const SizedBox(height: 15),
 
@@ -1108,7 +1109,7 @@ class _YesFormScreenState extends State<YesFormScreen> {
                         const Text(
                           '🎨 천사 캐릭터 커스터마이징',
                           style: TextStyle(
-                            fontSize: 22,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: textColor,
                           ),
@@ -1169,7 +1170,7 @@ class _YesFormScreenState extends State<YesFormScreen> {
                   child: Text(
                     AppLocalizations.of(context)!.angelRegistration,
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 20,
                       color: Colors.white,
                       fontFamily:
                           LanguageManager.currentLocale.languageCode == 'ko'
@@ -1226,7 +1227,7 @@ class NoFormScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  "우리에게는 새로운 시작이 있으니까요.\n당신의 마음속에 작은 씨앗을 심어볼까요? \n당신의 천사와 함께 하게 될거에요.",
+                  "우리에게는 새로운 시작이 있으니까요.\n당신의 마음속에 작은 씨앗을 심어볼까요? 당신의 천사와 함께 하게 될거에요.",
                   style: Theme.of(context).textTheme.bodyLarge,
                   textAlign: TextAlign.center,
                 ),
@@ -1246,7 +1247,7 @@ class NoFormScreen extends StatelessWidget {
                   },
                   child: const Text(
                     "마음의 씨앗 심기",
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],

@@ -47,6 +47,18 @@ class AuthService {
     return session != null;
   }
 
+  // Check if user is logged in (with SharedPreferences fallback)
+  Future<bool> isLoggedInAsync() async {
+    final session = _supabase.auth.currentSession;
+    if (session != null) {
+      return true;
+    }
+
+    // Fallback to SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_isLoggedInKey) ?? false;
+  }
+
   // Save login state to SharedPreferences
   Future<void> saveLoginState(String email) async {
     final prefs = await SharedPreferences.getInstance();
