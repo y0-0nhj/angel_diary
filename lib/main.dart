@@ -130,7 +130,7 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Angel Diary',
+      title: AppLocalizations.of(context)?.appTitle ?? 'Angel Diary',
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -330,7 +330,11 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+
+    if (l10n == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return Container(
       key: const ValueKey('splash'),
@@ -338,11 +342,11 @@ class _SplashScreenState extends State<SplashScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          // 언어 선택 아이콘 (우상단)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [_buildLanguageSelector(context)],
-          ),
+          // 언어 선택 아이콘 (우상단) - 임시 주석처리
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.end,
+          //   children: [_buildLanguageSelector(context)],
+          // ),
           Text(
             l10n.splashMessage1,
             style: textTheme.bodyMedium,
@@ -403,18 +407,23 @@ class _SplashScreenState extends State<SplashScreen> {
     String flagEmoji;
     String languageName;
 
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      return const SizedBox.shrink();
+    }
+
     switch (currentLocale.languageCode) {
       case 'ko':
         flagEmoji = '🇰🇷';
-        languageName = AppLocalizations.of(context)!.korean;
+        languageName = l10n.korean;
         break;
       case 'en':
         flagEmoji = '🇺🇸';
-        languageName = AppLocalizations.of(context)!.english;
+        languageName = l10n.english;
         break;
       case 'ja':
         flagEmoji = '🇯🇵';
-        languageName = AppLocalizations.of(context)!.japanese;
+        languageName = l10n.japanese;
         break;
       default:
         flagEmoji = '🌐';
@@ -493,21 +502,21 @@ class _SplashScreenState extends State<SplashScreen> {
                 context,
                 'ko',
                 '🇰🇷',
-                AppLocalizations.of(context)!.korean,
+                AppLocalizations.of(context)?.korean ?? '한국어',
               ),
               const SizedBox(height: 12),
               _buildLanguageOption(
                 context,
                 'en',
                 '🇺🇸',
-                AppLocalizations.of(context)!.english,
+                AppLocalizations.of(context)?.english ?? 'English',
               ),
               const SizedBox(height: 12),
               _buildLanguageOption(
                 context,
                 'ja',
                 '🇯🇵',
-                AppLocalizations.of(context)!.japanese,
+                AppLocalizations.of(context)?.japanese ?? '日本語',
               ),
             ],
           ),
@@ -583,7 +592,11 @@ class QuestionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+
+    if (l10n == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return Center(
       key: const ValueKey('question'),
@@ -843,7 +856,9 @@ class _YesFormScreenState extends State<YesFormScreen> {
   }
 
   void _initializePetData() {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) return;
+
     _petTypes = [l10n.petTypeDog, l10n.petTypeCat, l10n.petTypeOther];
     _petDescs = [l10n.petDesc1, l10n.petDesc2, l10n.petDesc3, l10n.petDesc4];
   }
