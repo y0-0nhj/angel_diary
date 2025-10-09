@@ -1220,11 +1220,14 @@ class NoFormScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text("괜찮아요.", style: Theme.of(context).textTheme.headlineSmall),
+                Text(
+                  "괜찮아요.",
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
                 const SizedBox(height: 10),
                 Text(
-                  "우리에게는 새로운 시작이 있으니까요.\n당신의 마음속에 작은 씨앗을 심어볼까요? 당신의 천사와 함께 하게 될거에요.",
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  "우리에게는 새로운 시작이 있으니까요.\n당신의 마음속에 작은 씨앗을 심어볼까요? \n당신의 천사와 함께 하게 될거에요.",
+                  style: Theme.of(context).textTheme.bodyLarge,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 30),
@@ -1243,7 +1246,7 @@ class NoFormScreen extends StatelessWidget {
                   },
                   child: const Text(
                     "마음의 씨앗 심기",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],

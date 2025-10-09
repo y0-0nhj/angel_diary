@@ -942,7 +942,11 @@ class _HomeScreenState extends State<HomeScreen>
                 }),
                 _buildSettingsItem(Icons.language, l10n.languageSelection, () {
                   Navigator.of(context).pop();
-                  _showLanguageSelectionDialog(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${l10n.languageSelection} 기능 준비 중입니다'),
+                    ),
+                  );
                 }),
                 _buildSettingsItem(
                   Icons.notifications,
