@@ -51,27 +51,25 @@ class IntroSignupScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              _buildSocialLoginButton(
-                context: context,
-                icon: Icons.circle,
-                iconColor: Colors.white,
-                backgroundColor: const Color(0xFF03C75A), // 네이버 초록색
-                text: l10n.startWithNaver,
-                onPressed: () => _handleNaverLogin(context),
-              ),
-
+              // _buildSocialLoginButton(
+              //   context: context,
+              //   icon: Icons.circle,
+              //   iconColor: Colors.white,
+              //   backgroundColor: const Color(0xFF03C75A), // 네이버 초록색
+              //   text: l10n.startWithNaver,
+              //   onPressed: () => _handleNaverLogin(context),
+              // ),
               const SizedBox(height: 16),
 
-              _buildSocialLoginButton(
-                context: context,
-                icon: Icons.circle,
-                iconColor: Colors.grey[600]!,
-                backgroundColor: Colors.white,
-                text: l10n.startWithGoogle,
-                onPressed: () => _handleGoogleLogin(context),
-                hasBorder: true,
-              ),
-
+              // _buildSocialLoginButton(
+              //   context: context,
+              //   icon: Icons.circle,
+              //   iconColor: Colors.grey[600]!,
+              //   backgroundColor: Colors.white,
+              //   text: l10n.startWithGoogle,
+              //   onPressed: () => _handleGoogleLogin(context),
+              //   hasBorder: true,
+              // ),
               const SizedBox(height: 40),
 
               // 구분선

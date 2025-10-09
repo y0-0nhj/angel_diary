@@ -1137,10 +1137,10 @@ class _HomeScreenState extends State<HomeScreen>
                     const SnackBar(content: Text('통계 기능 준비 중입니다')),
                   );
                 }),
-                _buildMyPageItem(Icons.backup, '데이터 백업', () {
-                  Navigator.of(context).pop();
-                  _handleDataBackup(context);
-                }),
+                // _buildMyPageItem(Icons.backup, '데이터 백업', () {
+                //   Navigator.of(context).pop();
+                //   _handleDataBackup(context);
+                // }),
               ],
             ),
           ),

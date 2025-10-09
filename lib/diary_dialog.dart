@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
 import 'home.dart';
+import 'services/daily.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // 일기 다이얼로그
 class DiaryDialog extends StatefulWidget {
@@ -212,18 +214,78 @@ class _DiaryDialogState extends State<DiaryDialog> {
       return;
     }
 
-    // 일기 저장 (로컬만)
-    final now = DateTime.now();
-    final dateString =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    await CalendarDataManager.saveDiary(dateString, content);
+    try {
+      final now = DateTime.now();
+      final dateString =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(widget.isEditMode ? '일기가 수정되었습니다 ✨' : '일기가 저장되었습니다 ✨'),
-      ),
-    );
+      // 로컬에 일기 저장
+      await CalendarDataManager.saveDiary(dateString, content);
 
-    Navigator.of(context).pop();
+      // Supabase에 목표, 감사, 일기 저장
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        final dailyRepo = DailyRepository();
+
+        // 오늘의 목표와 감사 데이터 가져오기
+        final dayData = CalendarDataManager.getDayData(dateString);
+        final goals = dayData?['goals'] as List<dynamic>? ?? [];
+        final gratitudes = dayData?['gratitudes'] as List<dynamic>? ?? [];
+
+        // 목표와 감사를 JSONB 형태로 변환
+        Map<String, dynamic>? goalData;
+        Map<String, dynamic>? gratitudeData;
+
+        if (goals.isNotEmpty) {
+          goalData = {
+            'items': goals
+                .map(
+                  (goal) => {
+                    'text': goal['text'] ?? '',
+                    'completed': goal['completed'] ?? false,
+                  },
+                )
+                .toList(),
+          };
+        }
+
+        if (gratitudes.isNotEmpty) {
+          gratitudeData = {
+            'items': gratitudes
+                .map(
+                  (gratitude) => {
+                    'text': gratitude['text'] ?? '',
+                    'completed': gratitude['completed'] ?? false,
+                  },
+                )
+                .toList(),
+          };
+        }
+
+        // Supabase에 저장
+        await dailyRepo.createOrUpsert(
+          date: now,
+          goal: goalData,
+          gratitude: gratitudeData,
+          diary: content,
+        );
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(widget.isEditMode ? '일기가 수정되었습니다 ✨' : '일기가 저장되었습니다 ✨'),
+        ),
+      );
+
+      Navigator.of(context).pop();
+    } catch (e) {
+      print('일기 저장 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('저장 중 오류가 발생했습니다: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

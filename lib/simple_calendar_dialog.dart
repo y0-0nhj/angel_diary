@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
 import 'home.dart';
+import 'services/daily.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // 간단한 캘린더 다이얼로그
 class SimpleCalendarDialog extends StatefulWidget {
@@ -13,7 +15,7 @@ class SimpleCalendarDialog extends StatefulWidget {
 class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
   DateTime _selectedDate = DateTime.now();
   Map<String, dynamic>? _selectedDayData;
-  int _selectedTabIndex = 0; // 0: 소망, 1: 목표, 2: 감사
+  int _selectedTabIndex = 0; // 0: 목표, 1: 감사
 
   @override
   void initState() {
@@ -28,11 +30,112 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
     _loadDayData(_selectedDate);
   }
 
-  void _loadDayData(DateTime date) {
+  void _loadDayData(DateTime date) async {
     final dateString = _getDateString(date);
-    setState(() {
-      _selectedDayData = CalendarDataManager.getDayData(dateString);
-    });
+
+    // 1. 먼저 SharedPreferences에서 로컬 데이터 확인
+    final localData = CalendarDataManager.getDayData(dateString);
+
+    if (localData != null && _hasValidData(localData)) {
+      // 로컬에 유효한 데이터가 있으면 사용
+      setState(() {
+        _selectedDayData = localData;
+      });
+    } else {
+      // 2. 로컬에 데이터가 없으면 Supabase에서 로드
+      await _loadFromSupabase(dateString);
+    }
+  }
+
+  bool _hasValidData(Map<String, dynamic> data) {
+    // 목표, 감사, 일기 중 하나라도 있으면 유효한 데이터로 간주
+    final goals = data['goals'] as List?;
+    final gratitudes = data['gratitudes'] as List?;
+    final diary = data['diary'] as String?;
+
+    return (goals != null && goals.isNotEmpty) ||
+        (gratitudes != null && gratitudes.isNotEmpty) ||
+        (diary != null && diary.isNotEmpty);
+  }
+
+  Future<void> _loadFromSupabase(String dateString) async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) {
+        // 로그인되지 않은 경우 빈 데이터 표시
+        setState(() {
+          _selectedDayData = {
+            'goals': <Map<String, dynamic>>[],
+            'gratitudes': <Map<String, dynamic>>[],
+            'diary': '',
+          };
+        });
+        return;
+      }
+
+      final dailyRepo = DailyRepository();
+      final date = DateTime.parse(dateString);
+      final daily = await dailyRepo.getByDate(date);
+
+      if (daily != null) {
+        // Supabase 데이터를 로컬 형식으로 변환
+        final Map<String, dynamic> convertedData = {
+          'goals': <Map<String, dynamic>>[],
+          'gratitudes': <Map<String, dynamic>>[],
+          'diary': daily.diary ?? '',
+        };
+
+        // 목표 데이터 변환
+        if (daily.goal != null && daily.goal!['items'] != null) {
+          final goalItems = daily.goal!['items'] as List<dynamic>? ?? [];
+          convertedData['goals'] = goalItems
+              .map(
+                (item) => {
+                  'text': item['text'] ?? '',
+                  'completed': item['completed'] ?? false,
+                },
+              )
+              .toList();
+        }
+
+        // 감사 데이터 변환
+        if (daily.gratitude != null && daily.gratitude!['items'] != null) {
+          final gratitudeItems =
+              daily.gratitude!['items'] as List<dynamic>? ?? [];
+          convertedData['gratitudes'] = gratitudeItems
+              .map(
+                (item) => {
+                  'text': item['text'] ?? '',
+                  'completed': item['completed'] ?? false,
+                },
+              )
+              .toList();
+        }
+
+        setState(() {
+          _selectedDayData = convertedData;
+        });
+      } else {
+        // Supabase에도 데이터가 없는 경우
+        setState(() {
+          _selectedDayData = {
+            'goals': <Map<String, dynamic>>[],
+            'gratitudes': <Map<String, dynamic>>[],
+            'diary': '',
+          };
+        });
+      }
+    } catch (e) {
+      print('Supabase에서 데이터 로드 실패: $e');
+      // 에러 발생 시 빈 데이터 표시
+      setState(() {
+        _selectedDayData = {
+          'goals': <Map<String, dynamic>>[],
+          'gratitudes': <Map<String, dynamic>>[],
+          'diary': '',
+        };
+      });
+    }
   }
 
   String _getDateString(DateTime date) {
@@ -207,7 +310,7 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
-        _selectedTabIndex = 0; // 날짜 변경 시 소망 탭으로 초기화
+        _selectedTabIndex = 0; // 날짜 변경 시 목표 탭으로 초기화
       });
       _loadDayData(picked);
     }
@@ -289,9 +392,8 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
                           ),
                           child: Row(
                             children: [
-                              _buildTabButton(0, '소망', Colors.lightBlue[300]!),
-                              _buildTabButton(1, '목표', Colors.pink[200]!),
-                              _buildTabButton(2, '감사', Colors.yellow[400]!),
+                              _buildTabButton(0, '목표', Colors.pink[200]!),
+                              _buildTabButton(1, '감사', Colors.yellow[400]!),
                             ],
                           ),
                         ),
@@ -419,10 +521,8 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
   Widget _buildTabContent() {
     switch (_selectedTabIndex) {
       case 0:
-        return _buildSimpleDataList(_selectedDayData?['wishes']);
-      case 1:
         return _buildSimpleDataList(_selectedDayData?['goals']);
-      case 2:
+      case 1:
         return _buildSimpleDataList(_selectedDayData?['gratitudes']);
       default:
         return const SizedBox();
