@@ -98,27 +98,56 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
   // 천사 등록 여부 및 로그인 상태 확인
   Future<void> _checkAngelStatus() async {
     try {
-      // AngelDataManager에서 천사 데이터 로드
-      final angelData = await adm.AngelDataManager.loadAngelFromStorage();
+      // 1. 첫 방문 여부 확인
+      final prefs = await SharedPreferences.getInstance();
+      final hasVisitedBefore = prefs.getBool('hasVisitedBefore') ?? false;
 
-      // 로그인 상태 확인
+      print('=== 앱 초기 진입 로직 ===');
+      print('첫 방문 여부: ${!hasVisitedBefore}');
+
+      if (!hasVisitedBefore) {
+        // 첫 방문: hasVisitedBefore를 true로 설정하고 천사 생성 화면으로
+        await prefs.setBool('hasVisitedBefore', true);
+        print('첫 방문 → 천사 생성 화면 (게스트 모드)');
+
+        setState(() {
+          _hasAngel = false;
+          _isLoggedIn = false;
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // 재방문: 로그인 상태 확인
       final authService = AuthService();
       final isLoggedIn = authService.isLoggedIn();
+
+      if (!isLoggedIn) {
+        // 로그아웃 상태: 로그인 화면으로
+        print('재방문 & 로그아웃 → 로그인 화면');
+        setState(() {
+          _hasAngel = false;
+          _isLoggedIn = false;
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // 로그인 상태: 메인 화면으로
+      final angelData = await adm.AngelDataManager.loadAngelFromStorage();
+      print('재방문 & 로그인 → 메인 화면');
+      print('천사 등록 여부: ${angelData != null}');
+      if (angelData != null) {
+        print('천사 이름: ${angelData.name}');
+      }
 
       setState(() {
         _hasAngel = angelData != null;
         _isLoggedIn = isLoggedIn;
         _isLoading = false;
       });
-
-      print('=== 앱 시작 상태 확인 ===');
-      print('천사 등록 여부: $_hasAngel');
-      print('로그인 상태: $_isLoggedIn');
-      if (angelData != null) {
-        print('천사 이름: ${angelData.name}');
-      }
-      print('=======================');
     } catch (e) {
+      print('에러 발생: $e');
       setState(() {
         _hasAngel = false;
         _isLoggedIn = false;

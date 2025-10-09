@@ -5,7 +5,8 @@ import 'dart:async';
 import 'character_view.dart';
 import 'utils/responsive_layout.dart';
 import 'common/constants/strings.dart';
-import 'main.dart' show bgColor, textColor, primaryColor, AngelDiaryApp;
+import 'main.dart'
+    show bgColor, textColor, primaryColor, AngelDiaryApp, OnboardingScreen;
 import 'package:table_calendar/table_calendar.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'models/angel_data.dart';
@@ -19,8 +20,6 @@ import 'generated/l10n/app_localizations.dart';
 import 'language_manager.dart';
 import 'screens/help/help_screen.dart';
 import 'screens/auth/intro_signup.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'services/data_backup_service.dart';
 import 'services/wish_service.dart';
 import 'models/wish.dart';
 import 'services/auth/auth_service.dart';
@@ -1138,9 +1137,13 @@ class _HomeScreenState extends State<HomeScreen>
                     const SnackBar(content: Text('통계 기능 준비 중입니다')),
                   );
                 }),
+                _buildMyPageItem(Icons.logout, '로그아웃', () {
+                  Navigator.of(context).pop();
+                  _showLogoutDialog();
+                }),
                 // _buildMyPageItem(Icons.backup, '데이터 백업', () {
                 //   Navigator.of(context).pop();
-                //   _handleDataBackup(context);
+                //   _showLoginRequiredDialog(context);
                 // }),
               ],
             ),
@@ -1148,95 +1151,6 @@ class _HomeScreenState extends State<HomeScreen>
         );
       },
     );
-  }
-
-  // 데이터 백업 처리
-  Future<void> _handleDataBackup(BuildContext context) async {
-    try {
-      // 로그인 상태 확인
-      final supabase = Supabase.instance.client;
-      final session = supabase.auth.currentSession;
-
-      if (session != null) {
-        // 로그인된 상태 - 데이터 백업 실행
-        await _performDataBackup(context);
-      } else {
-        // 로그인되지 않은 상태 - 로그인 화면으로 이동
-        _showLoginRequiredDialog(context);
-      }
-    } catch (error) {
-      // 에러 발생 시 로그인 화면으로 이동
-      _showLoginRequiredDialog(context);
-    }
-  }
-
-  // 데이터 백업 실행
-  Future<void> _performDataBackup(BuildContext context) async {
-    try {
-      // 로딩 표시
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-
-      // 데이터 백업 서비스 사용
-      final backupService = DataBackupService();
-      final result = await backupService.backupAllData();
-
-      // 로딩 다이얼로그 닫기
-      if (context.mounted) {
-        Navigator.of(context).pop();
-      }
-
-      // 결과에 따른 메시지 표시
-      if (context.mounted) {
-        if (result['success']) {
-          final backedUpItems = result['backedUpItems'] as List<String>;
-          final errors = result['errors'] as List<String>;
-
-          String message = '데이터 백업이 완료되었습니다!\n';
-          if (backedUpItems.isNotEmpty) {
-            message += '백업된 항목: ${backedUpItems.join(', ')}\n';
-          }
-          if (errors.isNotEmpty) {
-            message += '오류: ${errors.join(', ')}';
-          }
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(message),
-              backgroundColor: errors.isEmpty ? Colors.green : Colors.orange,
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        } else {
-          final errors = result['errors'] as List<String>;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('데이터 백업 실패: ${errors.join(', ')}'),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
-      }
-    } catch (error) {
-      // 로딩 다이얼로그 닫기
-      if (context.mounted) {
-        Navigator.of(context).pop();
-      }
-
-      // 에러 메시지 표시
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('데이터 백업 실패: $error'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   // 소망 저장을 위한 로그인 유도 다이얼로그
@@ -1544,6 +1458,88 @@ class _HomeScreenState extends State<HomeScreen>
         ),
       ),
     );
+  }
+
+  // 로그아웃 확인 다이얼로그
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.logout, color: Colors.red, size: 24),
+              SizedBox(width: 8),
+              Text('로그아웃'),
+            ],
+          ),
+          content: const Text('정말 로그아웃하시겠습니까?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _performLogout();
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('로그아웃'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 로그아웃 실행
+  Future<void> _performLogout() async {
+    try {
+      // AuthService를 통한 로그아웃
+      final authService = AuthService();
+      await authService.signOut();
+
+      // SharedPreferences에서 로그인 상태 제거
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('isLoggedIn');
+
+      // 성공 메시지 표시
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('로그아웃되었습니다'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      print('로그아웃 완료');
+
+      // 로그인 화면으로 이동
+      final currentAngel = adm.AngelDataManager.currentAngel;
+      if (currentAngel != null) {
+        // 천사 데이터가 있으면 로그인 화면으로
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => IntroSignupScreen(angelData: currentAngel),
+          ),
+          (route) => false,
+        );
+      } else {
+        // 천사 데이터가 없으면 온보딩 화면으로
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      print('로그아웃 에러: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('로그아웃 중 오류가 발생했습니다: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   // 마이페이지 아이템 빌더
