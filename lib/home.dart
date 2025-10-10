@@ -2500,7 +2500,23 @@ class _HomeScreenState extends State<HomeScreen>
           // 일기 쓰기/수정 버튼 (왼쪽)
           Expanded(
             child: ElevatedButton(
-              onPressed: hasDiary ? _showEditDiaryDialog : _showDiaryDialog,
+              onPressed: () {
+                try {
+                  if (hasDiary) {
+                    _showEditDiaryDialog();
+                  } else {
+                    _showDiaryDialog();
+                  }
+                } catch (e) {
+                  print('일기 다이얼로그 오류: $e');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('일기 기능을 사용할 수 없습니다. 앱을 다시 시작해주세요.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
                 foregroundColor: Colors.white,
@@ -2517,9 +2533,15 @@ class _HomeScreenState extends State<HomeScreen>
                 children: [
                   Icon(hasDiary ? Icons.edit : Icons.edit_note, size: 24),
                   const SizedBox(width: 12),
-                  Text(
-                    hasDiary ? '오늘의 일기 수정' : '오늘의 일기 쓰기',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Flexible(
+                    child: Text(
+                      hasDiary ? '오늘의 일기 수정' : '오늘의 일기 쓰기',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
@@ -2552,25 +2574,50 @@ class _HomeScreenState extends State<HomeScreen>
 
   // 일기 다이얼로그 표시 (새로 작성)
   void _showDiaryDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return DiaryDialog();
-      },
-    );
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (BuildContext context) {
+          return const DiaryDialog();
+        },
+      );
+    } catch (e) {
+      print('일기 다이얼로그 표시 오류: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('일기 다이얼로그를 열 수 없습니다.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   // 일기 수정 다이얼로그 표시
   void _showEditDiaryDialog() {
-    final dateString = _getDateString(_selectedDate);
-    final existingContent = CalendarDataManager.getDiary(dateString);
+    try {
+      final dateString = _getDateString(_selectedDate);
+      final existingContent = CalendarDataManager.getDiary(dateString);
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return DiaryDialog(existingContent: existingContent, isEditMode: true);
-      },
-    );
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (BuildContext context) {
+          return DiaryDialog(
+            existingContent: existingContent,
+            isEditMode: true,
+          );
+        },
+      );
+    } catch (e) {
+      print('일기 수정 다이얼로그 표시 오류: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('일기 수정 다이얼로그를 열 수 없습니다.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   // 캘린더 다이얼로그 표시

@@ -48,10 +48,10 @@ class _DiaryDialogState extends State<DiaryDialog> {
           const SizedBox(width: 12),
           Text(
             widget.isEditMode ? '일기 수정하기' : '오늘의 일기',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: textColor,
+              color: Colors.black,
             ),
           ),
           const Spacer(),
@@ -74,10 +74,10 @@ class _DiaryDialogState extends State<DiaryDialog> {
                 const SizedBox(width: 12),
                 Text(
                   widget.isEditMode ? '일기 수정하기' : '오늘의 일기',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: textColor,
+                    color: Colors.black,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -96,7 +96,7 @@ class _DiaryDialogState extends State<DiaryDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: bgColor,
+      backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         constraints: BoxConstraints(
@@ -106,33 +106,38 @@ class _DiaryDialogState extends State<DiaryDialog> {
           minHeight: 300,
         ),
         padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // 헤더
-            _buildResponsiveHeader(),
-            const SizedBox(height: 20),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 헤더
+              _buildResponsiveHeader(),
+              const SizedBox(height: 20),
 
-            // 날짜 표시
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '${DateTime.now().year}년 ${DateTime.now().month}월 ${DateTime.now().day}일',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
+              // 날짜 표시
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${DateTime.now().year}년 ${DateTime.now().month}월 ${DateTime.now().day}일',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // 일기 입력 영역
-            Expanded(
-              child: Container(
+              // 일기 입력 영역
+              Container(
+                height: 200,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.grey[50],
@@ -156,49 +161,49 @@ class _DiaryDialogState extends State<DiaryDialog> {
                   ),
                   style: const TextStyle(
                     fontSize: 16,
-                    color: textColor,
+                    color: Colors.black,
                     height: 1.5,
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // 버튼들
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[300],
-                      foregroundColor: Colors.grey[700],
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+              // 버튼들
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[300],
+                        foregroundColor: Colors.grey[700],
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
+                      child: const Text('취소'),
                     ),
-                    child: const Text('취소'),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _saveDiary,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _saveDiary,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
+                      child: Text(widget.isEditMode ? '수정하기' : '저장'),
                     ),
-                    child: Text(widget.isEditMode ? '수정하기' : '저장'),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
