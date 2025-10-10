@@ -106,3 +106,7 @@ web/
 
 # Custom additions for angel_diary
 # Add any project-specific files you want to ignore
+
+key.properties
+**/*.keystore
+**/*.jks

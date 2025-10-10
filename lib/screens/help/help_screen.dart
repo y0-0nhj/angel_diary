@@ -6,6 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:io';
 import 'terms_of_service_screen.dart';
 import 'privacy_policy_screen.dart';
+import 'service_introduce.dart';
 
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
@@ -39,9 +40,13 @@ class HelpScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.contact_support),
             title: const Text('서비스 소개'),
-            subtitle: const Text('앱 사용법 및 기능 안내'),
+            subtitle: const Text('앱 소개 및 안내'),
             onTap: () {
-              // 서비스 소개 페이지로 이동
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ServiceIntroduceScreen(),
+                ),
+              );
             },
           ),
           ListTile(

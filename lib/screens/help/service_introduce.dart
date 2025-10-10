@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-class PrivacyPolicyScreen extends StatefulWidget {
-  const PrivacyPolicyScreen({super.key});
+class ServiceIntroduceScreen extends StatefulWidget {
+  const ServiceIntroduceScreen({super.key});
 
   @override
-  State<PrivacyPolicyScreen> createState() => _PrivacyPolicyScreenState();
+  State<ServiceIntroduceScreen> createState() => _ServiceIntroduceScreenState();
 }
 
-class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
+class _ServiceIntroduceScreenState extends State<ServiceIntroduceScreen> {
   WebViewController? _controller;
   bool _isLoading = true;
 
@@ -23,7 +23,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
     try {
       // HTML 파일을 assets에서 읽기
       final String htmlContent = await rootBundle.loadString(
-        'lib/screens/help/privacy_policy.html',
+        'lib/screens/help/service_introduce.html',
       );
 
       // WebView 컨트롤러 초기화
@@ -51,7 +51,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('개인정보처리방침'),
+        title: const Text('서비스 소개'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.black,

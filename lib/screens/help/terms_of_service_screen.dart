@@ -10,7 +10,7 @@ class TermsOfServiceScreen extends StatefulWidget {
 }
 
 class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
-  late final WebViewController _controller;
+  WebViewController? _controller;
   bool _isLoading = true;
 
   @override
@@ -67,9 +67,9 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
           ),
         ],
       ),
-      body: _isLoading
+      body: _isLoading || _controller == null
           ? const Center(child: CircularProgressIndicator())
-          : WebViewWidget(controller: _controller),
+          : WebViewWidget(controller: _controller!),
     );
   }
 }

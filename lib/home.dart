@@ -3218,113 +3218,118 @@ class _CalendarDialogState extends State<CalendarDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         width: MediaQuery.of(context).size.width * 0.95,
-        height: MediaQuery.of(context).size.height * 0.85,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+          minHeight: 300,
+        ),
         padding: const EdgeInsets.all(10),
-        child: Column(
-          children: [
-            // 헤더
-            Row(
-              children: [
-                const Icon(Icons.calendar_today, color: Colors.red, size: 28),
-                const SizedBox(width: 12),
-                const Text(
-                  '날짜별 체크리스트',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
-                  ),
-                ),
-                const Spacer(),
-                // 뷰 전환 버튼
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _isWeekView = !_isWeekView;
-                    });
-                  },
-                  icon: Icon(
-                    _isWeekView ? Icons.calendar_view_month : Icons.view_week,
-                    color: Colors.blue,
-                  ),
-                  tooltip: _isWeekView ? '이번달 펼쳐보기' : '이번주만 보기',
-                ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: Colors.grey),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // 캘린더 영역
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: _isWeekView ? _buildWeekView() : _buildMonthView(),
-            ),
-            const SizedBox(height: 20),
-
-            // 카테고리 탭
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Row(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // 헤더
+              Row(
                 children: [
-                  _buildCategoryTab(0, '소망', Colors.blue[400]!),
-                  _buildCategoryTab(1, '목표', Colors.pink[400]!),
-                  _buildCategoryTab(2, '감사', Colors.yellow[600]!),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // 선택된 날짜와 작업 목록
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 선택된 날짜 표시 (왼쪽)
-                  Container(
-                    width: 80,
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        Text(
-                          '${_selectedDay?.day ?? DateTime.now().day}',
-                          style: const TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: textColor,
-                          ),
-                        ),
-                        Text(
-                          _getWeekdayShort(_selectedDay ?? DateTime.now()),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
+                  const Icon(Icons.calendar_today, color: Colors.red, size: 28),
+                  const SizedBox(width: 12),
+                  const Text(
+                    '날짜별 체크리스트',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
                     ),
                   ),
-                  // 작업 목록 (오른쪽)
-                  Expanded(
-                    child: ValueListenableBuilder<List<Map<String, dynamic>>>(
-                      valueListenable: _selectedEvents,
-                      builder: (context, value, _) {
-                        return _buildChecklistContent(value);
-                      },
+                  const Spacer(),
+                  // 뷰 전환 버튼
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _isWeekView = !_isWeekView;
+                      });
+                    },
+                    icon: Icon(
+                      _isWeekView ? Icons.calendar_view_month : Icons.view_week,
+                      color: Colors.blue,
                     ),
+                    tooltip: _isWeekView ? '이번달 펼쳐보기' : '이번주만 보기',
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Colors.grey),
                   ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+
+              // 캘린더 영역
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: _isWeekView ? _buildWeekView() : _buildMonthView(),
+              ),
+              const SizedBox(height: 20),
+
+              // 카테고리 탭
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Row(
+                  children: [
+                    _buildCategoryTab(0, '소망', Colors.blue[400]!),
+                    _buildCategoryTab(1, '목표', Colors.pink[400]!),
+                    _buildCategoryTab(2, '감사', Colors.yellow[600]!),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // 선택된 날짜와 작업 목록
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 선택된 날짜 표시 (왼쪽)
+                    Container(
+                      width: 80,
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Text(
+                            '${_selectedDay?.day ?? DateTime.now().day}',
+                            style: const TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
+                            ),
+                          ),
+                          Text(
+                            _getWeekdayShort(_selectedDay ?? DateTime.now()),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // 작업 목록 (오른쪽)
+                    Expanded(
+                      child: ValueListenableBuilder<List<Map<String, dynamic>>>(
+                        valueListenable: _selectedEvents,
+                        builder: (context, value, _) {
+                          return _buildChecklistContent(value);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
