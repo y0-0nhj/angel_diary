@@ -315,15 +315,20 @@ class _LetterWritingDialogState extends State<LetterWritingDialog> {
       final prefs = await SharedPreferences.getInstance();
       final letters = prefs.getStringList('letters') ?? [];
 
-      if (letters.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('저장된 편지가 없습니다.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
+      // 개발자 편지 추가 (항상 첫 번째에 표시)
+      final developerLetter = {
+        'recipient': '천사일기 사용자님',
+        'content':
+            '안녕하세요! 천사일기 개발자입니다. 이 앱을 이용해주셔서 정말 감사합니다. 이 편지를 통해 저의 솔직한 이야기를 나누고 싶습니다. 저는 급작스럽게 발병한 뇌질환을 겪으면서 예측할 수 없는 감정의 폭풍과 끝없는 무기력감 속에서 모든 것을 포기하고 싶고 매일을 누워서 폰만하던 시간 속에 살았습니다. 제 안에 빛이 완전히 사라진 것만 같았고, 그 속에서 저는 자신감도 잃고 행복감도 잃었습니다. 그럼에도 불구하고 저에겐 6마리의 고양이들이 있었습니다. 게으름도 물리치고 끼니를 챙겨주고, 똥을 치워주는 일을 하게 해주던 소중한 아이들이었습니다. 그러다 문득 이 아이들이 언젠가 무지개다리를 건널 수 있다는 생각에 절망에 빠졌습니다. 그 때, 하나님을 만났습니다. 하나님께서는 소중한 아이들과 함께 주인을 기다리고있다고하셨습니다. 저는 남아있는 저를 위해서도, 무지개다리를 건넌 아이들을 보고싶어하시는 펫로스분들을 위해서도 그리움이 아닌 따뜻한 교감으로 가상에서도 아이들과 연결되어 함께 무기력과 공허를 극복할 수 있기를 간절히 바라는 마음으로 어플을 개발했습니다. 그것은 사랑이었습니다. 그 사랑은 저에게 다시 일어설 용기를 주었고, 그렇게 얻은 힘으로 저는 저의 모든 소망과 감사함을 기록하고싶어졌습니다. 그리고 저와 같은 어려움을 겪는 분들에게도 이 따뜻한 경험을 선물하고 싶다는 간절한 마음으로 이 <천사일기> 어플을 개발하게 되었습니다. 이는 저의 치유와 성장의 여정이자, 당신의 여정이 될 것입니다. 당신의 빛나는 소망을 천사일기와 함께 시작하세요!💙',
+        'emotion': '😊',
+        'createdAt': DateTime.now()
+            .subtract(const Duration(days: 1))
+            .toIso8601String(),
+        'isDeveloper': true,
+      };
+
+      // 편지 목록에 개발자 편지 추가
+      final allLetters = [jsonEncode(developerLetter), ...letters];
 
       // 편지 목록 다이얼로그 표시
       showDialog(
@@ -335,13 +340,16 @@ class _LetterWritingDialogState extends State<LetterWritingDialog> {
               width: double.maxFinite,
               height: 400,
               child: ListView.builder(
-                itemCount: letters.length,
+                itemCount: allLetters.length,
                 itemBuilder: (context, index) {
-                  final letterData = jsonDecode(letters[index]);
+                  final letterData = jsonDecode(allLetters[index]);
                   final createdAt = DateTime.parse(letterData['createdAt']);
 
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 4),
+                    color: letterData['isDeveloper'] == true
+                        ? Colors.blue[50]
+                        : null,
                     child: ListTile(
                       leading: Text(
                         letterData['emotion'],
@@ -349,11 +357,36 @@ class _LetterWritingDialogState extends State<LetterWritingDialog> {
                       ),
                       title: Text(
                         letterData['recipient'],
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: letterData['isDeveloper'] == true
+                              ? Colors.blue[700]
+                              : null,
+                        ),
                       ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (letterData['isDeveloper'] == true)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[200],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                '개발자 편지',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ),
+                          const SizedBox(height: 4),
                           Text(
                             letterData['content'],
                             maxLines: 2,
@@ -404,24 +437,59 @@ class _LetterWritingDialogState extends State<LetterWritingDialog> {
       builder: (BuildContext context) {
         final createdAt = DateTime.parse(letterData['createdAt']);
         return AlertDialog(
+          backgroundColor: letterData['isDeveloper'] == true
+              ? Colors.blue[50]
+              : null,
           title: Row(
             children: [
               Text(letterData['emotion'], style: const TextStyle(fontSize: 24)),
               const SizedBox(width: 8),
-              Text(letterData['recipient']),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(letterData['content'], style: const TextStyle(fontSize: 16)),
-              const SizedBox(height: 16),
               Text(
-                '작성일: ${createdAt.year}.${createdAt.month.toString().padLeft(2, '0')}.${createdAt.day.toString().padLeft(2, '0')} ${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                letterData['recipient'],
+                style: TextStyle(
+                  color: letterData['isDeveloper'] == true
+                      ? Colors.blue[700]
+                      : null,
+                ),
               ),
             ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (letterData['isDeveloper'] == true)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[200],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      '개발자 편지',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                Text(
+                  letterData['content'],
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '작성일: ${createdAt.year}.${createdAt.month.toString().padLeft(2, '0')}.${createdAt.day.toString().padLeft(2, '0')} ${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(

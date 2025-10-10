@@ -1189,9 +1189,30 @@ class _HomeScreenState extends State<HomeScreen>
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text('이름: ${angelData?.name ?? '미설정'}'),
-                      Text('특징: ${angelData?.feature ?? '미설정'}'),
-                      Text('동물: ${angelData?.animalType ?? '미설정'}'),
+                      Text(
+                        '이름: ${angelData?.name ?? '미설정'}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
+                      Text(
+                        '특징: ${angelData?.feature ?? '미설정'}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
+                      Text(
+                        '동물: ${angelData?.animalType ?? '미설정'}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -1269,6 +1290,7 @@ class _HomeScreenState extends State<HomeScreen>
                 '소망은 클라우드에 안전하게 저장되어 언제든지 확인할 수 있어요.',
                 style: TextStyle(
                   fontSize: 14,
+                  fontWeight: FontWeight.bold,
                   color: Colors.grey[600],
                   fontFamily: LanguageManager.currentLocale.languageCode == 'ko'
                       ? 'Cafe24Oneprettynight'
@@ -1296,6 +1318,7 @@ class _HomeScreenState extends State<HomeScreen>
                         '로그인하면 소망이 자동으로 백업됩니다',
                         style: TextStyle(
                           fontSize: 12,
+                          fontWeight: FontWeight.bold,
                           color: Colors.lightBlue[700],
                           fontFamily:
                               LanguageManager.currentLocale.languageCode == 'ko'
@@ -1315,6 +1338,7 @@ class _HomeScreenState extends State<HomeScreen>
               child: Text(
                 '나중에',
                 style: TextStyle(
+                  fontWeight: FontWeight.bold,
                   color: Colors.grey[600],
                   fontFamily: LanguageManager.currentLocale.languageCode == 'ko'
                       ? 'Cafe24Oneprettynight'
@@ -1375,12 +1399,21 @@ class _HomeScreenState extends State<HomeScreen>
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('로그인 필요'),
-          content: const Text('데이터 백업을 위해서는 로그인이 필요합니다.'),
+          title: const Text(
+            '로그인 필요',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            '데이터 백업을 위해서는 로그인이 필요합니다.',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('취소'),
+              child: const Text(
+                '취소',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
             ElevatedButton(
               onPressed: () {
@@ -1404,7 +1437,10 @@ class _HomeScreenState extends State<HomeScreen>
                   );
                 }
               },
-              child: const Text('로그인'),
+              child: const Text(
+                '로그인',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         );
@@ -1561,11 +1597,17 @@ class _HomeScreenState extends State<HomeScreen>
               Text('로그아웃'),
             ],
           ),
-          content: const Text('정말 로그아웃하시겠습니까?'),
+          content: const Text(
+            '정말 로그아웃하시겠습니까?',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('취소'),
+              child: const Text(
+                '취소',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
             TextButton(
               onPressed: () {
@@ -1602,7 +1644,10 @@ class _HomeScreenState extends State<HomeScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('취소'),
+              child: const Text(
+                '취소',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
             ElevatedButton(
               onPressed: () {
@@ -1636,7 +1681,10 @@ class _HomeScreenState extends State<HomeScreen>
                   );
                 }
               },
-              child: const Text('로그인'),
+              child: const Text(
+                '로그인',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         );
@@ -1823,7 +1871,7 @@ class _HomeScreenState extends State<HomeScreen>
                   _isPlaying ? '음악 재생 중' : '음악 재생',
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.bold,
                     color: _isPlaying ? Colors.pinkAccent : Colors.grey[600],
                   ),
                 ),
@@ -1891,6 +1939,7 @@ class _HomeScreenState extends State<HomeScreen>
               _buildMessageText(angelData, angelName),
               style: const TextStyle(
                 fontSize: 18,
+                fontWeight: FontWeight.bold,
                 color: textColor,
                 height: 1.4,
               ),
@@ -3214,68 +3263,142 @@ class _CalendarDialogState extends State<CalendarDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: bgColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: Colors.transparent,
       child: Container(
         width: MediaQuery.of(context).size.width * 0.95,
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.85,
           minHeight: 300,
         ),
-        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.white, Colors.grey[50]!],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
         child: SingleChildScrollView(
           child: Column(
             children: [
               // 헤더
-              Row(
-                children: [
-                  const Icon(Icons.calendar_today, color: Colors.red, size: 28),
-                  const SizedBox(width: 12),
-                  const Text(
-                    '날짜별 체크리스트',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Colors.blue[400]!, Colors.purple[400]!],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.calendar_today,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  // 뷰 전환 버튼
-                  IconButton(
-                    onPressed: () {
-                      setState(() {
-                        _isWeekView = !_isWeekView;
-                      });
-                    },
-                    icon: Icon(
-                      _isWeekView ? Icons.calendar_view_month : Icons.view_week,
-                      color: Colors.blue,
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Text(
+                        '날짜별 체크리스트',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                    tooltip: _isWeekView ? '이번달 펼쳐보기' : '이번주만 보기',
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Colors.grey),
-                  ),
-                ],
+                    // 뷰 전환 버튼
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _isWeekView = !_isWeekView;
+                          });
+                        },
+                        icon: Icon(
+                          _isWeekView
+                              ? Icons.calendar_view_month
+                              : Icons.view_week,
+                          color: Colors.white,
+                        ),
+                        tooltip: _isWeekView ? '이번달 펼쳐보기' : '이번주만 보기',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               // 캘린더 영역
               Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: _isWeekView ? _buildWeekView() : _buildMonthView(),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               // 카테고리 탭
               Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(15),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Colors.grey[50]!, Colors.grey[100]!],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
@@ -3285,19 +3408,108 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               // 선택된 날짜와 작업 목록
-              Expanded(
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // 선택된 날짜 표시 (왼쪽)
                     Container(
-                      width: 80,
-                      padding: const EdgeInsets.all(16),
+                      width: 120,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.blue[50]!, Colors.purple[50]!],
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          bottomLeft: Radius.circular(16),
+                        ),
+                      ),
                       child: Column(
                         children: [
+                          // 날짜 탐색 화살표
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  if (_selectedDay != null) {
+                                    final newDay = _selectedDay!.subtract(
+                                      const Duration(days: 1),
+                                    );
+                                    setState(() {
+                                      _selectedDay = newDay;
+                                      _focusedDay = newDay;
+                                    });
+                                    _selectedEvents.value = _getEventsForDay(
+                                      newDay,
+                                    );
+                                    widget.onDateSelected(newDay);
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.7),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.chevron_left,
+                                    color: Colors.grey[700],
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  if (_selectedDay != null) {
+                                    final newDay = _selectedDay!.add(
+                                      const Duration(days: 1),
+                                    );
+                                    setState(() {
+                                      _selectedDay = newDay;
+                                      _focusedDay = newDay;
+                                    });
+                                    _selectedEvents.value = _getEventsForDay(
+                                      newDay,
+                                    );
+                                    widget.onDateSelected(newDay);
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.7),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.chevron_right,
+                                    color: Colors.grey[700],
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          // 날짜 표시
                           Text(
                             '${_selectedDay?.day ?? DateTime.now().day}',
                             style: const TextStyle(
@@ -3306,11 +3518,23 @@ class _CalendarDialogState extends State<CalendarDialog> {
                               color: textColor,
                             ),
                           ),
+                          const SizedBox(height: 4),
                           Text(
                             _getWeekdayShort(_selectedDay ?? DateTime.now()),
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 12,
                               color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          // 년월 표시
+                          Text(
+                            '${_selectedDay?.year ?? DateTime.now().year}.${(_selectedDay?.month ?? DateTime.now().month).toString().padLeft(2, '0')}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey[500],
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                         ],
@@ -3318,11 +3542,15 @@ class _CalendarDialogState extends State<CalendarDialog> {
                     ),
                     // 작업 목록 (오른쪽)
                     Expanded(
-                      child: ValueListenableBuilder<List<Map<String, dynamic>>>(
-                        valueListenable: _selectedEvents,
-                        builder: (context, value, _) {
-                          return _buildChecklistContent(value);
-                        },
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child:
+                            ValueListenableBuilder<List<Map<String, dynamic>>>(
+                              valueListenable: _selectedEvents,
+                              builder: (context, value, _) {
+                                return _buildChecklistContent(value);
+                              },
+                            ),
                       ),
                     ),
                   ],
@@ -3345,19 +3573,36 @@ class _CalendarDialogState extends State<CalendarDialog> {
           });
           _selectedEvents.value = _getEventsForDay(_selectedDay!);
         },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
           decoration: BoxDecoration(
-            color: isSelected ? color : Colors.transparent,
-            borderRadius: BorderRadius.circular(15),
+            gradient: isSelected
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [color, color.withOpacity(0.8)],
+                  )
+                : null,
+            color: isSelected ? null : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: color.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
           ),
           child: Text(
             title,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: isSelected ? Colors.white : textColor,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? Colors.white : Colors.grey[600],
             ),
           ),
         ),
@@ -3367,19 +3612,32 @@ class _CalendarDialogState extends State<CalendarDialog> {
 
   Widget _buildChecklistContent(List<Map<String, dynamic>> items) {
     if (items.isEmpty) {
-      return Center(
+      return Container(
+        padding: const EdgeInsets.all(40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.checklist, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(50),
+              ),
+              child: Icon(
+                Icons.checklist_rounded,
+                size: 48,
+                color: Colors.grey[400],
+              ),
+            ),
+            const SizedBox(height: 20),
             Text(
               '이 날의 ${_getCategoryName(_selectedCategory)}이 없습니다',
               style: TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w500,
                 color: Colors.grey[600],
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -3391,39 +3649,76 @@ class _CalendarDialogState extends State<CalendarDialog> {
       itemBuilder: (context, index) {
         final item = items[index];
         return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: item['completed'] ? Colors.lightGreen : Colors.grey[300]!,
-              width: 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                item['completed']
-                    ? Icons.check_circle
-                    : Icons.radio_button_unchecked,
-                color: item['completed'] ? Colors.lightGreen : Colors.grey[400],
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  item['text'],
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: item['completed'] ? Colors.grey[600] : textColor,
-                    decoration: item['completed']
-                        ? TextDecoration.lineThrough
-                        : null,
+            gradient: item['completed']
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Colors.green[50]!, Colors.lightGreen[50]!],
+                  )
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Colors.white, Colors.grey[50]!],
                   ),
-                ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: item['completed'] ? Colors.green[200]! : Colors.grey[200]!,
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: item['completed']
+                    ? Colors.green.withOpacity(0.1)
+                    : Colors.grey.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: item['completed']
+                        ? Colors.green[100]
+                        : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    item['completed']
+                        ? Icons.check_circle_rounded
+                        : Icons.radio_button_unchecked_rounded,
+                    color: item['completed']
+                        ? Colors.green[600]
+                        : Colors.grey[400],
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    item['text'],
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: item['text'].toString().contains('성경')
+                          ? FontWeight.normal
+                          : FontWeight.w500,
+                      color: item['completed']
+                          ? Colors.grey[500]
+                          : Colors.grey[800],
+                      decoration: item['completed']
+                          ? TextDecoration.lineThrough
+                          : null,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
