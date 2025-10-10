@@ -41,6 +41,13 @@ class AuthService {
     return user?.email;
   }
 
+  // Get current user ID
+  String? getCurrentUserId() {
+    final session = _supabase.auth.currentSession;
+    final user = session?.user;
+    return user?.id;
+  }
+
   // Check if user is currently logged in
   bool isLoggedIn() {
     final session = _supabase.auth.currentSession;

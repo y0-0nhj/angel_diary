@@ -1227,22 +1227,22 @@ class _HomeScreenState extends State<HomeScreen>
                     const SnackBar(content: Text('통계 기능 준비 중입니다')),
                   );
                 }),
-                // 로그인 상태에 따라 버튼 변경 (비동기 처리)
-                FutureBuilder<bool>(
-                  future: AuthService().isLoggedInAsync(),
-                  builder: (context, snapshot) {
-                    final isLoggedIn = snapshot.data ?? false;
-                    return isLoggedIn
-                        ? _buildMyPageItem(Icons.logout, '로그아웃', () {
-                            Navigator.of(context).pop();
-                            _showLogoutDialog();
-                          })
-                        : _buildMyPageItem(Icons.login, '로그인', () {
-                            Navigator.of(context).pop();
-                            _showLoginDialog();
-                          });
-                  },
-                ),
+                // // 로그인 상태에 따라 버튼 변경 (비동기 처리)
+                // FutureBuilder<bool>(
+                //   future: AuthService().isLoggedInAsync(),
+                //   builder: (context, snapshot) {
+                //     final isLoggedIn = snapshot.data ?? false;
+                //     return isLoggedIn
+                //         ? _buildMyPageItem(Icons.logout, '로그아웃', () {
+                //             Navigator.of(context).pop();
+                //             _showLogoutDialog();
+                //           })
+                //         : _buildMyPageItem(Icons.login, '로그인', () {
+                //             Navigator.of(context).pop();
+                //             _showLoginDialog();
+                //           });
+                //   },
+                // ),
                 // _buildMyPageItem(Icons.backup, '데이터 백업', () {
                 //   Navigator.of(context).pop();
                 //   _showLoginRequiredDialog(context);

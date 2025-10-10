@@ -151,7 +151,8 @@ class _DiaryDialogState extends State<DiaryDialog> {
                   expands: true,
                   textAlignVertical: TextAlignVertical.top,
                   decoration: const InputDecoration(
-                    hintText: '오늘 하루는 어땠나요?\n소중한 순간들을 기록해보세요...',
+                    hintText:
+                        '오늘 하루는 어땠나요?\n소중한 순간들을 기록해보세요...\n일기를 작성하면 오늘의 소망, 목표, 감사 내용이 자동으로 저장됩니다.',
                     border: InputBorder.none,
                     hintStyle: TextStyle(
                       fontSize: 16,
