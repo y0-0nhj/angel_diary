@@ -1982,9 +1982,9 @@ class _HomeScreenState extends State<HomeScreen>
         const containerHeight = 350.0;
         const containerWidth = 400.0; // 고정 너비 사용
 
-        // 태양의 X 위치 계산 (천사창 안에서 서쪽에서 동쪽으로 - 좌우반전)
+        // 태양의 X 위치 계산 (천사창 안에서 동쪽에서 서쪽으로)
         final progress = _sunPositionAnimation?.value ?? 0.0;
-        final sunX = containerWidth * (1.0 - progress); // 좌우반전
+        final sunX = containerWidth * progress; // 정상적인 동서 이동
 
         // 태양의 Y 위치 계산 (천사창 안에서 아크 형태로 이동)
         // 아크 형태: 동쪽(0.0)과 서쪽(1.0)에서는 높이 0.8, 중앙(0.5)에서는 높이 0.3
