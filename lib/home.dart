@@ -249,6 +249,11 @@ class _HomeScreenState extends State<HomeScreen>
   int _currentEmotionIndex = 1; // 현재 표정 인덱스
   final DateTime _selectedDate = DateTime.now(); // 선택된 날짜
 
+  // 태양 애니메이션 관련 변수들
+  AnimationController? _sunAnimationController;
+  Animation<double>? _sunPositionAnimation;
+  Timer? _sunUpdateTimer;
+
   // 음악 재생 관련
 
   // 음악 재생 관련
@@ -317,6 +322,9 @@ class _HomeScreenState extends State<HomeScreen>
     _initializeApp();
     _startMessageRotation();
 
+    // 태양 애니메이션 초기화
+    _initializeSunAnimation();
+
     // 앱 생명주기 상태 감지를 위한 observer 등록
     WidgetsBinding.instance.addObserver(this);
   }
@@ -348,6 +356,59 @@ class _HomeScreenState extends State<HomeScreen>
           _showEncouragement = false;
         });
         _heartAnimationController.reset();
+      }
+    });
+  }
+
+  // 태양 애니메이션 초기화
+  void _initializeSunAnimation() {
+    _sunAnimationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+
+    _sunPositionAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _sunAnimationController!,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    // 현재 시간에 따른 태양 위치 계산 및 애니메이션 시작
+    _updateSunPosition();
+    _startSunUpdateTimer();
+  }
+
+  // 태양 위치 업데이트
+  void _updateSunPosition() {
+    final now = DateTime.now();
+    final hour = now.hour;
+    final minute = now.minute;
+
+    // 시간에 따른 태양 위치 계산 (5시~19시 기준으로 확장)
+    double sunProgress = 0.0;
+    if (hour >= 5 && hour < 19) {
+      // 5시~19시 사이의 태양 위치 (14시간)
+      final totalMinutes = (hour - 5) * 60 + minute;
+      final totalDayMinutes = 14 * 60; // 14시간
+      sunProgress = totalMinutes / totalDayMinutes;
+    } else if (hour < 5) {
+      // 새벽 (5시 이전) - 동쪽에 위치
+      sunProgress = 0.0;
+    } else {
+      // 저녁 (19시 이후) - 서쪽에 위치
+      sunProgress = 1.0;
+    }
+
+    print('태양 위치 업데이트: 시간=$hour:$minute, 진행률=$sunProgress');
+    _sunAnimationController?.animateTo(sunProgress);
+  }
+
+  // 태양 위치 업데이트 타이머 시작
+  void _startSunUpdateTimer() {
+    _sunUpdateTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (mounted) {
+        _updateSunPosition();
       }
     });
   }
@@ -494,6 +555,10 @@ class _HomeScreenState extends State<HomeScreen>
 
     _audioPlayer.dispose();
     _heartAnimationController.dispose();
+
+    // 태양 애니메이션 정리
+    _sunAnimationController?.dispose();
+    _sunUpdateTimer?.cancel();
 
     // 로그인 성공 콜백 정리
     AuthService.clearLoginSuccessCallback();
@@ -1832,7 +1897,10 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
           const SizedBox(width: 10),
-          const Text('😊', style: TextStyle(fontSize: 30)),
+          const Text(
+            '😊',
+            style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );
@@ -1850,6 +1918,88 @@ class _HomeScreenState extends State<HomeScreen>
         : '당신의 마음속 사랑은\n시간과 공간을 넘어 전해진다.';
 
     return '$greeting\n\n${message['text']}\n- ${message['source']}';
+  }
+
+  // 천사창 안의 태양 애니메이션
+  Widget _buildSunInAngelWindow() {
+    if (_sunPositionAnimation == null) {
+      return const SizedBox.shrink();
+    }
+
+    return AnimatedBuilder(
+      animation: _sunPositionAnimation!,
+      builder: (context, child) {
+        // 천사창의 크기 (350px 높이, 고정 너비)
+        const containerHeight = 350.0;
+        const containerWidth = 400.0; // 고정 너비 사용
+
+        // 태양의 X 위치 계산 (천사창 안에서 서쪽에서 동쪽으로 - 좌우반전)
+        final progress = _sunPositionAnimation?.value ?? 0.0;
+        final sunX = containerWidth * (1.0 - progress); // 좌우반전
+
+        // 태양의 Y 위치 계산 (천사창 안에서 아크 형태로 이동)
+        // 아크 형태: 동쪽(0.0)과 서쪽(1.0)에서는 높이 0.8, 중앙(0.5)에서는 높이 0.3
+        final sunY =
+            containerHeight *
+            (0.8 - 0.5 * (1 - (2 * progress - 1) * (2 * progress - 1)));
+
+        // 시간에 따른 태양 투명도 계산 (일출/일몰 시 투명도 감소)
+        double opacity = 1.0;
+        if (progress < 0.05 || progress > 0.95) {
+          // 아침/저녁 극단에서는 매우 투명
+          opacity = 0.3;
+        } else if (progress < 0.15 || progress > 0.85) {
+          // 일출/일몰 시간
+          opacity = 0.6;
+        } else if (progress < 0.3 || progress > 0.7) {
+          // 오전/오후
+          opacity = 0.8;
+        } else {
+          // 정오 시간대
+          opacity = 1.0;
+        }
+
+        // 디버깅 정보 출력
+        print('태양 위치: X=$sunX, Y=$sunY, 진행률=$progress, 투명도=$opacity');
+
+        return Positioned(
+          left: sunX - 30, // 태양 크기의 절반만큼 오프셋
+          top: sunY - 70,
+          child: Opacity(
+            opacity: opacity,
+            child: Container(
+              width: 70,
+              height: 70,
+              // decoration: BoxDecoration(
+              //   shape: BoxShape.circle,
+              //   color: Colors.yellow[500], // 더 밝은 노란색
+              //   // border: Border.all(color: Colors.orange[600]!, width: 2),
+              //   boxShadow: [
+              //     BoxShadow(
+              //       color: Colors.orange.withOpacity(0.8),
+              //       blurRadius: 10,
+              //       spreadRadius: 2,
+              //     ),
+              //   ],
+              // ),
+              child: Image.asset(
+                'assets/images/illustrations/sun.png',
+                width: 50,
+                height: 50,
+                fit: BoxFit.fitHeight,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.wb_sunny,
+                    size: 30,
+                    color: Colors.orange,
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildAngelIllustration() {
@@ -1873,6 +2023,9 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
           ),
+
+          // 태양 애니메이션 (천사창 안에서 움직임)
+          _buildSunInAngelWindow(),
 
           // 투명한 천사 이미지 (시간대별 배경 위에 쌓이는 레이어)
           Positioned.fill(
@@ -2414,7 +2567,12 @@ class _HomeScreenState extends State<HomeScreen>
 
     if (angelData == null) {
       // 천사가 없을 때 기본 이모지 표시
-      return const Center(child: Text('🐱', style: TextStyle(fontSize: 60)));
+      return const Center(
+        child: Text(
+          '🐱',
+          style: TextStyle(fontSize: 60, fontWeight: FontWeight.bold),
+        ),
+      );
     }
 
     // 실제 생성된 천사 캐릭터 표시
@@ -3212,7 +3370,11 @@ class _CalendarDialogState extends State<CalendarDialog> {
             const SizedBox(height: 16),
             Text(
               '이 날의 ${_getCategoryName(_selectedCategory)}이 없습니다',
-              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[600],
+              ),
             ),
           ],
         ),
@@ -3665,7 +3827,11 @@ class _DailyWishDialogState extends State<DailyWishDialog> {
             const SizedBox(height: 8),
             Text(
               '최대 5개까지 소망을 설정할 수 있습니다',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[600],
+              ),
             ),
             const SizedBox(height: 20),
 
@@ -3746,7 +3912,11 @@ class _DailyWishDialogState extends State<DailyWishDialog> {
                     ),
                     child: const Text(
                       '취소',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
                     ),
                   ),
                 ),
@@ -3853,7 +4023,11 @@ class _WishDialogState extends State<WishDialog> {
                       ),
                       Text(
                         '현재 ${widget.currentCount}/3개',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[600],
+                        ),
                       ),
                     ],
                   ),
@@ -3901,7 +4075,11 @@ class _WishDialogState extends State<WishDialog> {
                     ),
                     child: const Text(
                       '취소',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
                     ),
                   ),
                 ),
@@ -4004,7 +4182,11 @@ class _GoalDialogState extends State<GoalDialog> {
                       ),
                       Text(
                         '현재 ${widget.currentCount}/3개',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[600],
+                        ),
                       ),
                     ],
                   ),
@@ -4052,7 +4234,11 @@ class _GoalDialogState extends State<GoalDialog> {
                     ),
                     child: const Text(
                       '취소',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
                     ),
                   ),
                 ),
@@ -4167,7 +4353,11 @@ class _GratitudeDialogState extends State<GratitudeDialog> {
                       ),
                       Text(
                         '현재 ${widget.currentCount}/3개',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[600],
+                        ),
                       ),
                     ],
                   ),
@@ -4215,7 +4405,11 @@ class _GratitudeDialogState extends State<GratitudeDialog> {
                     ),
                     child: const Text(
                       '취소',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
                     ),
                   ),
                 ),
@@ -4425,7 +4619,11 @@ class _EditDialogState extends State<EditDialog> {
                     ),
                     child: const Text(
                       '취소',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
                     ),
                   ),
                 ),
