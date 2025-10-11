@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../generated/l10n/app_localizations.dart';
 import '../../main.dart' show primaryColor;
 import '../../models/angel_data.dart';
@@ -362,6 +363,41 @@ class IntroSignupScreen extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('카카오 로그인 실패: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // 게스트 모드로 진행하기
+  Future<void> _handleGuestMode(BuildContext context) async {
+    try {
+      print('게스트 모드로 진행하기 시작');
+
+      // 천사 데이터를 SharedPreferences에 저장
+      await adm.AngelDataManager.setCurrentAngel(angelData);
+      print('게스트 모드 - 천사 데이터 저장 완료: ${angelData.name}');
+
+      // 게스트 데이터 플래그 설정
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('hasGuestData', true);
+      print('게스트 모드 - hasGuestData 플래그 설정 완료');
+
+      // 홈 화면으로 이동
+      if (context.mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          (route) => false,
+        );
+        print('게스트 모드 - 홈 화면으로 이동 완료');
+      }
+    } catch (error) {
+      print('게스트 모드 처리 실패: $error');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('게스트 모드 시작 실패: $error'),
             backgroundColor: Colors.red,
           ),
         );

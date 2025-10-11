@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 전역 캘린더 데이터 관리자
-/// 
+///
 /// 캘린더 데이터와 소망 데이터의 저장, 로드, 삭제를 담당합니다.
 class CalendarDataManager {
   static final Map<String, Map<String, dynamic>> _calendarData = {};
-  static final Map<String, List<Map<String, dynamic>>> _persistentWishes = 
+  static final Map<String, List<Map<String, dynamic>>> _persistentWishes =
       {}; // 소망은 지속적으로 유지
   static const String _calendarKey = 'calendar_data';
   static const String _wishesKey = 'wishes_data';
@@ -23,6 +23,7 @@ class CalendarDataManager {
   ) async {
     _calendarData[dateString] = dayData;
     await _saveCalendarToStorage();
+    await _setGuestDataFlag();
   }
 
   /// 일기 내용을 저장합니다.
@@ -37,6 +38,7 @@ class CalendarDataManager {
     }
     _calendarData[dateString]!['diary'] = diaryContent;
     await _saveCalendarToStorage();
+    await _setGuestDataFlag();
   }
 
   /// 특정 날짜의 일기를 반환합니다.
@@ -124,6 +126,17 @@ class CalendarDataManager {
       }
     } catch (e) {
       // 에러 처리 (로깅 등)
+    }
+  }
+
+  /// 게스트 데이터 플래그 설정
+  static Future<void> _setGuestDataFlag() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('hasGuestData', true);
+      print('CalendarDataManager - 게스트 데이터 플래그 설정 완료: hasGuestData = true');
+    } catch (e) {
+      print('CalendarDataManager - 게스트 데이터 플래그 설정 실패: $e');
     }
   }
 

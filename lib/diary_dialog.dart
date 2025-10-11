@@ -35,11 +35,10 @@ class _DiaryDialogState extends State<DiaryDialog> {
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-    
+
     return Dialog(
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -78,7 +77,7 @@ class _DiaryDialogState extends State<DiaryDialog> {
                 ],
               ),
             ),
-            
+
             // 스크롤 가능한 내용
             Flexible(
               child: SingleChildScrollView(
@@ -128,7 +127,7 @@ class _DiaryDialogState extends State<DiaryDialog> {
                         textAlignVertical: TextAlignVertical.top,
                         decoration: const InputDecoration(
                           hintText:
-                              '오늘 하루는 어땠나요?\n소중한 순간들을 기록해보세요...\n일기를 작성하면 오늘의 소망, 목표, 감사 내용이 자동으로 저장됩니다.',
+                              '오늘 하루는 어땠나요?\n소중한 순간들을 기록해보세요...\n일기를 작성하면 오늘의 목표, 감사, 일기 내용이 자동으로 저장됩니다.',
                           border: InputBorder.none,
                           hintStyle: TextStyle(
                             fontSize: 16,
@@ -161,7 +160,10 @@ class _DiaryDialogState extends State<DiaryDialog> {
                             ),
                             child: const Text(
                               '취소',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
@@ -179,7 +181,10 @@ class _DiaryDialogState extends State<DiaryDialog> {
                             ),
                             child: Text(
                               widget.isEditMode ? '수정하기' : '저장',
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),

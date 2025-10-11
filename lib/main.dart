@@ -72,6 +72,7 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
   bool _isLoading = true;
   bool _hasAngel = false;
   bool _isLoggedIn = false;
+  bool _hasGuestData = false;
   // Removed auth subscription
 
   @override
@@ -101,9 +102,18 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
       // 1. 첫 방문 여부 확인
       final prefs = await SharedPreferences.getInstance();
       final hasVisitedBefore = prefs.getBool('hasVisitedBefore') ?? false;
+      final hasGuestData = prefs.getBool('hasGuestData') ?? false;
 
       print('=== 앱 초기 진입 로직 ===');
       print('첫 방문 여부: ${!hasVisitedBefore}');
+      print('게스트 데이터 여부: $hasGuestData');
+      print('SharedPreferences 키들:');
+      print('- hasVisitedBefore: $hasVisitedBefore');
+      print('- hasGuestData: $hasGuestData');
+
+      // 모든 SharedPreferences 키 확인
+      final keys = prefs.getKeys();
+      print('모든 SharedPreferences 키: $keys');
 
       if (!hasVisitedBefore) {
         // 첫 방문: hasVisitedBefore를 true로 설정하고 천사 생성 화면으로
@@ -113,6 +123,7 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
         setState(() {
           _hasAngel = false;
           _isLoggedIn = false;
+          _hasGuestData = false;
           _isLoading = false;
         });
         return;
@@ -124,14 +135,33 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
       print('재방문 & 로그인 상태: $isLoggedIn');
 
       if (!isLoggedIn) {
-        // 로그아웃 상태: 로그인 화면으로
-        print('재방문 & 로그아웃 → 로그인 화면');
-        setState(() {
-          _hasAngel = false;
-          _isLoggedIn = false;
-          _isLoading = false;
-        });
-        return;
+        // 로그아웃 상태: 게스트 데이터가 있으면 홈 화면, 없으면 로그인 화면
+        if (hasGuestData) {
+          // 게스트 모드에서도 천사 데이터 확인
+          final angelData = await adm.AngelDataManager.loadAngelFromStorage();
+          print('재방문 & 로그아웃 & 게스트 데이터 있음 → 홈 화면 (게스트 모드)');
+          print('게스트 모드 천사 등록 여부: ${angelData != null}');
+          if (angelData != null) {
+            print('게스트 모드 천사 이름: ${angelData.name}');
+          }
+
+          setState(() {
+            _hasAngel = angelData != null;
+            _isLoggedIn = false;
+            _hasGuestData = true;
+            _isLoading = false;
+          });
+          return;
+        } else {
+          print('재방문 & 로그아웃 & 게스트 데이터 없음 → 온보딩 화면');
+          setState(() {
+            _hasAngel = false;
+            _isLoggedIn = false;
+            _hasGuestData = false;
+            _isLoading = false;
+          });
+          return;
+        }
       }
 
       // 로그인 상태: 메인 화면으로
@@ -145,6 +175,7 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
       setState(() {
         _hasAngel = angelData != null;
         _isLoggedIn = isLoggedIn;
+        _hasGuestData = false;
         _isLoading = false;
       });
     } catch (e) {
@@ -152,6 +183,7 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
       setState(() {
         _hasAngel = false;
         _isLoggedIn = false;
+        _hasGuestData = false;
         _isLoading = false;
       });
     }
@@ -211,15 +243,31 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
       return const LoadingScreen();
     }
 
+    print(
+      '_buildHome 호출 - 로그인: $_isLoggedIn, 천사: $_hasAngel, 게스트데이터: $_hasGuestData',
+    );
+
     // 로그인 상태와 천사 등록 상태에 따라 초기 화면 결정
     if (_isLoggedIn && _hasAngel) {
       // 로그인되어 있고 천사도 등록되어 있으면 홈 화면
+      print('→ 홈 화면 (로그인 + 천사)');
       return const HomeScreen();
     } else if (_isLoggedIn && !_hasAngel) {
       // 로그인되어 있지만 천사가 없으면 온보딩 화면
+      print('→ 온보딩 화면 (로그인 + 천사 없음)');
       return const OnboardingScreen();
+    } else if (!_isLoggedIn && _hasGuestData) {
+      // 로그인되어 있지 않지만 게스트 데이터가 있으면 홈 화면 (게스트 모드)
+      if (_hasAngel) {
+        print('→ 홈 화면 (게스트 모드 + 천사 있음)');
+        return const HomeScreen();
+      } else {
+        print('→ 온보딩 화면 (게스트 모드 + 천사 없음)');
+        return const OnboardingScreen();
+      }
     } else {
-      // 로그인되어 있지 않으면 온보딩 화면 (로그인 유도)
+      // 로그인되어 있지 않고 게스트 데이터도 없으면 온보딩 화면 (로그인 유도)
+      print('→ 온보딩 화면 (로그인 유도)');
       return const OnboardingScreen();
     }
   }

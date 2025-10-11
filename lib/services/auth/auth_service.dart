@@ -78,6 +78,8 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_isLoggedInKey);
     await prefs.remove(_userEmailKey);
+    // 게스트 데이터 플래그도 초기화
+    await prefs.remove('hasGuestData');
   }
 
   // Check if user was previously logged in

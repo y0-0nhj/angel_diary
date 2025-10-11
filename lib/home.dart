@@ -519,6 +519,15 @@ class _HomeScreenState extends State<HomeScreen>
     await prefs.setString('daily_goals', jsonEncode(_goals));
     await prefs.setString('daily_gratitudes', jsonEncode(_gratitudes));
     // 소망은 Supabase에 저장되므로 SharedPreferences에는 저장하지 않음
+
+    // 게스트 데이터 플래그 설정 (비로그인 상태에서 데이터 저장 시)
+    final authService = AuthService();
+    final isLoggedIn = await authService.isLoggedInAsync();
+    print('_saveDailyData - 로그인 상태: $isLoggedIn');
+    if (!isLoggedIn) {
+      await prefs.setBool('hasGuestData', true);
+      print('게스트 데이터 플래그 설정 완료: hasGuestData = true');
+    }
   }
 
   // 일일 데이터 로드
@@ -3021,6 +3030,16 @@ class _HomeScreenState extends State<HomeScreen>
       dateString,
       _wishes.map((wish) => wish.toMap()).toList(),
     );
+
+    // 게스트 데이터 플래그 설정 (비로그인 상태에서 데이터 저장 시)
+    final authService = AuthService();
+    final isLoggedIn = await authService.isLoggedInAsync();
+    print('_saveToCalendar - 로그인 상태: $isLoggedIn');
+    if (!isLoggedIn) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('hasGuestData', true);
+      print('게스트 데이터 플래그 설정 완료: hasGuestData = true');
+    }
   }
 
   String _getDateString(DateTime date) {
