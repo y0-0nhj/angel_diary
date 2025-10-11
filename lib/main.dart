@@ -1420,89 +1420,197 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
     super.dispose();
   }
 
-  // 반응형 헤더 빌더
+  // 모던한 반응형 헤더 빌더
   Widget _buildResponsiveHeader() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isWideScreen = screenWidth > 600; // 폴드4 펼쳐진 상태 기준
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
+    final isWideScreen = screenWidth > 600;
+    final isVerySmallScreen = screenHeight < 600;
+    final isSmallScreen = screenHeight < 700;
 
-    if (isWideScreen) {
-      // 펼쳐진 상태: Row로 쭉 spaceBetween
-      return Row(
-        children: [
-          if (_currentStep > 0)
-            IconButton(
-              onPressed: () {
-                setState(() {
-                  _currentStep--;
-                });
-              },
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-            ),
-          Expanded(
-            child: Text(
-              _currentStep == 0 ? '천사 정보 입력' : '천사 커스터마이징',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close, color: Colors.white),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            primaryColor,
+            primaryColor.withOpacity(0.8),
+            primaryColor.withOpacity(0.9),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
-      );
-    } else {
-      // 접힌 상태: Wrap으로 줄바꿈
-      return Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
+      ),
+      child: Column(
         children: [
-          if (_currentStep > 0)
-            IconButton(
-              onPressed: () {
-                setState(() {
-                  _currentStep--;
-                });
-              },
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
+          // 상단 네비게이션 바
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: isVerySmallScreen ? 12 : 16,
+              vertical: isVerySmallScreen ? 8 : 12,
             ),
-          Flexible(
-            child: Text(
-              _currentStep == 0 ? '천사 정보 입력' : '천사 커스터마이징',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
+            child: Row(
+              children: [
+                // 뒤로가기 버튼 (모던한 스타일)
+                if (_currentStep > 0)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _currentStep--;
+                        });
+                      },
+                      icon: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white,
+                        size: isVerySmallScreen ? 18 : 20,
+                      ),
+                      padding: EdgeInsets.all(isVerySmallScreen ? 8 : 10),
+                      constraints: BoxConstraints(
+                        minWidth: isVerySmallScreen ? 36 : 40,
+                        minHeight: isVerySmallScreen ? 36 : 40,
+                      ),
+                    ),
+                  ),
+
+                // 제목 영역
+                Expanded(
+                  child: Column(
+                    children: [
+                      // 단계 표시기
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isVerySmallScreen ? 8 : 12,
+                          vertical: isVerySmallScreen ? 4 : 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          '${_currentStep + 1}/2',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: isVerySmallScreen ? 12 : 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: isVerySmallScreen ? 6 : 8),
+
+                      // 메인 제목
+                      Text(
+                        _currentStep == 0 ? '천사 정보 입력' : '천사 커스터마이징',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isVerySmallScreen
+                              ? 16
+                              : (isSmallScreen ? 18 : 20),
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 닫기 버튼 (모던한 스타일)
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: Colors.white,
+                      size: isVerySmallScreen ? 18 : 20,
+                    ),
+                    padding: EdgeInsets.all(isVerySmallScreen ? 8 : 10),
+                    constraints: BoxConstraints(
+                      minWidth: isVerySmallScreen ? 36 : 40,
+                      minHeight: isVerySmallScreen ? 36 : 40,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close, color: Colors.white),
+
+          // 진행률 바
+          Container(
+            height: 3,
+            margin: EdgeInsets.symmetric(
+              horizontal: isVerySmallScreen ? 12 : 16,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: (_currentStep + 1) / 2,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.white, Colors.white.withOpacity(0.8)],
+                  ),
+                  borderRadius: BorderRadius.circular(2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.5),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
-      );
-    }
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.height < 700;
+    final isVerySmallScreen = screenSize.height < 600;
 
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
         constraints: BoxConstraints(
           maxWidth: screenSize.width * 0.95,
-          maxHeight: screenSize.height * 0.9,
-          minWidth: 320,
-          minHeight: 400,
+          maxHeight: screenSize.height * (isVerySmallScreen ? 0.95 : 0.9),
+          minWidth: 300,
+          minHeight: isVerySmallScreen ? 350 : 400,
         ),
         decoration: BoxDecoration(
           color: bgColor,
@@ -1511,21 +1619,17 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 헤더
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: primaryColor,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
+            // 모던한 헤더
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
               child: _buildResponsiveHeader(),
             ),
 
-            // 내용 영역 (반응형)
-            Flexible(
+            // 내용 영역 (유연한 높이)
+            Expanded(
               child: _currentStep == 0
                   ? _buildFormStep()
                   : _buildCustomizationStep(),
@@ -1539,15 +1643,19 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
   // 폼 입력 단계
   Widget _buildFormStep() {
     final l10n = AppLocalizations.of(context)!;
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.height < 700;
+    final isVerySmallScreen = screenSize.height < 600;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(30.0),
+      padding: EdgeInsets.all(isVerySmallScreen ? 20.0 : 30.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             l10n.customizationTitle,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: isSmallScreen ? 16 : 18,
               fontWeight: FontWeight.bold,
               color: textColor,
               fontFamily: LanguageManager.currentLocale.languageCode == 'ko'
@@ -1555,7 +1663,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
                   : null,
             ),
           ),
-          const SizedBox(height: 30),
+          SizedBox(height: isVerySmallScreen ? 20 : 30),
 
           // 이름 입력
           TextField(
@@ -1572,7 +1680,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: isVerySmallScreen ? 15 : 20),
 
           // 특징 입력
           TextField(
@@ -1589,7 +1697,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: isVerySmallScreen ? 15 : 20),
 
           // 동물 타입 선택
           Text(
@@ -1603,16 +1711,16 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
                   : null,
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: isVerySmallScreen ? 8 : 10),
           Row(
             children: [
               Expanded(child: _buildAnimalTypeCard(l10n.petTypeDog, 'dog')),
-              const SizedBox(width: 15),
+              SizedBox(width: isVerySmallScreen ? 10 : 15),
               Expanded(child: _buildAnimalTypeCard(l10n.petTypeCat, 'cat')),
             ],
           ),
 
-          const SizedBox(height: 30),
+          SizedBox(height: isVerySmallScreen ? 20 : 30),
 
           // 다음 단계 버튼
           SizedBox(
@@ -1621,7 +1729,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
                 foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
+                minimumSize: Size(double.infinity, isVerySmallScreen ? 45 : 50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15),
                 ),
@@ -1639,7 +1747,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
               ),
             ),
           ),
-          const SizedBox(height: 20), // 하단 여백 추가
+          SizedBox(height: isVerySmallScreen ? 15 : 20), // 하단 여백 추가
         ],
       ),
     );
@@ -1650,14 +1758,15 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
     final l10n = AppLocalizations.of(context)!;
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = screenSize.height < 700;
+    final isVerySmallScreen = screenSize.height < 600;
 
     return SingleChildScrollView(
       child: Column(
         children: [
           // 캐릭터 미리보기 (반응형 높이)
           Container(
-            height: isSmallScreen ? 200 : 250,
-            margin: const EdgeInsets.all(20),
+            height: isVerySmallScreen ? 150 : (isSmallScreen ? 200 : 250),
+            margin: EdgeInsets.all(isVerySmallScreen ? 15 : 20),
             decoration: BoxDecoration(
               color: cardBgColor,
               borderRadius: BorderRadius.circular(20),
@@ -1670,14 +1779,18 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
                 bodyIndex: selectedBodyIndex,
                 emotionIndex: selectedEmotionIndex,
                 tailIndex: selectedTailIndex,
-                scaleFactor: isSmallScreen ? 0.8 : 1.0, // 작은 화면에서는 크기 조정
+                scaleFactor: isVerySmallScreen
+                    ? 0.6
+                    : (isSmallScreen ? 0.8 : 1.0), // 작은 화면에서는 크기 조정
               ),
             ),
           ),
 
           // 커스터마이징 컨트롤
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: EdgeInsets.symmetric(
+              horizontal: isVerySmallScreen ? 15 : 20,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1685,13 +1798,13 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
                 _buildPartSelector('귀 타입', 4, selectedFaceType, (index) {
                   setState(() => selectedFaceType = index);
                 }),
-                const SizedBox(height: 15),
+                SizedBox(height: isVerySmallScreen ? 10 : 15),
 
                 // 패턴 색상 선택
                 _buildPartSelector('패턴 색상', 6, selectedFaceColor, (index) {
                   setState(() => selectedFaceColor = index);
                 }),
-                const SizedBox(height: 15),
+                SizedBox(height: isVerySmallScreen ? 10 : 15),
 
                 // 꼬리 선택
                 _buildPartSelector(
@@ -1703,7 +1816,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
                   },
                 ),
 
-                const SizedBox(height: 30),
+                SizedBox(height: isVerySmallScreen ? 20 : 30),
 
                 // 완료 버튼
                 SizedBox(
@@ -1712,7 +1825,10 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
                       foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 50),
+                      minimumSize: Size(
+                        double.infinity,
+                        isVerySmallScreen ? 45 : 50,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
@@ -1731,7 +1847,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20), // 하단 여백 추가
+                SizedBox(height: isVerySmallScreen ? 15 : 20), // 하단 여백 추가
               ],
             ),
           ),
@@ -1742,10 +1858,13 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
 
   // 동물 타입 카드
   Widget _buildAnimalTypeCard(String text, String animalType) {
+    final screenSize = MediaQuery.of(context).size;
+    final isVerySmallScreen = screenSize.height < 600;
+
     return GestureDetector(
       onTap: () => setState(() => _selectedAnimalType = animalType),
       child: Container(
-        height: 50,
+        height: isVerySmallScreen ? 45 : 50,
         decoration: BoxDecoration(
           color: _selectedAnimalType == animalType
               ? primaryColor
@@ -1756,7 +1875,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
           child: Text(
             text,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: isVerySmallScreen ? 14 : 16,
               fontWeight: FontWeight.bold,
               color: _selectedAnimalType == animalType
                   ? Colors.white
@@ -1775,20 +1894,23 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
     int selectedIndex,
     Function(int) onSelect,
   ) {
+    final screenSize = MediaQuery.of(context).size;
+    final isVerySmallScreen = screenSize.height < 600;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 16,
+          style: TextStyle(
+            fontSize: isVerySmallScreen ? 14 : 16,
             fontWeight: FontWeight.bold,
             color: textColor,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: isVerySmallScreen ? 6 : 8),
         SizedBox(
-          height: 60,
+          height: isVerySmallScreen ? 50 : 60,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: count,
@@ -1797,9 +1919,9 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
               return GestureDetector(
                 onTap: () => onSelect(itemIndex),
                 child: Container(
-                  width: 50,
-                  height: 50,
-                  margin: const EdgeInsets.only(right: 10),
+                  width: isVerySmallScreen ? 45 : 50,
+                  height: isVerySmallScreen ? 45 : 50,
+                  margin: EdgeInsets.only(right: isVerySmallScreen ? 8 : 10),
                   decoration: BoxDecoration(
                     color: selectedIndex == itemIndex
                         ? primaryColor
