@@ -96,95 +96,124 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
     });
   }
 
-  // 천사 등록 여부 및 로그인 상태 확인
+  /// 앱 초기 진입 시 사용자 상태를 확인하고 적절한 화면으로 분기하는 핵심 로직
+  ///
+  /// 📋 분기 처리 플로우:
+  /// 1. 첫 방문 여부 확인 (hasVisitedBefore)
+  /// 2. 재방문 시 로그인 상태 확인 (isLoggedIn)
+  /// 3. 로그아웃 상태에서 게스트 데이터 여부 확인 (hasGuestData)
+  /// 4. 각 상태에 따라 적절한 화면으로 분기
+  ///
+  /// 🎯 최종 분기 결과:
+  /// - 첫 방문 → 온보딩 화면 (천사 생성)
+  /// - 로그인 + 천사 있음 → 홈 화면
+  /// - 로그인 + 천사 없음 → 온보딩 화면
+  /// - 로그아웃 + 게스트데이터 + 천사 있음 → 홈 화면 (게스트 모드)
+  /// - 로그아웃 + 게스트데이터 + 천사 없음 → 온보딩 화면
+  /// - 로그아웃 + 게스트데이터 없음 → 온보딩 화면
   Future<void> _checkAngelStatus() async {
     try {
-      // 1. 첫 방문 여부 확인
+      // ===== 1단계: SharedPreferences에서 사용자 상태 정보 로드 =====
       final prefs = await SharedPreferences.getInstance();
-      final hasVisitedBefore = prefs.getBool('hasVisitedBefore') ?? false;
-      final hasGuestData = prefs.getBool('hasGuestData') ?? false;
+      final hasVisitedBefore =
+          prefs.getBool('hasVisitedBefore') ?? false; // 앱을 이전에 실행한 적이 있는지
+      final hasGuestData =
+          prefs.getBool('hasGuestData') ?? false; // 비로그인 상태에서 데이터를 저장한 적이 있는지
 
-      print('=== 앱 초기 진입 로직 ===');
+      print('=== 앱 초기 진입 로직 시작 ===');
       print('첫 방문 여부: ${!hasVisitedBefore}');
       print('게스트 데이터 여부: $hasGuestData');
       print('SharedPreferences 키들:');
       print('- hasVisitedBefore: $hasVisitedBefore');
       print('- hasGuestData: $hasGuestData');
 
-      // 모든 SharedPreferences 키 확인
+      // 디버깅용: 모든 SharedPreferences 키 출력
       final keys = prefs.getKeys();
       print('모든 SharedPreferences 키: $keys');
 
+      // ===== 2단계: 첫 방문 여부 확인 =====
       if (!hasVisitedBefore) {
-        // 첫 방문: hasVisitedBefore를 true로 설정하고 천사 생성 화면으로
+        // 🔥 첫 방문 사용자 처리
+        // - hasVisitedBefore를 true로 설정하여 다음부터는 재방문으로 처리
+        // - 온보딩 화면으로 이동하여 천사 생성 과정 진행
         await prefs.setBool('hasVisitedBefore', true);
-        print('첫 방문 → 천사 생성 화면 (게스트 모드)');
+        print('✅ 첫 방문 → 온보딩 화면 (천사 생성 과정)');
 
         setState(() {
-          _hasAngel = false;
-          _isLoggedIn = false;
-          _hasGuestData = false;
-          _isLoading = false;
+          _hasAngel = false; // 아직 천사 생성 전이므로 false
+          _isLoggedIn = false; // 첫 방문이므로 로그인 상태 아님
+          _hasGuestData = false; // 아직 데이터 저장 전이므로 false
+          _isLoading = false; // 로딩 완료
         });
-        return;
+        return; // 첫 방문 처리 완료, 메서드 종료
       }
 
-      // 재방문: 로그인 상태 확인
+      // ===== 3단계: 재방문 사용자 - 로그인 상태 확인 =====
       final authService = AuthService();
-      final isLoggedIn = await authService.isLoggedInAsync();
+      final isLoggedIn = await authService
+          .isLoggedInAsync(); // Supabase 세션 + SharedPreferences 확인
       print('재방문 & 로그인 상태: $isLoggedIn');
 
+      // ===== 4단계: 로그아웃 상태 처리 =====
       if (!isLoggedIn) {
-        // 로그아웃 상태: 게스트 데이터가 있으면 홈 화면, 없으면 로그인 화면
+        // 🔥 로그아웃 상태에서 게스트 데이터 여부에 따른 분기
         if (hasGuestData) {
-          // 게스트 모드에서도 천사 데이터 확인
+          // 🎯 게스트 데이터가 있는 경우: 천사 데이터도 확인 필요
+          // - 게스트 모드에서 목표/감사/일기를 저장한 적이 있음
+          // - 천사 데이터가 있어야 홈화면에 천사를 표시할 수 있음
           final angelData = await adm.AngelDataManager.loadAngelFromStorage();
-          print('재방문 & 로그아웃 & 게스트 데이터 있음 → 홈 화면 (게스트 모드)');
+          print('✅ 재방문 & 로그아웃 & 게스트 데이터 있음 → 천사 데이터 확인');
           print('게스트 모드 천사 등록 여부: ${angelData != null}');
           if (angelData != null) {
             print('게스트 모드 천사 이름: ${angelData.name}');
           }
 
           setState(() {
-            _hasAngel = angelData != null;
-            _isLoggedIn = false;
-            _hasGuestData = true;
-            _isLoading = false;
+            _hasAngel = angelData != null; // 천사 데이터 존재 여부에 따라 설정
+            _isLoggedIn = false; // 로그아웃 상태 유지
+            _hasGuestData = true; // 게스트 데이터 있음
+            _isLoading = false; // 로딩 완료
           });
-          return;
+          return; // 게스트 모드 처리 완료
         } else {
-          print('재방문 & 로그아웃 & 게스트 데이터 없음 → 온보딩 화면');
+          // 🔥 게스트 데이터가 없는 경우: 온보딩 화면으로 이동
+          // - 로그아웃 상태이면서 데이터 저장 경험도 없음
+          // - 천사 생성 과정을 거쳐야 함
+          print('✅ 재방문 & 로그아웃 & 게스트 데이터 없음 → 온보딩 화면');
           setState(() {
-            _hasAngel = false;
-            _isLoggedIn = false;
-            _hasGuestData = false;
-            _isLoading = false;
+            _hasAngel = false; // 천사 데이터 없음
+            _isLoggedIn = false; // 로그아웃 상태
+            _hasGuestData = false; // 게스트 데이터 없음
+            _isLoading = false; // 로딩 완료
           });
-          return;
+          return; // 온보딩 화면으로 이동 처리 완료
         }
       }
 
-      // 로그인 상태: 메인 화면으로
+      // ===== 5단계: 로그인 상태 처리 =====
+      // 🔥 로그인된 사용자: 천사 데이터 확인 후 홈화면 또는 온보딩 화면으로 분기
       final angelData = await adm.AngelDataManager.loadAngelFromStorage();
-      print('재방문 & 로그인 → 메인 화면');
+      print('✅ 재방문 & 로그인 → 천사 데이터 확인');
       print('천사 등록 여부: ${angelData != null}');
       if (angelData != null) {
         print('천사 이름: ${angelData.name}');
       }
 
       setState(() {
-        _hasAngel = angelData != null;
-        _isLoggedIn = isLoggedIn;
-        _hasGuestData = false;
-        _isLoading = false;
+        _hasAngel = angelData != null; // 천사 데이터 존재 여부
+        _isLoggedIn = isLoggedIn; // 로그인 상태 유지
+        _hasGuestData = false; // 로그인 사용자는 게스트 데이터 플래그 불필요
+        _isLoading = false; // 로딩 완료
       });
     } catch (e) {
-      print('에러 발생: $e');
+      // ===== 에러 처리 =====
+      // 🔥 예외 발생 시: 안전한 기본 상태로 설정
+      print('❌ 앱 초기 진입 로직 에러 발생: $e');
       setState(() {
-        _hasAngel = false;
-        _isLoggedIn = false;
-        _hasGuestData = false;
-        _isLoading = false;
+        _hasAngel = false; // 안전한 기본값
+        _isLoggedIn = false; // 안전한 기본값
+        _hasGuestData = false; // 안전한 기본값
+        _isLoading = false; // 로딩 완료
       });
     }
   }
@@ -238,36 +267,64 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
 
   // Removed auth subscription disposal
 
+  /// _checkAngelStatus에서 설정된 상태 변수들을 기반으로 최종 화면을 결정하는 메서드
+  ///
+  /// 📋 화면 분기 로직:
+  /// 1. 로딩 중이면 → LoadingScreen
+  /// 2. 로그인 + 천사 있음 → HomeScreen (정상 로그인 사용자)
+  /// 3. 로그인 + 천사 없음 → OnboardingScreen (로그인했지만 천사 미생성)
+  /// 4. 로그아웃 + 게스트데이터 + 천사 있음 → HomeScreen (게스트 모드)
+  /// 5. 로그아웃 + 게스트데이터 + 천사 없음 → OnboardingScreen (게스트 모드이지만 천사 없음)
+  /// 6. 로그아웃 + 게스트데이터 없음 → OnboardingScreen (일반적인 온보딩)
   Widget _buildHome() {
+    // ===== 1단계: 로딩 상태 확인 =====
     if (_isLoading) {
+      // 🔄 아직 사용자 상태 확인이 완료되지 않은 경우
       return const LoadingScreen();
     }
 
+    // ===== 2단계: 현재 상태 로그 출력 =====
     print(
-      '_buildHome 호출 - 로그인: $_isLoggedIn, 천사: $_hasAngel, 게스트데이터: $_hasGuestData',
+      '🎯 _buildHome 호출 - 로그인: $_isLoggedIn, 천사: $_hasAngel, 게스트데이터: $_hasGuestData',
     );
 
-    // 로그인 상태와 천사 등록 상태에 따라 초기 화면 결정
+    // ===== 3단계: 로그인 상태 + 천사 데이터 조합에 따른 화면 분기 =====
+
     if (_isLoggedIn && _hasAngel) {
-      // 로그인되어 있고 천사도 등록되어 있으면 홈 화면
-      print('→ 홈 화면 (로그인 + 천사)');
+      // 🔥 케이스 1: 로그인 + 천사 있음
+      // - 정상적인 로그인 사용자
+      // - 홈화면에서 모든 기능 사용 가능
+      print('✅ → 홈 화면 (로그인 + 천사)');
       return const HomeScreen();
     } else if (_isLoggedIn && !_hasAngel) {
-      // 로그인되어 있지만 천사가 없으면 온보딩 화면
-      print('→ 온보딩 화면 (로그인 + 천사 없음)');
+      // 🔥 케이스 2: 로그인 + 천사 없음
+      // - 로그인은 했지만 천사를 생성하지 않은 상태
+      // - 온보딩 화면에서 천사 생성 과정 진행
+      print('✅ → 온보딩 화면 (로그인 + 천사 없음)');
       return const OnboardingScreen();
     } else if (!_isLoggedIn && _hasGuestData) {
-      // 로그인되어 있지 않지만 게스트 데이터가 있으면 홈 화면 (게스트 모드)
+      // 🔥 케이스 3: 로그아웃 + 게스트 데이터 있음
+      // - 비로그인 상태이지만 이전에 데이터를 저장한 적이 있음
+      // - 천사 데이터 여부에 따라 추가 분기
+
       if (_hasAngel) {
-        print('→ 홈 화면 (게스트 모드 + 천사 있음)');
+        // 🎯 게스트 모드 + 천사 있음
+        // - 게스트 모드로 홈화면 진입 가능
+        // - 로그인하지 않아도 기본 기능 사용 가능
+        print('✅ → 홈 화면 (게스트 모드 + 천사 있음)');
         return const HomeScreen();
       } else {
-        print('→ 온보딩 화면 (게스트 모드 + 천사 없음)');
+        // 🎯 게스트 모드 + 천사 없음
+        // - 게스트 데이터는 있지만 천사가 없는 상태
+        // - 온보딩 화면에서 천사 생성 필요
+        print('✅ → 온보딩 화면 (게스트 모드 + 천사 없음)');
         return const OnboardingScreen();
       }
     } else {
-      // 로그인되어 있지 않고 게스트 데이터도 없으면 온보딩 화면 (로그인 유도)
-      print('→ 온보딩 화면 (로그인 유도)');
+      // 🔥 케이스 4: 로그아웃 + 게스트 데이터 없음
+      // - 일반적인 첫 방문 또는 데이터 저장 경험이 없는 사용자
+      // - 온보딩 화면에서 천사 생성 및 로그인 유도
+      print('✅ → 온보딩 화면 (로그인 유도)');
       return const OnboardingScreen();
     }
   }

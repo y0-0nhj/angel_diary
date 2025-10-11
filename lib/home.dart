@@ -520,13 +520,20 @@ class _HomeScreenState extends State<HomeScreen>
     await prefs.setString('daily_gratitudes', jsonEncode(_gratitudes));
     // 소망은 Supabase에 저장되므로 SharedPreferences에는 저장하지 않음
 
-    // 게스트 데이터 플래그 설정 (비로그인 상태에서 데이터 저장 시)
+    // ===== 게스트 데이터 플래그 설정 (비로그인 상태에서 데이터 저장 시) =====
+    // 🔥 목적: 비로그인 상태에서 일일 데이터를 저장한 사용자를 식별
+    // - _saveToCalendar와 동일한 로직으로 게스트 모드 사용자 판단
+    // - 목표/감사 데이터 저장 시에도 게스트 플래그 설정
     final authService = AuthService();
     final isLoggedIn = await authService.isLoggedInAsync();
     print('_saveDailyData - 로그인 상태: $isLoggedIn');
+
     if (!isLoggedIn) {
+      // 🎯 비로그인 상태에서 일일 데이터 저장 시에만 실행
+      // - hasGuestData 플래그를 true로 설정
+      // - 앱 재시작 시 게스트 모드로 홈화면 진입 가능하게 함
       await prefs.setBool('hasGuestData', true);
-      print('게스트 데이터 플래그 설정 완료: hasGuestData = true');
+      print('✅ 게스트 데이터 플래그 설정 완료: hasGuestData = true');
     }
   }
 
@@ -840,7 +847,7 @@ class _HomeScreenState extends State<HomeScreen>
         ?.requestNotificationsPermission();
   }
 
-  // 매일 오전 11시 47분에 소망 설정 알림 스케줄링
+  // 매일 오전
   Future<void> _scheduleDailyWishNotification() async {
     try {
       // 기존 알림 취소
@@ -3031,14 +3038,21 @@ class _HomeScreenState extends State<HomeScreen>
       _wishes.map((wish) => wish.toMap()).toList(),
     );
 
-    // 게스트 데이터 플래그 설정 (비로그인 상태에서 데이터 저장 시)
+    // ===== 게스트 데이터 플래그 설정 (비로그인 상태에서 데이터 저장 시) =====
+    // 🔥 목적: 비로그인 상태에서 목표/감사/일기를 저장한 사용자를 식별
+    // - 다음 앱 실행 시 게스트 모드로 홈화면에 진입할 수 있도록 함
+    // - 로그인하지 않아도 데이터가 보존되도록 함
     final authService = AuthService();
     final isLoggedIn = await authService.isLoggedInAsync();
     print('_saveToCalendar - 로그인 상태: $isLoggedIn');
+
     if (!isLoggedIn) {
+      // 🎯 비로그인 상태에서 데이터 저장 시에만 실행
+      // - hasGuestData 플래그를 true로 설정
+      // - 이 플래그는 앱 초기 진입 로직에서 게스트 모드 판단에 사용됨
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('hasGuestData', true);
-      print('게스트 데이터 플래그 설정 완료: hasGuestData = true');
+      print('✅ 게스트 데이터 플래그 설정 완료: hasGuestData = true');
     }
   }
 

@@ -130,13 +130,24 @@ class CalendarDataManager {
   }
 
   /// 게스트 데이터 플래그 설정
+  ///
+  /// 📋 목적: 비로그인 상태에서 캘린더 데이터를 저장한 사용자를 식별
+  ///
+  /// 🔥 호출 시점:
+  /// - saveDayData() 메서드에서 호출
+  /// - saveDiary() 메서드에서 호출
+  ///
+  /// 🎯 결과:
+  /// - hasGuestData = true로 설정
+  /// - 다음 앱 실행 시 게스트 모드로 홈화면 진입 가능
+  /// - 앱 초기 진입 로직에서 게스트 모드 판단에 사용
   static Future<void> _setGuestDataFlag() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('hasGuestData', true);
-      print('CalendarDataManager - 게스트 데이터 플래그 설정 완료: hasGuestData = true');
+      print('✅ CalendarDataManager - 게스트 데이터 플래그 설정 완료: hasGuestData = true');
     } catch (e) {
-      print('CalendarDataManager - 게스트 데이터 플래그 설정 실패: $e');
+      print('❌ CalendarDataManager - 게스트 데이터 플래그 설정 실패: $e');
     }
   }
 

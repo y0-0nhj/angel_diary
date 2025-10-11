@@ -370,30 +370,48 @@ class IntroSignupScreen extends StatelessWidget {
     }
   }
 
-  // 게스트 모드로 진행하기
+  /// 게스트 모드로 진행하기 버튼 클릭 시 실행되는 메서드
+  ///
+  /// 📋 게스트 모드 처리 과정:
+  /// 1. 천사 데이터를 SharedPreferences에 저장 (angel_data 키)
+  /// 2. hasGuestData 플래그를 true로 설정
+  /// 3. 모든 이전 화면을 제거하고 홈 화면으로 이동
+  ///
+  /// 🎯 결과:
+  /// - 다음 앱 실행 시 게스트 모드로 홈 화면에 진입 가능
+  /// - 로그인하지 않아도 기본 기능 사용 가능
+  /// - 천사 데이터가 저장되어 홈 화면에 천사 표시
   Future<void> _handleGuestMode(BuildContext context) async {
     try {
-      print('게스트 모드로 진행하기 시작');
+      print('🚀 게스트 모드로 진행하기 시작');
 
-      // 천사 데이터를 SharedPreferences에 저장
+      // ===== 1단계: 천사 데이터를 SharedPreferences에 저장 =====
+      // - AngelDataManager를 통해 천사 데이터를 영구 저장
+      // - 키: 'angel_data', 값: JSON 형태의 천사 정보
       await adm.AngelDataManager.setCurrentAngel(angelData);
-      print('게스트 모드 - 천사 데이터 저장 완료: ${angelData.name}');
+      print('✅ 게스트 모드 - 천사 데이터 저장 완료: ${angelData.name}');
 
-      // 게스트 데이터 플래그 설정
+      // ===== 2단계: 게스트 데이터 플래그 설정 =====
+      // - hasGuestData를 true로 설정하여 게스트 모드 사용자임을 표시
+      // - 다음 앱 실행 시 이 플래그를 확인하여 게스트 모드로 홈화면 진입
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('hasGuestData', true);
-      print('게스트 모드 - hasGuestData 플래그 설정 완료');
+      print('✅ 게스트 모드 - hasGuestData 플래그 설정 완료');
 
-      // 홈 화면으로 이동
+      // ===== 3단계: 홈 화면으로 이동 =====
+      // - 모든 이전 화면을 제거하고 홈 화면으로 이동
+      // - pushAndRemoveUntil을 사용하여 뒤로가기 불가능하게 설정
       if (context.mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
-          (route) => false,
+          (route) => false, // 모든 이전 라우트 제거
         );
-        print('게스트 모드 - 홈 화면으로 이동 완료');
+        print('✅ 게스트 모드 - 홈 화면으로 이동 완료');
       }
     } catch (error) {
-      print('게스트 모드 처리 실패: $error');
+      // ===== 에러 처리 =====
+      // 🔥 게스트 모드 처리 중 오류 발생 시 사용자에게 알림
+      print('❌ 게스트 모드 처리 실패: $error');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
