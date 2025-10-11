@@ -622,11 +622,14 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
       itemBuilder: (context, index) {
         final item = items[index];
         return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 4), // 8px → 4px로 줄임
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 8,
+          ), // 16px → 12px/8px로 줄임
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8), // 12px → 8px로 줄임
             border: Border.all(color: Colors.transparent, width: 0),
           ),
           child: Row(
@@ -636,14 +639,14 @@ class _SimpleCalendarDialogState extends State<SimpleCalendarDialog> {
                     ? Icons.check_circle
                     : Icons.radio_button_unchecked,
                 color: item['completed'] ? Colors.lightGreen : Colors.grey[400],
-                size: 24,
+                size: 20, // 24px → 20px로 줄임
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8), // 12px → 8px로 줄임
               Expanded(
                 child: Text(
                   item['text'] ?? '',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 14, // 16px → 14px로 줄임
                     color: textColor,
                     decoration: item['completed'] == true
                         ? TextDecoration.lineThrough

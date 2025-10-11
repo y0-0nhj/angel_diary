@@ -1388,13 +1388,15 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.9,
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
-          minWidth: 300,
+          maxWidth: screenSize.width * 0.95,
+          maxHeight: screenSize.height * 0.9,
+          minWidth: 320,
           minHeight: 400,
         ),
         decoration: BoxDecoration(
@@ -1402,6 +1404,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             // 헤더
             Container(
@@ -1416,8 +1419,8 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
               child: _buildResponsiveHeader(),
             ),
 
-            // 내용 영역
-            Expanded(
+            // 내용 영역 (반응형)
+            Flexible(
               child: _currentStep == 0
                   ? _buildFormStep()
                   : _buildCustomizationStep(),
@@ -1431,7 +1434,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
   // 폼 입력 단계
   Widget _buildFormStep() {
     final l10n = AppLocalizations.of(context)!;
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(30.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1504,7 +1507,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
             ],
           ),
 
-          const Spacer(),
+          const SizedBox(height: 30),
 
           // 다음 단계 버튼
           SizedBox(
@@ -1531,6 +1534,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
               ),
             ),
           ),
+          const SizedBox(height: 20), // 하단 여백 추가
         ],
       ),
     );
@@ -1539,33 +1543,36 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
   // 커스터마이징 단계
   Widget _buildCustomizationStep() {
     final l10n = AppLocalizations.of(context)!;
-    return Column(
-      children: [
-        // 캐릭터 미리보기
-        Container(
-          height: 300,
-          margin: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: cardBgColor,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Center(
-            child: CharacterView(
-              animalType: _selectedAnimalType,
-              faceType: selectedFaceType,
-              faceColor: selectedFaceColor,
-              bodyIndex: selectedBodyIndex,
-              emotionIndex: selectedEmotionIndex,
-              tailIndex: selectedTailIndex,
-              scaleFactor: 1.0, // 천사 생성 팝업에서는 원본 크기
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.height < 700;
+
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // 캐릭터 미리보기 (반응형 높이)
+          Container(
+            height: isSmallScreen ? 200 : 250,
+            margin: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: cardBgColor,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Center(
+              child: CharacterView(
+                animalType: _selectedAnimalType,
+                faceType: selectedFaceType,
+                faceColor: selectedFaceColor,
+                bodyIndex: selectedBodyIndex,
+                emotionIndex: selectedEmotionIndex,
+                tailIndex: selectedTailIndex,
+                scaleFactor: isSmallScreen ? 0.8 : 1.0, // 작은 화면에서는 크기 조정
+              ),
             ),
           ),
-        ),
 
-        // 커스터마이징 컨트롤
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+          // 커스터마이징 컨트롤
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1619,11 +1626,12 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 20), // 하단 여백 추가
               ],
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1770,6 +1778,9 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
       );
     } else if (shouldSave == false) {
       // 임시 저장 (메모리에만 보관)
+      // AngelDataManager에 천사 데이터 저장
+      await adm.AngelDataManager.setCurrentAngel(angelData);
+
       // 팝업 닫기
       Navigator.of(context).pop();
 
@@ -1839,13 +1850,23 @@ class StorageConfirmationDialog extends StatelessWidget {
                   width: 2,
                 ),
               ),
-              child: CharacterView(
-                animalType: angelData.animalType,
-                faceType: angelData.faceType,
-                faceColor: angelData.faceColor,
-                bodyIndex: angelData.bodyIndex,
-                emotionIndex: angelData.emotionIndex,
-                tailIndex: angelData.tailIndex,
+              child: Stack(
+                children: [
+                  Positioned(
+                    right: 8, // 오른쪽으로 8px 이동
+                    top: 0,
+                    bottom: 0,
+                    child: CharacterView(
+                      animalType: angelData.animalType,
+                      faceType: angelData.faceType,
+                      faceColor: angelData.faceColor,
+                      bodyIndex: angelData.bodyIndex,
+                      emotionIndex: angelData.emotionIndex,
+                      tailIndex: angelData.tailIndex,
+                      scaleFactor: 0.5, // 4분의 1 크기로 축소
+                    ),
+                  ),
+                ],
               ),
             ),
 
