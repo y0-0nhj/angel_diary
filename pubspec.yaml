@@ -84,10 +84,16 @@ flutter:
     - assets/images/characters/cat/body/
     - assets/images/characters/cat/emotion/
     - assets/images/characters/cat/tail/
+    - assets/images/characters/cat/face2/
+    - assets/images/characters/cat/body2/
+    - assets/images/characters/cat/tail2/
     - assets/images/characters/dog/face/
     - assets/images/characters/dog/body/
     - assets/images/characters/dog/emotion/
     - assets/images/characters/dog/tail/
+    - assets/images/characters/dog/face2/
+    - assets/images/characters/dog/body2/
+    - assets/images/characters/dog/tail2/
     - assets/audio/
 
 # Flutter Launcher Icons 설정
