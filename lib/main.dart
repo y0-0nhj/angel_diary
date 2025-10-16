@@ -1,3 +1,7 @@
+// 앱의 진입점과 전역 테마/온보딩/분기 로직을 포함하는 메인 파일입니다.
+// - 앱 초기화: Firebase, Supabase, Kakao SDK, Timezone, 언어 설정, 세션 복원
+// - 전역 테마 구성: 색상, 폰트 패밀리, 로컬라이제이션 지원
+// - 초기 분기: 첫 방문/로그인/게스트/천사 데이터 유무에 따라 홈/온보딩으로 라우팅
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:angel_diary/clients/supabase_client.dart';
@@ -28,39 +32,43 @@ const Color secondaryColor = Color(0xFFB0B0B0);
 const Color textColor = Color(0xFF3D3D3D);
 const Color cardBgColor = Colors.white;
 
-// 앱의 시작점
+/// 앱의 시작점.
+///
+/// 앱에서 사용되는 외부 SDK 및 런타임 의존성을 초기화하고, 저장된 언어/세션 상태를 복원한 후
+/// 최상위 위젯인 `AngelDiaryApp`을 실행합니다.
 Future<void> main() async {
   // Flutter 바인딩을 먼저 초기화
   WidgetsFlutterBinding.ensureInitialized();
 
   // await dotenv.load(fileName: ".env");
 
-  // Firebase 초기화
+  // Firebase 초기화: 알림/분석/원격 구성 등 Firebase 기반 기능 사용을 위해 필요
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Supabase 초기화
+  // Supabase 초기화: 인증/데이터 저장 등 Supabase 사용을 위한 클라이언트 준비
   await SupabaseClient().init();
 
-  // 카카오 SDK 초기화
+  // 카카오 SDK 초기화: 소셜 로그인/연동 기능 사용을 위한 준비
   kakao.KakaoSdk.init(
     nativeAppKey: '41bafe186ed2ce2ceef68c2dd004b0b0', // 실제 네이티브 앱 키로 교체 필요
     javaScriptAppKey:
         'fdb84d1114ec854e0e72d1e4661247d9', // 실제 JavaScript 앱 키로 교체 필요
   );
 
-  // 언어 설정 로드
+  // 언어 설정 로드: 사용자가 저장한 언어 선호도 복원 (Locale 적용)
   await LanguageManager.loadSavedLanguage();
 
-  // 타임존 초기화
+  // 타임존 초기화: 로컬 알림/시간 표시의 정확도를 위해 필요
   tz.initializeTimeZones();
 
-  // 자동 로그인 세션 복원
+  // 자동 로그인 세션 복원: 이전 세션이 유효하면 로그인 상태를 유지
   final authService = AuthService();
   await authService.restoreSession();
 
   runApp(const AngelDiaryApp());
 }
 
+/// 앱의 루트 위젯. 로컬라이제이션/테마 설정과 초기 화면 분기를 담당합니다.
 class AngelDiaryApp extends StatefulWidget {
   const AngelDiaryApp({super.key});
 
@@ -90,13 +98,14 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
     super.dispose();
   }
 
+  /// 언어 변경 리스너. Locale 변경 시 전체 위젯 트리를 재빌드합니다.
   void _onLanguageChanged() {
     setState(() {
       // 언어가 변경되면 UI를 다시 빌드
     });
   }
 
-  /// 앱 초기 진입 시 사용자 상태를 확인하고 적절한 화면으로 분기하는 핵심 로직
+  /// 앱 초기 진입 시 사용자 상태를 확인하고 적절한 화면으로 분기하는 핵심 로직입니다.
   ///
   /// 📋 분기 처리 플로우:
   /// 1. 첫 방문 여부 확인 (hasVisitedBefore)
@@ -114,6 +123,7 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
   Future<void> _checkAngelStatus() async {
     try {
       // ===== 1단계: SharedPreferences에서 사용자 상태 정보 로드 =====
+      // 앱 첫 실행 여부/게스트 데이터 보유 여부를 통해 온보딩 필요성을 판단합니다.
       final prefs = await SharedPreferences.getInstance();
       final hasVisitedBefore =
           prefs.getBool('hasVisitedBefore') ?? false; // 앱을 이전에 실행한 적이 있는지
@@ -149,6 +159,7 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
       }
 
       // ===== 3단계: 재방문 사용자 - 로그인 상태 확인 =====
+      // Supabase 세션이 우선이며, 없을 경우 SharedPreferences의 보조 플래그를 확인합니다.
       final authService = AuthService();
       final isLoggedIn = await authService
           .isLoggedInAsync(); // Supabase 세션 + SharedPreferences 확인
@@ -207,7 +218,7 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
       });
     } catch (e) {
       // ===== 에러 처리 =====
-      // 🔥 예외 발생 시: 안전한 기본 상태로 설정
+      // 🔥 예외 발생 시: 안전한 기본 상태로 설정하고 사용자 흐름을 막지 않습니다.
       print('❌ 앱 초기 진입 로직 에러 발생: $e');
       setState(() {
         _hasAngel = false; // 안전한 기본값
@@ -267,7 +278,7 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
 
   // Removed auth subscription disposal
 
-  /// _checkAngelStatus에서 설정된 상태 변수들을 기반으로 최종 화면을 결정하는 메서드
+  /// `_checkAngelStatus`에서 설정된 상태 변수들을 기반으로 최종 화면을 결정하는 메서드입니다.
   ///
   /// 📋 화면 분기 로직:
   /// 1. 로딩 중이면 → LoadingScreen
@@ -331,6 +342,8 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
 }
 
 // 로딩 화면
+/// 앱 전역 로딩 화면.
+/// - 초기 데이터/세션/리소스 로딩 동안 배경과 인디케이터를 표시합니다.
 class LoadingScreen extends StatelessWidget {
   const LoadingScreen({super.key});
 

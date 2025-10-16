@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -7,9 +8,7 @@ enum Priority { high, medium, low }
 
 class DiscodeWebhookClient {
   // Discord 웹훅 URL (실제 사용 시 환경변수로 관리 권장)
-  static const String _webhookUrl =
-      'https://discordapp.com/api/webhooks/1423903113735180430/S-5TiN9sO2fabbbBEPMnuYnPqZDoNiXfYyaAeaIXTWBebFlaH_8DKDxgb6WHG2g0tE7t';
-
+  static String get _webhookUrl => dotenv.env['DISCORD_WEBHOOK_URL'] ?? '';
   int _getColor(Priority priority) {
     switch (priority) {
       case Priority.high:

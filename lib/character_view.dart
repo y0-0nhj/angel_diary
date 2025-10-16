@@ -454,18 +454,18 @@ class _CharacterViewState extends State<CharacterView>
     switch (part) {
       case 'body':
         // 몸통
-        return 'assets/images/characters/${widget.animalType}/body2/${widget.faceColor}.webp';
+        return 'assets/images/characters/${widget.animalType}/body/${widget.faceColor}.webp';
       case 'face':
         // 얼굴은 타입-색상 형태
-        return 'assets/images/characters/${widget.animalType}/face2/${widget.faceType}-${widget.faceColor}.webp';
+        return 'assets/images/characters/${widget.animalType}/face/${widget.faceType}-${widget.faceColor}.webp';
       case 'emotion':
         // 표정 (현재 표정 사용) - PNG 파일 사용
         return 'assets/images/characters/${widget.animalType}/emotion/$_currentEmotionIndex.png';
       case 'tail':
         // 꼬리는 선택된 타입과 얼굴 색상 적용
-        return 'assets/images/characters/${widget.animalType}/tail2/${widget.tailIndex}-${widget.faceColor}.webp';
+        return 'assets/images/characters/${widget.animalType}/tail/${widget.tailIndex}-${widget.faceColor}.webp';
       default:
-        return 'assets/images/characters/${widget.animalType}/body2/1.webp';
+        return 'assets/images/characters/${widget.animalType}/body/1.webp';
     }
   }
 
