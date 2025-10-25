@@ -10,6 +10,8 @@ import '../../services/auth/auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/user_profile_service.dart';
 import '../../models/user_profile.dart';
+import 'email_login_screen.dart';
+import 'email_signup_screen.dart';
 
 class IntroSignupScreen extends StatelessWidget {
   final AngelData angelData;
@@ -145,6 +147,32 @@ class IntroSignupScreen extends StatelessWidget {
           onPressed: () => _handleKakaoLogin(context),
           isPrimary: true,
         ),
+
+        const SizedBox(height: 16),
+
+        // 이메일 로그인 버튼
+        _buildModernLoginButton(
+          context: context,
+          icon: Icons.email_outlined,
+          iconColor: Colors.white,
+          backgroundColor: primaryColor,
+          text: '이메일로 로그인',
+          onPressed: () => _handleEmailLogin(context),
+          isPrimary: false,
+        ),
+
+        const SizedBox(height: 16),
+
+        // 이메일 회원가입 버튼
+        _buildModernLoginButton(
+          context: context,
+          icon: Icons.person_add_outlined,
+          iconColor: primaryColor,
+          backgroundColor: Colors.white,
+          text: '이메일로 회원가입',
+          onPressed: () => _handleEmailSignup(context),
+          isPrimary: false,
+        ),
       ],
     );
   }
@@ -187,6 +215,9 @@ class IntroSignupScreen extends StatelessWidget {
             : null,
         color: isPrimary ? null : backgroundColor,
         borderRadius: BorderRadius.circular(16),
+        border: backgroundColor == Colors.white
+            ? Border.all(color: primaryColor.withValues(alpha: 0.3), width: 1.5)
+            : null,
         boxShadow: [
           BoxShadow(
             color: backgroundColor.withValues(alpha: 0.3),
@@ -327,6 +358,32 @@ class IntroSignupScreen extends StatelessWidget {
         MaterialPageRoute(builder: (context) => const HomeScreen()),
         (route) => false,
       );
+    }
+  }
+
+  // 이메일 로그인 처리
+  Future<void> _handleEmailLogin(BuildContext context) async {
+    final result = await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const EmailLoginScreen()));
+
+    // 로그인 성공 시 처리
+    if (result == true && context.mounted) {
+      _handleAuthSuccess(context);
+    }
+  }
+
+  // 이메일 회원가입 처리
+  Future<void> _handleEmailSignup(BuildContext context) async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => EmailSignupScreen(angelData: angelData),
+      ),
+    );
+
+    // 회원가입 성공 시 처리
+    if (result == true && context.mounted) {
+      _handleAuthSuccess(context);
     }
   }
 

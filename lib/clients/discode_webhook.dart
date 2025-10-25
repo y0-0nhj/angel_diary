@@ -8,7 +8,8 @@ enum Priority { high, medium, low }
 
 class DiscodeWebhookClient {
   // Discord 웹훅 URL (실제 사용 시 환경변수로 관리 권장)
-  static String get _webhookUrl => dotenv.env['DISCORD_WEBHOOK_URL'] ?? '';
+  static String get _webhookUrl =>
+      'https://discordapp.com/api/webhooks/1423903113735180430/S-5TiN9sO2fabbbBEPMnuYnPqZDoNiXfYyaAeaIXTWBebFlaH_8DKDxgb6WHG2g0tE7t';
   int _getColor(Priority priority) {
     switch (priority) {
       case Priority.high:

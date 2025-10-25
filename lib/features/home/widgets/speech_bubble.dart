@@ -1,11 +1,11 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../generated/l10n/app_localizations.dart';
-import '../../../features/angel/models/angel_model.dart';
+import '../../../models/angel_data.dart';
 import '../../../utils/constants.dart';
 
 class SpeechBubble extends StatelessWidget {
-  final Angel? angelData;
+  final AngelData? angelData;
 
   const SpeechBubble({super.key, this.angelData});
 
@@ -38,10 +38,14 @@ class SpeechBubble extends StatelessWidget {
     );
   }
 
-  String _buildMessageText(BuildContext context, Angel? angelData, String angelName) {
+  String _buildMessageText(
+    BuildContext context,
+    AngelData? angelData,
+    String angelName,
+  ) {
     final l10n = AppLocalizations.of(context)!;
     final random = Random();
-    
+
     // 격려 메시지 배열
     final messages = [
       {'text': l10n.inspirationalMessage1, 'source': l10n.source1},
@@ -49,7 +53,7 @@ class SpeechBubble extends StatelessWidget {
       {'text': l10n.inspirationalMessage3, 'source': l10n.source3},
       {'text': l10n.inspirationalMessage4, 'source': l10n.source4},
     ];
-    
+
     final message = messages[random.nextInt(messages.length)];
 
     final greeting = angelData != null

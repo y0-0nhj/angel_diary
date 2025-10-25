@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../common/widgets/custom_text_field.dart';
 import '../../common/constants/colors.dart';
+import '../../models/angel_data.dart';
 
 class EmailSignupScreen extends StatefulWidget {
-  const EmailSignupScreen({super.key});
+  final AngelData? angelData;
+
+  const EmailSignupScreen({super.key, this.angelData});
 
   @override
   State<EmailSignupScreen> createState() => _EmailSignupScreenState();

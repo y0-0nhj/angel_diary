@@ -4,8 +4,8 @@
 // - 초기 분기: 첫 방문/로그인/게스트/천사 데이터 유무에 따라 홈/온보딩으로 라우팅
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
 import 'package:angel_diary/clients/supabase_client.dart';
-// Removed supabase_flutter import
 import 'generated/l10n/app_localizations.dart';
 import 'character_view.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,17 +13,17 @@ import 'dart:io';
 import 'home.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'dart:async';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'language_manager.dart';
 import 'screens/auth/intro_signup.dart';
 import 'models/angel_data.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart' as kakao;
-import 'services/auth/auth_service.dart';
-import 'managers/angel_data_manager.dart' as adm;
-// import 'package:flutter_dotenv/flutter_dotenv.dart';
-// Removed auth imports
+import 'providers/angel_provider.dart';
+import 'providers/auth_provider.dart';
+import 'providers/music_provider.dart';
+import 'providers/app_provider.dart';
+import 'services/deep_link_service.dart';
 
 // --- 앱 전체에서 사용할 색상 정의 ---
 const Color bgColor = Color(0xFFF8F5EF);
@@ -61,14 +61,14 @@ Future<void> main() async {
   // 타임존 초기화: 로컬 알림/시간 표시의 정확도를 위해 필요
   tz.initializeTimeZones();
 
-  // 자동 로그인 세션 복원: 이전 세션이 유효하면 로그인 상태를 유지
-  final authService = AuthService();
-  await authService.restoreSession();
+  // 딥링크 서비스 초기화
+  DeepLinkService().initialize();
+  await DeepLinkService().handleInitialLink();
 
   runApp(const AngelDiaryApp());
 }
 
-/// 앱의 루트 위젯. 로컬라이제이션/테마 설정과 초기 화면 분기를 담당합니다.
+/// 앱의 루트 위젯. Provider 설정과 전역 테마를 담당합니다.
 class AngelDiaryApp extends StatefulWidget {
   const AngelDiaryApp({super.key});
 
@@ -77,19 +77,11 @@ class AngelDiaryApp extends StatefulWidget {
 }
 
 class _AngelDiaryAppState extends State<AngelDiaryApp> {
-  bool _isLoading = true;
-  bool _hasAngel = false;
-  bool _isLoggedIn = false;
-  bool _hasGuestData = false;
-  // Removed auth subscription
-
   @override
   void initState() {
     super.initState();
-    _checkAngelStatus();
     // LanguageManager의 변경사항을 감지하기 위해 리스너 추가
     LanguageManager().addListener(_onLanguageChanged);
-    // Removed auth state listener
   }
 
   @override
@@ -105,239 +97,194 @@ class _AngelDiaryAppState extends State<AngelDiaryApp> {
     });
   }
 
-  /// 앱 초기 진입 시 사용자 상태를 확인하고 적절한 화면으로 분기하는 핵심 로직입니다.
-  ///
-  /// 📋 분기 처리 플로우:
-  /// 1. 첫 방문 여부 확인 (hasVisitedBefore)
-  /// 2. 재방문 시 로그인 상태 확인 (isLoggedIn)
-  /// 3. 로그아웃 상태에서 게스트 데이터 여부 확인 (hasGuestData)
-  /// 4. 각 상태에 따라 적절한 화면으로 분기
-  ///
-  /// 🎯 최종 분기 결과:
-  /// - 첫 방문 → 온보딩 화면 (천사 생성)
-  /// - 로그인 + 천사 있음 → 홈 화면
-  /// - 로그인 + 천사 없음 → 온보딩 화면
-  /// - 로그아웃 + 게스트데이터 + 천사 있음 → 홈 화면 (게스트 모드)
-  /// - 로그아웃 + 게스트데이터 + 천사 없음 → 온보딩 화면
-  /// - 로그아웃 + 게스트데이터 없음 → 온보딩 화면
-  Future<void> _checkAngelStatus() async {
-    try {
-      // ===== 1단계: SharedPreferences에서 사용자 상태 정보 로드 =====
-      // 앱 첫 실행 여부/게스트 데이터 보유 여부를 통해 온보딩 필요성을 판단합니다.
-      final prefs = await SharedPreferences.getInstance();
-      final hasVisitedBefore =
-          prefs.getBool('hasVisitedBefore') ?? false; // 앱을 이전에 실행한 적이 있는지
-      final hasGuestData =
-          prefs.getBool('hasGuestData') ?? false; // 비로그인 상태에서 데이터를 저장한 적이 있는지
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AngelProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => MusicProvider()),
+        ChangeNotifierProvider(create: (_) => AppProvider()),
+      ],
+      child: MaterialApp(
+        title: AppLocalizations.of(context)?.appTitle ?? 'Angel Diary',
+        debugShowCheckedModeBanner: false,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: LanguageManager.supportedLocales,
+        locale: LanguageManager.currentLocale,
+        theme: ThemeData(
+          scaffoldBackgroundColor: bgColor,
+          primaryColor: primaryColor,
+          fontFamily: 'Cafe24Oneprettynight', // 기본 폰트를 Cafe24Oneprettynight로 설정
+          textTheme: const TextTheme(
+            // // 대형 제목 - 브랜드/로고용
+            // displayLarge: TextStyle(fontFamily: 'Ongeulleap', fontSize: 48, fontWeight: FontWeight.bold, color: textColor),
+            // displayMedium: TextStyle(fontFamily: 'Oneprettynight', fontSize: 36, fontWeight: FontWeight.w600, color: textColor),
 
-      print('=== 앱 초기 진입 로직 시작 ===');
-      print('첫 방문 여부: ${!hasVisitedBefore}');
-      print('게스트 데이터 여부: $hasGuestData');
-      print('SharedPreferences 키들:');
-      print('- hasVisitedBefore: $hasVisitedBefore');
-      print('- hasGuestData: $hasGuestData');
+            // // 헤드라인 - 섹션 제목용
+            // headlineLarge: TextStyle(fontFamily: 'MaruBuri', fontSize: 28, fontWeight: FontWeight.w700, color: textColor),
+            // headlineMedium: TextStyle(fontFamily: 'MaruBuri', fontSize: 24, fontWeight: FontWeight.w600, color: textColor),
+            // headlineSmall: TextStyle(fontFamily: 'MaruBuri', fontSize: 22, fontWeight: FontWeight.w500, color: textColor, height: 1.5),
 
-      // 디버깅용: 모든 SharedPreferences 키 출력
-      final keys = prefs.getKeys();
-      print('모든 SharedPreferences 키: $keys');
+            // // 타이틀 - 카드/리스트 제목용
+            // titleLarge: TextStyle(fontFamily: 'Pretendard', fontSize: 20, fontWeight: FontWeight.w600, color: textColor),
+            // titleMedium: TextStyle(fontFamily: 'Pretendard', fontSize: 18, fontWeight: FontWeight.w500, color: textColor),
+            // titleSmall: TextStyle(fontFamily: 'Pretendard', fontSize: 16, fontWeight: FontWeight.w500, color: textColor),
 
-      // ===== 2단계: 첫 방문 여부 확인 =====
-      if (!hasVisitedBefore) {
-        // 🔥 첫 방문 사용자 처리
-        // - hasVisitedBefore를 true로 설정하여 다음부터는 재방문으로 처리
-        // - 온보딩 화면으로 이동하여 천사 생성 과정 진행
-        await prefs.setBool('hasVisitedBefore', true);
-        print('✅ 첫 방문 → 온보딩 화면 (천사 생성 과정)');
+            // // 본문 텍스트
+            // bodyLarge: TextStyle(fontFamily: 'Pretendard', fontSize: 16, color: textColor, height: 1.6),
+            // bodyMedium: TextStyle(fontFamily: 'Pretendard', fontSize: 14, color: textColor, height: 1.6),
+            // bodySmall: TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: textColor, height: 1.5),
 
-        setState(() {
-          _hasAngel = false; // 아직 천사 생성 전이므로 false
-          _isLoggedIn = false; // 첫 방문이므로 로그인 상태 아님
-          _hasGuestData = false; // 아직 데이터 저장 전이므로 false
-          _isLoading = false; // 로딩 완료
-        });
-        return; // 첫 방문 처리 완료, 메서드 종료
-      }
+            // // 라벨/버튼 텍스트
+            // labelLarge: TextStyle(fontFamily: 'Pretendard', fontSize: 14, fontWeight: FontWeight.w600, color: textColor),
+            // labelMedium: TextStyle(fontFamily: 'Pretendard', fontSize: 12, fontWeight: FontWeight.w500, color: textColor),
+            // labelSmall: TextStyle(fontFamily: 'Pretendard', fontSize: 11, fontWeight: FontWeight.w500, color: textColor),
+          ),
+        ),
+        home: const AppInitializer(),
+      ),
+    );
+  }
+}
 
-      // ===== 3단계: 재방문 사용자 - 로그인 상태 확인 =====
-      // Supabase 세션이 우선이며, 없을 경우 SharedPreferences의 보조 플래그를 확인합니다.
-      final authService = AuthService();
-      final isLoggedIn = await authService
-          .isLoggedInAsync(); // Supabase 세션 + SharedPreferences 확인
-      print('재방문 & 로그인 상태: $isLoggedIn');
+/// 앱 초기화를 담당하는 위젯
+///
+/// Provider를 통해 앱 상태를 초기화하고 적절한 화면으로 분기합니다.
+class AppInitializer extends StatefulWidget {
+  const AppInitializer({super.key});
 
-      // ===== 4단계: 로그아웃 상태 처리 =====
-      if (!isLoggedIn) {
-        // 🔥 로그아웃 상태에서 게스트 데이터 여부에 따른 분기
-        if (hasGuestData) {
-          // 🎯 게스트 데이터가 있는 경우: 천사 데이터도 확인 필요
-          // - 게스트 모드에서 목표/감사/일기를 저장한 적이 있음
-          // - 천사 데이터가 있어야 홈화면에 천사를 표시할 수 있음
-          final angelData = await adm.AngelDataManager.loadAngelFromStorage();
-          print('✅ 재방문 & 로그아웃 & 게스트 데이터 있음 → 천사 데이터 확인');
-          print('게스트 모드 천사 등록 여부: ${angelData != null}');
-          if (angelData != null) {
-            print('게스트 모드 천사 이름: ${angelData.name}');
-          }
+  @override
+  State<AppInitializer> createState() => _AppInitializerState();
+}
 
-          setState(() {
-            _hasAngel = angelData != null; // 천사 데이터 존재 여부에 따라 설정
-            _isLoggedIn = false; // 로그아웃 상태 유지
-            _hasGuestData = true; // 게스트 데이터 있음
-            _isLoading = false; // 로딩 완료
-          });
-          return; // 게스트 모드 처리 완료
-        } else {
-          // 🔥 게스트 데이터가 없는 경우: 온보딩 화면으로 이동
-          // - 로그아웃 상태이면서 데이터 저장 경험도 없음
-          // - 천사 생성 과정을 거쳐야 함
-          print('✅ 재방문 & 로그아웃 & 게스트 데이터 없음 → 온보딩 화면');
-          setState(() {
-            _hasAngel = false; // 천사 데이터 없음
-            _isLoggedIn = false; // 로그아웃 상태
-            _hasGuestData = false; // 게스트 데이터 없음
-            _isLoading = false; // 로딩 완료
-          });
-          return; // 온보딩 화면으로 이동 처리 완료
-        }
-      }
+class _AppInitializerState extends State<AppInitializer> {
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
 
-      // ===== 5단계: 로그인 상태 처리 =====
-      // 🔥 로그인된 사용자: 천사 데이터 확인 후 홈화면 또는 온보딩 화면으로 분기
-      final angelData = await adm.AngelDataManager.loadAngelFromStorage();
-      print('✅ 재방문 & 로그인 → 천사 데이터 확인');
-      print('천사 등록 여부: ${angelData != null}');
-      if (angelData != null) {
-        print('천사 이름: ${angelData.name}');
-      }
+  /// 앱 초기화
+  Future<void> _initializeApp() async {
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    final angelProvider = Provider.of<AngelProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-      setState(() {
-        _hasAngel = angelData != null; // 천사 데이터 존재 여부
-        _isLoggedIn = isLoggedIn; // 로그인 상태 유지
-        _hasGuestData = false; // 로그인 사용자는 게스트 데이터 플래그 불필요
-        _isLoading = false; // 로딩 완료
-      });
-    } catch (e) {
-      // ===== 에러 처리 =====
-      // 🔥 예외 발생 시: 안전한 기본 상태로 설정하고 사용자 흐름을 막지 않습니다.
-      print('❌ 앱 초기 진입 로직 에러 발생: $e');
-      setState(() {
-        _hasAngel = false; // 안전한 기본값
-        _isLoggedIn = false; // 안전한 기본값
-        _hasGuestData = false; // 안전한 기본값
-        _isLoading = false; // 로딩 완료
-      });
-    }
+    // 세션 복원
+    await authProvider.restoreSession();
+
+    // 앱 상태 초기화
+    await appProvider.initializeApp(angelProvider, authProvider);
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: AppLocalizations.of(context)?.appTitle ?? 'Angel Diary',
-      debugShowCheckedModeBanner: false,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: LanguageManager.supportedLocales,
-      locale: LanguageManager.currentLocale,
-      theme: ThemeData(
-        scaffoldBackgroundColor: bgColor,
-        primaryColor: primaryColor,
-        fontFamily: 'Cafe24Oneprettynight', // 기본 폰트를 Cafe24Oneprettynight로 설정
-        textTheme: const TextTheme(
-          // // 대형 제목 - 브랜드/로고용
-          // displayLarge: TextStyle(fontFamily: 'Ongeulleap', fontSize: 48, fontWeight: FontWeight.bold, color: textColor),
-          // displayMedium: TextStyle(fontFamily: 'Oneprettynight', fontSize: 36, fontWeight: FontWeight.w600, color: textColor),
+    return Consumer3<AppProvider, AngelProvider, AuthProvider>(
+      builder: (context, appProvider, angelProvider, authProvider, child) {
+        // 로딩 중이면 로딩 화면 표시
+        if (appProvider.isLoading) {
+          return const LoadingScreen();
+        }
 
-          // // 헤드라인 - 섹션 제목용
-          // headlineLarge: TextStyle(fontFamily: 'MaruBuri', fontSize: 28, fontWeight: FontWeight.w700, color: textColor),
-          // headlineMedium: TextStyle(fontFamily: 'MaruBuri', fontSize: 24, fontWeight: FontWeight.w600, color: textColor),
-          // headlineSmall: TextStyle(fontFamily: 'MaruBuri', fontSize: 22, fontWeight: FontWeight.w500, color: textColor, height: 1.5),
+        // 에러가 있으면 에러 화면 표시
+        if (appProvider.error != null) {
+          return ErrorScreen(error: appProvider.error!);
+        }
 
-          // // 타이틀 - 카드/리스트 제목용
-          // titleLarge: TextStyle(fontFamily: 'Pretendard', fontSize: 20, fontWeight: FontWeight.w600, color: textColor),
-          // titleMedium: TextStyle(fontFamily: 'Pretendard', fontSize: 18, fontWeight: FontWeight.w500, color: textColor),
-          // titleSmall: TextStyle(fontFamily: 'Pretendard', fontSize: 16, fontWeight: FontWeight.w500, color: textColor),
-
-          // // 본문 텍스트
-          // bodyLarge: TextStyle(fontFamily: 'Pretendard', fontSize: 16, color: textColor, height: 1.6),
-          // bodyMedium: TextStyle(fontFamily: 'Pretendard', fontSize: 14, color: textColor, height: 1.6),
-          // bodySmall: TextStyle(fontFamily: 'Pretendard', fontSize: 12, color: textColor, height: 1.5),
-
-          // // 라벨/버튼 텍스트
-          // labelLarge: TextStyle(fontFamily: 'Pretendard', fontSize: 14, fontWeight: FontWeight.w600, color: textColor),
-          // labelMedium: TextStyle(fontFamily: 'Pretendard', fontSize: 12, fontWeight: FontWeight.w500, color: textColor),
-          // labelSmall: TextStyle(fontFamily: 'Pretendard', fontSize: 11, fontWeight: FontWeight.w500, color: textColor),
-        ),
-      ),
-      home: _buildHome(),
+        // 화면 분기 로직
+        return _buildHomeScreen(appProvider, angelProvider, authProvider);
+      },
     );
   }
 
-  // Removed auth subscription disposal
-
-  /// `_checkAngelStatus`에서 설정된 상태 변수들을 기반으로 최종 화면을 결정하는 메서드입니다.
-  ///
-  /// 📋 화면 분기 로직:
-  /// 1. 로딩 중이면 → LoadingScreen
-  /// 2. 로그인 + 천사 있음 → HomeScreen (정상 로그인 사용자)
-  /// 3. 로그인 + 천사 없음 → OnboardingScreen (로그인했지만 천사 미생성)
-  /// 4. 로그아웃 + 게스트데이터 + 천사 있음 → HomeScreen (게스트 모드)
-  /// 5. 로그아웃 + 게스트데이터 + 천사 없음 → OnboardingScreen (게스트 모드이지만 천사 없음)
-  /// 6. 로그아웃 + 게스트데이터 없음 → OnboardingScreen (일반적인 온보딩)
-  Widget _buildHome() {
-    // ===== 1단계: 로딩 상태 확인 =====
-    if (_isLoading) {
-      // 🔄 아직 사용자 상태 확인이 완료되지 않은 경우
-      return const LoadingScreen();
-    }
-
-    // ===== 2단계: 현재 상태 로그 출력 =====
+  /// 화면 분기 로직
+  Widget _buildHomeScreen(
+    AppProvider appProvider,
+    AngelProvider angelProvider,
+    AuthProvider authProvider,
+  ) {
     print(
-      '🎯 _buildHome 호출 - 로그인: $_isLoggedIn, 천사: $_hasAngel, 게스트데이터: $_hasGuestData',
+      '🎯 화면 분기 - 로그인: ${appProvider.isLoggedIn}, 천사: ${appProvider.hasAngel}, 게스트데이터: ${appProvider.hasGuestData}',
     );
 
-    // ===== 3단계: 로그인 상태 + 천사 데이터 조합에 따른 화면 분기 =====
-
-    if (_isLoggedIn && _hasAngel) {
-      // 🔥 케이스 1: 로그인 + 천사 있음
-      // - 정상적인 로그인 사용자
-      // - 홈화면에서 모든 기능 사용 가능
+    if (appProvider.isLoggedIn && appProvider.hasAngel) {
+      // 로그인 + 천사 있음 → 홈 화면
       print('✅ → 홈 화면 (로그인 + 천사)');
       return const HomeScreen();
-    } else if (_isLoggedIn && !_hasAngel) {
-      // 🔥 케이스 2: 로그인 + 천사 없음
-      // - 로그인은 했지만 천사를 생성하지 않은 상태
-      // - 온보딩 화면에서 천사 생성 과정 진행
+    } else if (appProvider.isLoggedIn && !appProvider.hasAngel) {
+      // 로그인 + 천사 없음 → 온보딩 화면
       print('✅ → 온보딩 화면 (로그인 + 천사 없음)');
       return const OnboardingScreen();
-    } else if (!_isLoggedIn && _hasGuestData) {
-      // 🔥 케이스 3: 로그아웃 + 게스트 데이터 있음
-      // - 비로그인 상태이지만 이전에 데이터를 저장한 적이 있음
-      // - 천사 데이터 여부에 따라 추가 분기
-
-      if (_hasAngel) {
-        // 🎯 게스트 모드 + 천사 있음
-        // - 게스트 모드로 홈화면 진입 가능
-        // - 로그인하지 않아도 기본 기능 사용 가능
+    } else if (!appProvider.isLoggedIn && appProvider.hasGuestData) {
+      if (appProvider.hasAngel) {
+        // 게스트 모드 + 천사 있음 → 홈 화면
         print('✅ → 홈 화면 (게스트 모드 + 천사 있음)');
         return const HomeScreen();
       } else {
-        // 🎯 게스트 모드 + 천사 없음
-        // - 게스트 데이터는 있지만 천사가 없는 상태
-        // - 온보딩 화면에서 천사 생성 필요
+        // 게스트 모드 + 천사 없음 → 온보딩 화면
         print('✅ → 온보딩 화면 (게스트 모드 + 천사 없음)');
         return const OnboardingScreen();
       }
     } else {
-      // 🔥 케이스 4: 로그아웃 + 게스트 데이터 없음
-      // - 일반적인 첫 방문 또는 데이터 저장 경험이 없는 사용자
-      // - 온보딩 화면에서 천사 생성 및 로그인 유도
+      // 로그아웃 + 게스트 데이터 없음 → 온보딩 화면
       print('✅ → 온보딩 화면 (로그인 유도)');
       return const OnboardingScreen();
     }
+  }
+}
+
+/// 에러 화면
+class ErrorScreen extends StatelessWidget {
+  final String error;
+
+  const ErrorScreen({super.key, required this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            const SizedBox(height: 20),
+            Text(
+              '오류가 발생했습니다',
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              error,
+              style: const TextStyle(fontSize: 16, color: textColor),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () {
+                // 앱 재시작
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (context) => const AppInitializer(),
+                  ),
+                );
+              },
+              child: const Text('다시 시도'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -490,11 +437,6 @@ class _SplashScreenState extends State<SplashScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          // 언어 선택 아이콘 (우상단) - 임시 주석처리
-          // Row(
-          //   mainAxisAlignment: MainAxisAlignment.end,
-          //   children: [_buildLanguageSelector(context)],
-          // ),
           Text(
             l10n.splashMessage1,
             style: textTheme.bodyMedium,
@@ -544,183 +486,6 @@ class _SplashScreenState extends State<SplashScreen> {
           ),
           const Spacer(), // 하단에 여백 추가
         ],
-      ),
-    );
-  }
-
-  Widget _buildLanguageSelector(BuildContext context) {
-    final currentLocale = LanguageManager.currentLocale;
-
-    // 현재 언어에 따른 플래그 아이콘과 텍스트
-    String flagEmoji;
-    String languageName;
-
-    final l10n = AppLocalizations.of(context);
-    if (l10n == null) {
-      return const SizedBox.shrink();
-    }
-
-    switch (currentLocale.languageCode) {
-      case 'ko':
-        flagEmoji = '🇰🇷';
-        languageName = l10n.korean;
-        break;
-      case 'en':
-        flagEmoji = '🇺🇸';
-        languageName = l10n.english;
-        break;
-      case 'ja':
-        flagEmoji = '🇯🇵';
-        languageName = l10n.japanese;
-        break;
-      default:
-        flagEmoji = '🌐';
-        languageName = 'Language';
-    }
-
-    return GestureDetector(
-      onTap: () => _showLanguageDialog(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: primaryColor.withOpacity(0.3), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(flagEmoji, style: const TextStyle(fontSize: 20)),
-            const SizedBox(width: 6),
-            Text(
-              languageName,
-              style: TextStyle(
-                fontFamily: currentLocale.languageCode == 'ko'
-                    ? 'Cafe24Oneprettynight'
-                    : null,
-                fontSize: 14,
-                color: textColor,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.keyboard_arrow_down,
-              size: 16,
-              color: textColor.withOpacity(0.7),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showLanguageDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Text(
-            '언어 선택 / Language / 言語選択',
-            style: TextStyle(
-              fontFamily: LanguageManager.currentLocale.languageCode == 'ko'
-                  ? 'Cafe24Oneprettynight'
-                  : null,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildLanguageOption(
-                context,
-                'ko',
-                '🇰🇷',
-                AppLocalizations.of(context)?.korean ?? '한국어',
-              ),
-              const SizedBox(height: 12),
-              _buildLanguageOption(
-                context,
-                'en',
-                '🇺🇸',
-                AppLocalizations.of(context)?.english ?? 'English',
-              ),
-              const SizedBox(height: 12),
-              _buildLanguageOption(
-                context,
-                'ja',
-                '🇯🇵',
-                AppLocalizations.of(context)?.japanese ?? '日本語',
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildLanguageOption(
-    BuildContext context,
-    String languageCode,
-    String flag,
-    String languageName,
-  ) {
-    final isSelected =
-        LanguageManager.currentLocale.languageCode == languageCode;
-
-    return GestureDetector(
-      onTap: () {
-        LanguageManager.setLanguage(Locale(languageCode));
-        Navigator.of(context).pop();
-        setState(() {}); // 화면 새로고침
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? primaryColor.withOpacity(0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? primaryColor : Colors.grey.withOpacity(0.3),
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Text(flag, style: const TextStyle(fontSize: 24)),
-            const SizedBox(width: 12),
-            Text(
-              languageName,
-              style: TextStyle(
-                fontFamily: languageCode == 'ko'
-                    ? 'Cafe24Oneprettynight'
-                    : null,
-                fontSize: 16,
-                color: isSelected ? primaryColor : textColor,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-            const Spacer(),
-            if (isSelected)
-              Icon(Icons.check_circle, color: primaryColor, size: 20),
-          ],
-        ),
       ),
     );
   }
@@ -986,8 +751,12 @@ class _YesFormScreenState extends State<YesFormScreen> {
       createdAt: DateTime.now(),
     );
 
-    // 전역 천사 데이터에 저장 (SharedPreferences에 자동 저장)
-    await adm.AngelDataManager.setCurrentAngel(angelData);
+    // Provider를 통해 천사 데이터 저장
+    final angelProvider = Provider.of<AngelProvider>(context, listen: false);
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+
+    await angelProvider.setAngel(angelData);
+    appProvider.onAngelCreated();
 
     // 천사 등록 완료 - 홈으로 이동
     Navigator.of(context).pushReplacement(
@@ -1436,9 +1205,7 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
   // 모던한 반응형 헤더 빌더
   Widget _buildResponsiveHeader() {
     final screenSize = MediaQuery.of(context).size;
-    final screenWidth = screenSize.width;
     final screenHeight = screenSize.height;
-    final isWideScreen = screenWidth > 600;
     final isVerySmallScreen = screenHeight < 600;
     final isSmallScreen = screenHeight < 700;
 
@@ -2017,9 +1784,12 @@ class _AngelCreationPopupState extends State<AngelCreationPopup> {
         ),
       );
     } else if (shouldSave == false) {
-      // 임시 저장 (메모리에만 보관)
-      // AngelDataManager에 천사 데이터 저장
-      await adm.AngelDataManager.setCurrentAngel(angelData);
+      // Provider를 통해 천사 데이터 저장
+      final angelProvider = Provider.of<AngelProvider>(context, listen: false);
+      final appProvider = Provider.of<AppProvider>(context, listen: false);
+
+      await angelProvider.setAngel(angelData);
+      appProvider.onAngelCreated();
 
       // 팝업 닫기
       Navigator.of(context).pop();
@@ -2222,91 +1992,4 @@ class StorageConfirmationDialog extends StatelessWidget {
       ),
     );
   }
-}
-
-// Removed LoginScreen - no longer needed
-
-// Removed all login/signup related functions
-
-// 언어 선택 다이얼로그
-class LanguageSelectionDialog extends StatelessWidget {
-  const LanguageSelectionDialog({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.8,
-          maxHeight: MediaQuery.of(context).size.height * 0.6,
-          minWidth: 300,
-          minHeight: 200,
-        ),
-        decoration: BoxDecoration(
-          color: cardBgColor,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(30.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                l10n.languageSelection,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 30),
-              ...LanguageManager.supportedLocales.map((locale) {
-                final isSelected =
-                    LanguageManager.currentLocale.languageCode ==
-                    locale.languageCode;
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 15),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isSelected
-                          ? primaryColor
-                          : Colors.grey[200],
-                      foregroundColor: isSelected ? Colors.white : textColor,
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                    ),
-                    onPressed: () async {
-                      await LanguageManager.setLanguage(locale);
-                      Navigator.of(context).pop();
-                      // 언어 변경이 즉시 적용됨 (리스너를 통해)
-                    },
-                    child: Text(
-                      LanguageManager.getLanguageName(locale),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// 언어 선택 다이얼로그 표시 함수
-void _showLanguageSelectionDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (context) => const LanguageSelectionDialog(),
-  );
 }

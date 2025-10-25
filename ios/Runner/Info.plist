@@ -45,6 +45,18 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- 딥링크 설정 -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>angeldiary</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>angeldiary</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 <key>NSPhotoLibraryUsageDescription</key>
 <string>배경을 제거할 사진을 선택하기 위해 갤러리 접근 권한이 필요합니다.</string>

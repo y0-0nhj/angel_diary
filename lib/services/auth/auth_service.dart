@@ -30,7 +30,11 @@ class AuthService {
     String email,
     String password,
   ) async {
-    return await _supabase.auth.signUp(email: email, password: password);
+    return await _supabase.auth.signUp(
+      email: email,
+      password: password,
+      emailRedirectTo: 'angeldiary://auth-callback',
+    );
   }
 
   /// 로그아웃합니다. Supabase 세션을 무효화합니다.
@@ -137,5 +141,18 @@ class AuthService {
   // 로그인 성공 콜백 제거
   static void clearLoginSuccessCallback() {
     _onLoginSuccess = null;
+  }
+
+  /// 비밀번호 재설정 이메일 전송
+  Future<void> resetPassword(String email) async {
+    await _supabase.auth.resetPasswordForEmail(
+      email,
+      redirectTo: 'angeldiary://auth-callback',
+    );
+  }
+
+  /// 이메일 인증 재전송
+  Future<void> sendEmailVerification(String email) async {
+    await _supabase.auth.resend(type: OtpType.signup, email: email);
   }
 }

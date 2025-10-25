@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../features/angel/models/angel_model.dart';
+import '../../../models/angel_data.dart';
 import '../../../character_view.dart';
 
 class AngelIllustration extends StatelessWidget {
-  final Angel? angelData;
+  final AngelData? angelData;
   final int emotionIndex;
   final Function(int) onEmotionChanged;
 

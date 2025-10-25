@@ -1,214 +1,97 @@
+import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
-import '../models/angel_data.dart';
-import '../models/user_profile.dart';
-import '../managers/angel_data_manager.dart' as adm;
-import 'auth/auth_service.dart';
-import 'user_profile_service.dart';
 
-/// Deep Link 처리를 위한 서비스
-/// 블로그 참고: https://ownerdev88.tistory.com/440
+/// 딥링크 처리를 담당하는 서비스
+///
+/// 이메일 인증, 비밀번호 재설정 등의 딥링크를 처리합니다.
 class DeepLinkService {
-  static final AppLinks _appLinks = AppLinks();
-  static bool _isInitialized = false;
+  static final DeepLinkService _instance = DeepLinkService._internal();
+  factory DeepLinkService() => _instance;
+  DeepLinkService._internal();
 
-  /// Deep Link 서비스 초기화
-  static Future<void> initialize() async {
-    if (_isInitialized) return;
+  final AppLinks _appLinks = AppLinks();
+  StreamSubscription<Uri>? _linkSubscription;
+
+  /// 딥링크 리스너 초기화
+  void initialize() {
+    _linkSubscription = _appLinks.uriLinkStream.listen(
+      _handleDeepLink,
+      onError: (err) {
+        print('딥링크 에러: $err');
+      },
+    );
+  }
+
+  /// 딥링크 처리
+  Future<void> _handleDeepLink(Uri uri) async {
+    print('딥링크 수신: $uri');
 
     try {
-      // 앱이 종료된 상태에서 Deep Link로 실행된 경우
-      final initialLink = await _appLinks.getInitialLink();
-      if (initialLink != null) {
-        print('초기 Deep Link: $initialLink');
-        await _handleDeepLink(initialLink);
+      // Supabase 인증 관련 딥링크 처리
+      if (uri.scheme == 'angeldiary' || uri.scheme == 'https') {
+        await _handleAuthDeepLink(uri);
       }
-
-      // 앱이 실행 중일 때 Deep Link 수신
-      _appLinks.uriLinkStream.listen(
-        (Uri uri) async {
-          print('Deep Link 수신: $uri');
-          await _handleDeepLink(uri);
-        },
-        onError: (err) {
-          print('Deep Link 오류: $err');
-        },
-      );
-
-      _isInitialized = true;
-      print('Deep Link 서비스 초기화 완료');
     } catch (e) {
-      print('Deep Link 서비스 초기화 실패: $e');
+      print('딥링크 처리 에러: $e');
     }
   }
 
-  /// Deep Link 처리
-  static Future<void> _handleDeepLink(Uri uri) async {
-    try {
-      print('Deep Link 처리 시작: $uri');
+  /// 인증 관련 딥링크 처리
+  Future<void> _handleAuthDeepLink(Uri uri) async {
+    final supabase = Supabase.instance.client;
 
-      // scheme 확인
-      if (uri.scheme != 'angeldiary') {
-        print('지원하지 않는 scheme: ${uri.scheme}');
-        return;
+    // URL에서 토큰 추출
+    final accessToken = uri.queryParameters['access_token'];
+    final refreshToken = uri.queryParameters['refresh_token'];
+    final type = uri.queryParameters['type'];
+
+    if (accessToken != null && refreshToken != null) {
+      // 세션 설정
+      await supabase.auth.setSession(accessToken);
+
+      print('인증 토큰 설정 완료');
+
+      // 이메일 인증 완료 처리
+      if (type == 'signup' || type == 'email') {
+        await _handleEmailVerification();
       }
-
-      // host 확인
-      if (uri.host != 'redirect') {
-        print('지원하지 않는 host: ${uri.host}');
-        return;
-      }
-
-      // path 확인
-      if (uri.path != '/main') {
-        print('지원하지 않는 path: ${uri.path}');
-        return;
-      }
-
-      // 쿼리 파라미터 확인
-      final signup = uri.queryParameters['signup'];
-      final callback = uri.queryParameters['callback'];
-
-      print('Deep Link 파라미터 - signup: $signup, callback: $callback');
-
-      if (callback == 'true') {
-        // 이메일 인증 완료 처리
-        await _handleEmailVerification(signup == 'true');
-      }
-    } catch (e) {
-      print('Deep Link 처리 오류: $e');
     }
   }
 
   /// 이메일 인증 완료 처리
-  static Future<void> _handleEmailVerification(bool isSignup) async {
+  Future<void> _handleEmailVerification() async {
     try {
-      print('이메일 인증 완료 처리 시작 - 회원가입: $isSignup');
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
 
-      // Supabase 세션 확인
-      final session = Supabase.instance.client.auth.currentSession;
-      if (session == null) {
-        print('세션이 없습니다. 다시 로그인해주세요.');
-        return;
-      }
+      if (user != null) {
+        print('이메일 인증 완료: ${user.email}');
 
-      final user = session.user;
-      if (user == null) {
-        print('사용자 정보가 없습니다.');
-        return;
-      }
-
-      print('인증된 사용자: ${user.email}');
-
-      if (isSignup) {
-        // 회원가입 완료 처리
-        await _handleSignupCompletion(user);
-      } else {
-        // 로그인 완료 처리
-        await _handleLoginCompletion(user);
+        // 사용자 정보 업데이트 (필요시)
+        // await supabase.from('profiles').update({
+        //   'email_verified': true,
+        // }).eq('id', user.id);
       }
     } catch (e) {
-      print('이메일 인증 완료 처리 오류: $e');
+      print('이메일 인증 처리 에러: $e');
     }
   }
 
-  /// 회원가입 완료 처리
-  static Future<void> _handleSignupCompletion(User user) async {
-    try {
-      print('회원가입 완료 처리 시작');
-
-      // 임시 저장된 천사 데이터 확인
-      final prefs = await SharedPreferences.getInstance();
-      final tempAngelData = prefs.getString('temp_angel_data');
-
-      if (tempAngelData != null) {
-        print('임시 천사 데이터 발견, 서버로 이전');
-
-        // 천사 데이터를 서버에 저장
-        final angelData = AngelData.fromJson(jsonDecode(tempAngelData));
-        final userProfileService = UserProfileService();
-
-        // 사용자 프로필 업데이트 (천사 데이터 포함)
-        final userProfile = await userProfileService.getUserProfileById(
-          user.id,
-        );
-        if (userProfile != null) {
-          final updatedProfile = UserProfile(
-            id: userProfile.id,
-            email: userProfile.email,
-            nickname: userProfile.nickname,
-            createdAt: userProfile.createdAt,
-            lastActiveAt: userProfile.lastActiveAt,
-            pushNotificationEnabled: userProfile.pushNotificationEnabled,
-            languagePreference: userProfile.languagePreference,
-            exp: userProfile.exp,
-            level: userProfile.level,
-            acorns: userProfile.acorns,
-            isPremiumUser: userProfile.isPremiumUser,
-            angelData: angelData.toJson(),
-            updatedAt: DateTime.now(),
-          );
-          await userProfileService.upsertUserProfile(updatedProfile);
-
-          // AngelDataManager에 설정
-          await adm.AngelDataManager.setCurrentAngel(angelData);
-
-          // 임시 데이터 삭제
-          await prefs.remove('temp_angel_data');
-
-          print('천사 데이터 서버 이전 완료');
-        }
-      }
-
-      // 로그인 상태 저장
-      final authService = AuthService();
-      await authService.saveLoginState(user.email ?? '');
-
-      print('회원가입 완료 처리 성공');
-    } catch (e) {
-      print('회원가입 완료 처리 오류: $e');
-    }
+  /// 딥링크 리스너 해제
+  void dispose() {
+    _linkSubscription?.cancel();
   }
 
-  /// 로그인 완료 처리
-  static Future<void> _handleLoginCompletion(User user) async {
+  /// 앱이 종료된 상태에서 딥링크로 실행된 경우 처리
+  Future<void> handleInitialLink() async {
     try {
-      print('로그인 완료 처리 시작');
-
-      // 사용자 프로필에서 천사 데이터 로드
-      final userProfileService = UserProfileService();
-      final userProfile = await userProfileService.getUserProfileById(user.id);
-
-      if (userProfile != null && userProfile.angelData != null) {
-        final angelData = AngelData.fromJson(userProfile.angelData!);
-        await adm.AngelDataManager.setCurrentAngel(angelData);
-        print('사용자 천사 데이터 로드 완료');
+      final initialUri = await _appLinks.getInitialLink();
+      if (initialUri != null) {
+        await _handleDeepLink(initialUri);
       }
-
-      // 로그인 상태 저장
-      final authService = AuthService();
-      await authService.saveLoginState(user.email ?? '');
-
-      print('로그인 완료 처리 성공');
     } catch (e) {
-      print('로그인 완료 처리 오류: $e');
+      print('초기 딥링크 처리 에러: $e');
     }
-  }
-
-  /// Deep Link URL 생성 (테스트용)
-  static String generateDeepLinkUrl({
-    required String host,
-    required String path,
-    Map<String, String>? queryParameters,
-  }) {
-    final uri = Uri(
-      scheme: 'angeldiary',
-      host: host,
-      path: path,
-      queryParameters: queryParameters,
-    );
-    return uri.toString();
   }
 }
