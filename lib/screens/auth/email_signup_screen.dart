@@ -6,6 +6,7 @@ import '../../providers/angel_provider.dart';
 import '../../models/angel_data.dart';
 import '../../utils/constants.dart';
 import '../../generated/l10n/app_localizations.dart';
+import 'email_verification_waiting_screen.dart';
 
 /// 이메일 회원가입 화면
 ///
@@ -391,20 +392,32 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
       );
 
       if (success) {
-        // 천사 데이터 저장
-        await angelProvider.setAngel(widget.angelData);
-        appProvider.onLoginSuccess();
-
-        // 성공 메시지 표시
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('이메일 인증을 완료해주세요!'),
-            backgroundColor: Colors.green,
+        // 인증 대기 화면으로 이동
+        final verified = await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => EmailVerificationWaitingScreen(
+              email: _emailController.text.trim(),
+              angelData: widget.angelData,
+            ),
           ),
         );
 
-        // 성공 결과 반환
-        Navigator.of(context).pop(true);
+        // 인증이 완료되면 천사 데이터 저장 및 로그인 처리
+        if (verified == true && context.mounted) {
+          await angelProvider.setAngel(widget.angelData);
+          appProvider.onLoginSuccess();
+
+          // 성공 메시지 표시
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('회원가입이 완료되었습니다!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          // 성공 결과 반환
+          Navigator.of(context).pop(true);
+        }
       } else {
         // 에러 메시지 표시
         ScaffoldMessenger.of(context).showSnackBar(

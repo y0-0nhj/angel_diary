@@ -13,6 +13,9 @@ class DeepLinkService {
   final AppLinks _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSubscription;
 
+  // 이메일 인증 완료 콜백
+  static void Function()? _onEmailVerified;
+
   /// 딥링크 리스너 초기화
   void initialize() {
     _linkSubscription = _appLinks.uriLinkStream.listen(
@@ -68,6 +71,9 @@ class DeepLinkService {
       if (user != null) {
         print('이메일 인증 완료: ${user.email}');
 
+        // 콜백 호출 (대기 화면에 알림)
+        _onEmailVerified?.call();
+
         // 사용자 정보 업데이트 (필요시)
         // await supabase.from('profiles').update({
         //   'email_verified': true,
@@ -76,6 +82,16 @@ class DeepLinkService {
     } catch (e) {
       print('이메일 인증 처리 에러: $e');
     }
+  }
+
+  /// 이메일 인증 완료 콜백 설정
+  static void setOnEmailVerified(void Function() callback) {
+    _onEmailVerified = callback;
+  }
+
+  /// 이메일 인증 완료 콜백 제거
+  static void clearOnEmailVerified() {
+    _onEmailVerified = null;
   }
 
   /// 딥링크 리스너 해제
