@@ -13,6 +13,18 @@
 
 단순한 기록을 넘어, 반려동물이 무지개다리 너머 '천국의 섬'에서 행복하게 지내기를 소망하며, 언젠가 다시 만날 날을 기약하는 따뜻한 메시지를 담고 있습니다.
 
+![KakaoTalk_20260414_183112324](https://github.com/user-attachments/assets/2a0b0f50-a8c1-4e4b-a336-4705bd933fba)
+![KakaoTalk_20260414_183112324_01](https://github.com/user-attachments/assets/e15a86c4-6218-49d3-85f2-9938ff6b0f56)
+![KakaoTalk_20260414_183112324_02](https://github.com/user-attachments/assets/8f4cfa98-6b84-42e7-96cd-fa877b0da892)
+![KakaoTalk_20260414_183112324_03](https://github.com/user-attachments/assets/55ef7410-0f48-46fe-9450-81236acd6ed8)
+![KakaoTalk_20260414_183112324_04](https://github.com/user-attachments/assets/3dfb4f17-be80-44ac-8a63-eab79b8dc8a7)
+![KakaoTalk_20260414_183112324_05](https://github.com/user-attachments/assets/6e173abc-06d1-4a36-82c1-baf36fcfc11f)
+![KakaoTalk_20260414_183112324_06](https://github.com/user-attachments/assets/92d15e35-1b45-4949-a1bf-0406f5ac85f6)
+![KakaoTalk_20260414_183112324_07](https://github.com/user-attachments/assets/5e8b32ce-e10b-4823-b8c6-f08d5cf5696c)
+![KakaoTalk_20260414_183112324_08](https://github.com/user-attachments/assets/684c1cae-2cf4-417b-8878-9fcd5ff33b21)
+![KakaoTalk_20260414_183112324_09](https://github.com/user-attachments/assets/c1c16b31-dd56-4f8b-8b57-20706b5df7b9)
+
+
 ## 🌟 주요 기능
 
 ### 🎨 천사 캐릭터 생성
@@ -95,10 +107,6 @@
 - Dart SDK 3.0.0 이상
 - Android Studio / VS Code
 - Git
-
-### 실행 영상
-https://github.com/user-attachments/assets/7e60407c-75d3-4609-8aae-909946560827
-
 
 
 
