@@ -96,6 +96,11 @@
 - Android Studio / VS Code
 - Git
 
+### 실행 영상
+https://github.com/user-attachments/assets/7e60407c-75d3-4609-8aae-909946560827
+
+
+
 
 ## 📁 프로젝트 구조
 
